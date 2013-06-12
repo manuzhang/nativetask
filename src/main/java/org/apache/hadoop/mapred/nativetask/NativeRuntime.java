@@ -34,88 +34,23 @@ import org.apache.hadoop.io.FloatWritable;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
-import org.apache.hadoop.mapred.Counters;
 import org.apache.hadoop.mapred.JobConf;
-import org.apache.hadoop.mapred.Task.Counter;
 import org.apache.hadoop.mapred.TaskDelegation.DelegateReporter;
-import org.apache.hadoop.mapred.nativetask.NativeUtils;
+import org.apache.hadoop.mapred.nativetask.util.BytesUtil;
 import org.apache.hadoop.util.VersionInfo;
 
 /**
- * A factory for native object, also manages native runtime library
- * loading & cleaning
+ * This class stands for the native runtime It has three functions: 1. Create
+ * native handlers for map, reduce, outputcollector, and etc 2. Configure native
+ * task with provided MR configs 3. Provide file system api to native space, so
+ * that it can use File system like HDFS.
+ * 
  */
 public class NativeRuntime {
   private static Log LOG = LogFactory.getLog(NativeRuntime.class);
   private static boolean nativeLibraryLoaded = false;
+
   private static JobConf conf = new JobConf();
-  // All configs native side needed
-  private static String[] usefulExternalConfigsKeys = {
-      "mapred.map.tasks",
-      "mapred.reduce.tasks",
-      "mapred.task.partition",
-      "mapred.mapoutput.key.class",
-      "mapred.mapoutput.value.class",
-      "mapred.output.key.class",
-      "mapred.output.value.class",
-      "mapred.input.format.class",
-      "mapred.output.format.class",
-      "mapred.work.output.dir",
-      "mapred.textoutputformat.separator",
-      "mapred.compress.map.output",
-      "mapred.map.output.compression.codec",
-      "mapred.output.compress",
-      "mapred.output.compression.codec",
-      "mapred.map.output.sort",
-      "io.sort.mb",
-      "io.file.buffer.size",
-      "fs.default.name",
-      "fs.defaultFS",
-  };
-
-  public static String [][] supportedTypes = {
-      {
-        "org.apache.hadoop.io.Text",
-        "org.apache.hadoop.io.Text",
-      },
-      {
-        "org.apache.hadoop.io.BytesWritable",
-        "org.apache.hadoop.io.BytesWritable",
-      },
-      {
-        "org.apache.hadoop.typedbytes.TypedBytesWritable",
-        "org.apache.hadoop.io.BytesWritable",
-      },
-      {
-        "org.apache.hadoop.hive.ql.io.HiveKey",
-        "org.apache.hadoop.io.BytesWritable",
-      },
-  };
-
-  public static boolean supportType(String type) {
-    for (String [] st : supportedTypes) {
-      if (type.equals(st[0])) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  static String getCompatibleValue(String key, String value) {
-    if (key.equals("mapred.output.key.class") ||
-        key.equals("mapred.output.value.class") ||
-        key.equals("mapred.mapoutput.key.class") ||
-        key.equals("mapred.mapoutput.value.class")) {
-      for (String [] st : supportedTypes) {
-        if (value.equals(st[0])) {
-          return st[1];
-        }
-      }
-      return null;
-    } else {
-      return value;
-    }
-  }
 
   static {
     try {
@@ -130,6 +65,30 @@ public class NativeRuntime {
     }
   }
 
+  // All configs that native side needed
+  private static String[] usefulExternalConfigsKeys = {
+      "mapred.map.tasks",
+      "mapred.reduce.tasks", 
+      "mapred.task.partition",
+      "mapred.mapoutput.key.class", 
+      "mapred.mapoutput.value.class",
+      "mapred.output.key.class", 
+      "mapred.output.value.class",
+      "mapred.input.format.class",
+      "mapred.output.format.class",
+      "mapred.work.output.dir", 
+      "mapred.textoutputformat.separator",
+      "mapred.compress.map.output", 
+      "mapred.map.output.compression.codec",
+      "mapred.output.compress", 
+      "mapred.output.compression.codec",
+      "mapred.map.output.sort", 
+      "io.sort.mb", 
+      "io.file.buffer.size",
+      "fs.default.name", 
+      "fs.defaultFS" 
+   };
+
   private static void assertNativeLibraryLoaded() {
     if (!nativeLibraryLoaded) {
       throw new RuntimeException("Native runtime library not loaded");
@@ -138,65 +97,6 @@ public class NativeRuntime {
 
   public static boolean isNativeLibraryLoaded() {
     return nativeLibraryLoaded;
-  }
-
-  /**
-   * Open File to read, used by native side
-   * @param pathUTF8 file path
-   * @return
-   * @throws IOException
-   */
-  public static FSDataInputStream openFile(byte[] pathUTF8)
-      throws IOException {
-    String pathStr = NativeUtils.fromBytes(pathUTF8);
-    Path path = new Path(pathStr);
-    FileSystem fs = path.getFileSystem(conf);
-    return fs.open(path);
-  }
-
-  /**
-   * Create file to write, use by native side
-   * @param pathUTF8
-   * @param overwrite
-   * @return
-   * @throws IOException
-   */
-  public static FSDataOutputStream createFile(byte [] pathUTF8, boolean overwrite)
-      throws IOException {
-    String pathStr = NativeUtils.fromBytes(pathUTF8);
-    Path path = new Path(pathStr);
-    FileSystem fs = path.getFileSystem(conf);
-    return fs.create(path, overwrite);
-  }
-
-  public static long getFileLength(byte [] pathUTF8)
-      throws IOException {
-    String pathStr = NativeUtils.fromBytes(pathUTF8);
-    Path path = new Path(pathStr);
-    FileSystem fs = path.getFileSystem(conf);
-    return fs.getLength(path);
-  }
-  
-  public static boolean exists(byte [] pathUTF8) throws IOException {
-    String pathStr = NativeUtils.fromBytes(pathUTF8);
-    Path path = new Path(pathStr);
-    FileSystem fs = path.getFileSystem(conf);
-    return fs.exists(path);
-  }
-  
-  public static boolean remove(byte [] pathUTF8) throws IOException {
-    String pathStr = NativeUtils.fromBytes(pathUTF8);
-    Path path = new Path(pathStr);
-    FileSystem fs = path.getFileSystem(conf);
-    return fs.delete(path, true);
-  }
-  
-  public static boolean mkdirs(byte [] pathUTF8) throws IOException {
-    String pathStr = NativeUtils.fromBytes(pathUTF8);
-    Path path = new Path(pathStr);
-    FileSystem fs = path.getFileSystem(conf);
-    boolean ret = fs.mkdirs(path);
-    return ret;
   }
 
   public static void configure(JobConf jobConf) {
@@ -208,49 +108,56 @@ public class NativeRuntime {
       String key = usefulExternalConfigsKeys[i];
       String value = conf.get(key);
       if (value != null) {
-        String newValue = getCompatibleValue(key, value);
-        if (newValue != null) {
-          value = newValue;
-        }
-        nativeConfigs.add(NativeUtils.toBytes(key));
-        nativeConfigs.add(NativeUtils.toBytes(value));
+        // String newValue = getCompatibleValue(key, value);
+        // if (newValue != null) {
+        // value = newValue;
+        // }
+        //
+        nativeConfigs.add(BytesUtil.toBytes(key));
+        nativeConfigs.add(BytesUtil.toBytes(value));
       }
     }
     // add native.* configs
     for (Map.Entry<String, String> e : conf) {
       if (e.getKey().startsWith("native.")) {
-        nativeConfigs.add(NativeUtils.toBytes(e.getKey()));
-        nativeConfigs.add(NativeUtils.toBytes(e.getValue()));
+        nativeConfigs.add(BytesUtil.toBytes(e.getKey()));
+        nativeConfigs.add(BytesUtil.toBytes(e.getValue()));
       }
     }
-    nativeConfigs.add(NativeUtils.toBytes("native.hadoop.version"));
-    nativeConfigs.add(NativeUtils.toBytes(VersionInfo.getVersion()));
+    nativeConfigs.add(BytesUtil.toBytes("native.hadoop.version"));
+    nativeConfigs.add(BytesUtil.toBytes(VersionInfo.getVersion()));
     JNIConfigure(nativeConfigs.toArray(new byte[nativeConfigs.size()][]));
   }
 
-  public static void set(String key, String value) {
-    set(key, NativeUtils.toBytes(value));
+  public static void configure(String key, String value) {
+    configure(key, BytesUtil.toBytes(value));
   }
 
-  public static void set(String key, byte [] value) {
+  public static void configure(String key, boolean value) {
+    configure(key, Boolean.toString(value));
+  }
+
+  public static void configure(String key, int value) {
+    configure(key, Integer.toString(value));
+  }
+
+  public static void configure(String key, byte[] value) {
     assertNativeLibraryLoaded();
-    byte [][] jniConfig = new byte [2][];
-    jniConfig[0] = NativeUtils.toBytes(key);
+    byte[][] jniConfig = new byte[2][];
+    jniConfig[0] = BytesUtil.toBytes(key);
     jniConfig[1] = value;
     JNIConfigure(jniConfig);
   }
 
-  public static void set(String key, boolean value) {
-    set(key, Boolean.toString(value));
-  }
-
-  public static void set(String key, int value) {
-    set(key, Integer.toString(value));
-  }
-
+  /**
+   * create native object We use it to create native handlers
+   * 
+   * @param clazz
+   * @return
+   */
   public synchronized static long createNativeObject(String clazz) {
     assertNativeLibraryLoaded();
-    long ret = JNICreateNativeObject(NativeUtils.toBytes(clazz));
+    long ret = JNICreateNativeObject(BytesUtil.toBytes(clazz));
     if (ret == 0) {
       LOG.warn("Can't create NativeObject for class " + clazz
           + ", prabobly not exist.");
@@ -258,107 +165,24 @@ public class NativeRuntime {
     return ret;
   }
 
-  public enum NativeObjectType {
-    UnknownObjectType,
-    BatchHandlerType,
-    MapperType,
-    ReducerType,
-    PartitionerType,
-    CombinerType,
-    FolderType,
-    RecordReaderType,
-    RecordWriterType
-  }
-
-  public synchronized static long createDefaultObject(NativeObjectType type) {
-    assertNativeLibraryLoaded();
-    return JNICreateDefaultNativeObject(NativeUtils.toBytes(type.toString()));
-  }
-
+  /**
+   * destroy native object We use to destory native handlers
+   */
   public synchronized static void releaseNativeObject(long addr) {
     assertNativeLibraryLoaded();
     JNIReleaseNativeObject(addr);
   }
 
-  public static class StatusUpdater implements Runnable {
-    private Thread updaterThread;
-    private DelegateReporter reporter;
-    private long interval;
-
-    public StatusUpdater(DelegateReporter reporter) {
-      this(reporter, 1000);
-    }
-
-    public StatusUpdater(DelegateReporter reporter, long interval) {
-      this.reporter = reporter;
-      this.interval = interval;
-    }
-
-    @Override
-    public void run() {
-      while (true) {
-        try {
-          Thread.sleep(interval);
-        }
-        catch (InterruptedException e) {
-          if (LOG.isDebugEnabled()) {
-            LOG.debug("StatusUpdater thread exiting " +
-              "since it got interrupted");
-          }
-          break;
-        }
-        try {
-          updateStatus(reporter);
-        } catch (IOException e) {
-          LOG.warn("Update native status got exception", e);
-          reporter.setStatus(e.toString());
-          break;
-        }
-      }
-    }
-
-    protected void initUsedCounters() {
-      reporter.getCounter(Counter.MAP_INPUT_RECORDS);
-      reporter.getCounter(Counter.MAP_OUTPUT_RECORDS);
-      reporter.getCounter(Counter.MAP_INPUT_BYTES);
-      reporter.getCounter(Counter.MAP_OUTPUT_BYTES);
-      reporter.getCounter(Counter.MAP_OUTPUT_MATERIALIZED_BYTES);
-      reporter.getCounter(Counter.COMBINE_INPUT_RECORDS);
-      reporter.getCounter(Counter.COMBINE_OUTPUT_RECORDS);
-      reporter.getCounter(Counter.REDUCE_INPUT_RECORDS);
-      reporter.getCounter(Counter.REDUCE_OUTPUT_RECORDS);
-      reporter.getCounter(Counter.REDUCE_INPUT_GROUPS);
-    }
-
-    public synchronized void startUpdater() {
-      if (updaterThread == null) {
-        // init counters used by native side, 
-        // so they will have correct display name
-        initUsedCounters();
-        updaterThread = new Thread(this);
-        updaterThread.setDaemon(true);
-        updaterThread.start();
-      }
-    }
-
-    public synchronized void stopUpdater() throws InterruptedException {
-      if (updaterThread != null) {
-        updaterThread.interrupt();
-        updaterThread.join();
-      }
-    }
-  }
-
-  public static void updateStatus(DelegateReporter reporter)
-      throws IOException {
+  /**
+   * Get the status report from native space
+   * 
+   * @param reporter
+   * @throws IOException
+   */
+  public static void reportStatus(DelegateReporter reporter) throws IOException {
     assertNativeLibraryLoaded();
     synchronized (reporter) {
-      // Encoding: 
-      // progress:float
-      // status:Text
-      // Counter number
-      // Counters[group:Text, name:Text, incrCount:Long]
-      byte [] statusBytes = JNIUpdateStatus();
+      byte[] statusBytes = JNIUpdateStatus();
       DataInputBuffer ib = new DataInputBuffer();
       ib.reset(statusBytes, statusBytes.length);
       FloatWritable progress = new FloatWritable();
@@ -371,7 +195,7 @@ public class NativeRuntime {
       }
       IntWritable numCounters = new IntWritable();
       numCounters.readFields(ib);
-      if (numCounters.get()==0) {
+      if (numCounters.get() == 0) {
         return;
       }
       Text group = new Text();
@@ -386,12 +210,140 @@ public class NativeRuntime {
     }
   }
 
-  private native static void JNIRelease();
-  private native static void JNIConfigure(byte [][] configs);
-  private native static long JNICreateNativeObject(byte [] clazz);
-  private native static long JNICreateDefaultNativeObject(byte [] type);
-  private native static void JNIReleaseNativeObject(long addr);
-  private native static int  JNIRegisterModule(byte [] path, byte [] name);
-  private native static byte [] JNIUpdateStatus();
-}
+  /*******************************************************
+   *** The following are file system api so that we can use HDFS from native
+   ********************************************************/
 
+  /**
+   * Open File to read, used by native side We need this so that we are able to
+   * read data from HDFS in native
+   * 
+   * @param pathUTF8
+   *          file path
+   * @return
+   * @throws IOException
+   */
+  public static FSDataInputStream openFile(byte[] pathUTF8) throws IOException {
+    String pathStr = BytesUtil.fromBytes(pathUTF8);
+    Path path = new Path(pathStr);
+    FileSystem fs = path.getFileSystem(conf);
+    return fs.open(path);
+  }
+
+  /**
+   * Create file to write, use by native side We need it so that we are able to
+   * write data into HDFS in native side.
+   * 
+   * @param pathUTF8
+   * @param overwrite
+   * @return
+   * @throws IOException
+   */
+  public static FSDataOutputStream createFile(byte[] pathUTF8, boolean overwrite)
+      throws IOException {
+    String pathStr = BytesUtil.fromBytes(pathUTF8);
+    Path path = new Path(pathStr);
+    FileSystem fs = path.getFileSystem(conf);
+    return fs.create(path, overwrite);
+  }
+
+  /**
+   * We need this so that we are able to get the HDFS file length in native
+   * 
+   * @param pathUTF8
+   * @return
+   * @throws IOException
+   */
+  public static long getFileLength(byte[] pathUTF8) throws IOException {
+    String pathStr = BytesUtil.fromBytes(pathUTF8);
+    Path path = new Path(pathStr);
+    FileSystem fs = path.getFileSystem(conf);
+    return fs.getLength(path);
+  }
+
+  /**
+   * We need this so that we are able to check the HDFS file status
+   * 
+   */
+  public static boolean exists(byte[] pathUTF8) throws IOException {
+    String pathStr = BytesUtil.fromBytes(pathUTF8);
+    Path path = new Path(pathStr);
+    FileSystem fs = path.getFileSystem(conf);
+    return fs.exists(path);
+  }
+
+  /**
+   * We need this so that we are able to remove the file from HDFS
+   */
+  public static boolean remove(byte[] pathUTF8) throws IOException {
+    String pathStr = BytesUtil.fromBytes(pathUTF8);
+    Path path = new Path(pathStr);
+    FileSystem fs = path.getFileSystem(conf);
+    return fs.delete(path, true);
+  }
+
+  /**
+   * We need this so that we are able to mkdirs in HDFS from native side
+   */
+  public static boolean mkdirs(byte[] pathUTF8) throws IOException {
+    String pathStr = BytesUtil.fromBytes(pathUTF8);
+    Path path = new Path(pathStr);
+    FileSystem fs = path.getFileSystem(conf);
+    boolean ret = fs.mkdirs(path);
+    return ret;
+  }
+
+  /*******************************************************
+   *** The following are JNI apis
+   ********************************************************/
+
+  /**
+   * Config the native runtime with mapreduce job configurations.
+   * 
+   * @param configs
+   */
+  private native static void JNIConfigure(byte[][] configs);
+
+  /**
+   * create a native object in native space
+   * 
+   * @param clazz
+   * @return
+   */
+  private native static long JNICreateNativeObject(byte[] clazz);
+
+  /**
+   * create the default native object for certain type
+   * 
+   * @param type
+   * @return
+   */
+  @Deprecated
+  private native static long JNICreateDefaultNativeObject(byte[] type);
+
+  /**
+   * destroy native object in native space
+   * 
+   * @param addr
+   */
+  private native static void JNIReleaseNativeObject(long addr);
+
+  /**
+   * get status update from native side Encoding: progress:float status:Text
+   * Counter number: int the count of the counters Counters: array [group:Text,
+   * name:Text, incrCount:Long]
+   * 
+   * @return
+   */
+  private native static byte[] JNIUpdateStatus();
+
+  /**
+   * Not used.
+   */
+  private native static void JNIRelease();
+
+  /**
+   * Not used.
+   */
+  private native static int JNIRegisterModule(byte[] path, byte[] name);
+}
