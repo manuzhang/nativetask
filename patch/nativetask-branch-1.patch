@@ -1,51 +1,16 @@
-diff --git a/src/core/org/apache/hadoop/io/Text.java b/src/core/org/apache/hadoop/io/Text.java
-index 19faa87..a058d22 100644
---- a/src/core/org/apache/hadoop/io/Text.java
-+++ b/src/core/org/apache/hadoop/io/Text.java
-@@ -21,6 +21,7 @@ package org.apache.hadoop.io;
- import java.io.IOException;
- import java.io.DataInput;
- import java.io.DataOutput;
-+import java.io.InputStream;
- import java.nio.ByteBuffer;
- import java.nio.CharBuffer;
- import java.nio.charset.CharacterCodingException;
-@@ -219,6 +220,30 @@ public class Text extends BinaryComparable
-   }
- 
-   /**
-+   * Append some bytes from inputstream to the end of the given text
-+   * @param stream bytes source stream
-+   * @param len the number of bytes to append
-+   * @throws IOException
-+   */
-+  public void append(InputStream stream, int len) throws IOException {
-+    setCapacity(length+len,  true);
-+    stream.read(bytes, length, len);
-+    length += len;
-+  }
-+
-+  /**
-+   * Append some bytes from ByteBuffer to the end of the given text
-+   * @param buffer source ByteBuffer
-+   * @param len the number of bytes to append
-+   * @throws IOException
-+   */
-+  public void append(ByteBuffer buffer, int len) throws IOException {
-+    setCapacity(length+len,  true);
-+    buffer.get(bytes, length, len);
-+    length += len;
-+  }
-+
-+  /**
-    * Clear the string to empty.
-    */
-   public void clear() {
 diff --git a/src/mapred/org/apache/hadoop/mapred/MapTask.java b/src/mapred/org/apache/hadoop/mapred/MapTask.java
 index 78ddea3..85e5a01 100644
 --- a/src/mapred/org/apache/hadoop/mapred/MapTask.java
 +++ b/src/mapred/org/apache/hadoop/mapred/MapTask.java
-@@ -366,6 +366,18 @@ class MapTask extends Task {
+@@ -43,6 +43,7 @@
+ import org.apache.commons.logging.Log;
+ import org.apache.commons.logging.LogFactory;
+ import org.apache.hadoop.conf.Configuration;
++import org.apache.hadoop.filecache.TaskDistributedCacheManager;
+ import org.apache.hadoop.fs.FSDataInputStream;
+ import org.apache.hadoop.fs.FSDataOutputStream;
+ import org.apache.hadoop.fs.FileSystem;
+@@ -371,6 +372,18 @@
        return;
      }
  
@@ -64,18 +29,48 @@ index 78ddea3..85e5a01 100644
      if (useNewApi) {
        runNewMapper(job, splitMetaInfo, umbilical, reporter);
      } else {
-@@ -425,7 +437,9 @@ class MapTask extends Task {
-     LOG.info("numReduceTasks: " + numReduceTasks);
-     MapOutputCollector collector = null;
-     if (numReduceTasks > 0) {
--      collector = new MapOutputBuffer(umbilical, job, reporter);
+@@ -424,8 +437,30 @@
+         new SkippingRecordReader<INKEY,INVALUE>(inputSplit, umbilical, reporter) :
+         new TrackedRecordReader<INKEY,INVALUE>(inputSplit, job, reporter);
+     job.setBoolean("mapred.skip.on", isSkipping());
++    
++    int numReduceTasks = conf.getNumReduceTasks();
++    LOG.info("numReduceTasks: " + numReduceTasks);
++    MapOutputCollector collector = null;
++    if (numReduceTasks > 0) {
 +      collector = TaskDelegation.tryGetDelegateMapOutputCollector(job, getTaskID(), mapOutputFile);
 +      if (collector == null)
 +        collector = new MapOutputBuffer(umbilical, job, reporter);
-     } else { 
-       collector = new DirectMapOutputCollector(umbilical, job, reporter);
++    } else { 
++      collector = new DirectMapOutputCollector(umbilical, job, reporter);
++    }
++    MapRunnable<INKEY,INVALUE,OUTKEY,OUTVALUE> runner =
++      ReflectionUtils.newInstance(job.getMapRunnerClass(), job);
+ 
+-
++    try {
++      runner.run(in, new OldOutputCollector(collector, conf), reporter);
++      collector.flush();
++    } finally {
++      //close
++      in.close();                               // close input
++      collector.close();
++    }
++  }
++/*
+     int numReduceTasks = conf.getNumReduceTasks();
+     LOG.info("numReduceTasks: " + numReduceTasks);
+     MapOutputCollector<OUTKEY, OUTVALUE> collector = null;
+@@ -448,7 +483,7 @@
+       in.close();                               // close input
+       collector.close();
      }
-@@ -672,7 +686,8 @@ class MapTask extends Task {
+-  }
++  }*/
+ 
+   /**
+    * Update the job with details about the file split
+@@ -680,7 +715,8 @@
                         TaskUmbilicalProtocol umbilical,
                         TaskReporter reporter
                         ) throws IOException, ClassNotFoundException {
@@ -89,24 +84,24 @@ diff --git a/src/mapred/org/apache/hadoop/mapred/ReduceTask.java b/src/mapred/or
 index f3cfe0c..84ffbd7 100644
 --- a/src/mapred/org/apache/hadoop/mapred/ReduceTask.java
 +++ b/src/mapred/org/apache/hadoop/mapred/ReduceTask.java
-@@ -414,6 +414,11 @@ class ReduceTask extends Task {
+@@ -458,6 +458,12 @@
+     Class keyClass = job.getMapOutputKeyClass();
      Class valueClass = job.getMapOutputValueClass();
-     RawComparator comparator = job.getOutputValueGroupingComparator();
- 
+     RawComparator comparator = avoidsort ? null:job.getOutputValueGroupingComparator();
++    
 +    if (TaskDelegation.catDelegateReduceTask(job)) {
 +      TaskDelegation.delegateReduceTask(this, job, umbilical, reporter, rIter);
 +      done(umbilical, reporter);
 +      return;
-+    }
++    } 
      if (useNewApi) {
        runNewReducer(job, umbilical, reporter, rIter, comparator, 
-                     keyClass, valueClass);
 diff --git a/src/mapred/org/apache/hadoop/mapred/TaskDelegation.java b/src/mapred/org/apache/hadoop/mapred/TaskDelegation.java
 new file mode 100644
 index 0000000..20adabe
 --- /dev/null
 +++ b/src/mapred/org/apache/hadoop/mapred/TaskDelegation.java
-@@ -0,0 +1,150 @@
+@@ -0,0 +1,147 @@
 +/**
 + * Licensed to the Apache Software Foundation (ASF) under one
 + * or more contributor license agreements.  See the NOTICE file
@@ -131,6 +126,8 @@ index 0000000..20adabe
 +import java.lang.reflect.Constructor;
 +import java.lang.reflect.Method;
 +
++import org.apache.commons.logging.Log;
++import org.apache.commons.logging.LogFactory;
 +import org.apache.hadoop.mapred.Counters.Counter;
 +import org.apache.hadoop.mapred.Task.TaskReporter;
 +import org.apache.hadoop.util.ReflectionUtils;
@@ -140,6 +137,7 @@ index 0000000..20adabe
 +   * Add setProgress interface, cause Reporter don't have this,
 +   * and TaskReporter is protected
 +   */
++  private static final Log LOG = LogFactory.getLog(TaskDelegation.class);
 +  public static class DelegateReporter implements Reporter {
 +    private TaskReporter reporter;
 +    public DelegateReporter(TaskReporter reporter) {
@@ -172,10 +170,6 @@ index 0000000..20adabe
 +    @Override
 +    public void incrCounter(String group, String counter, long amount) {
 +      reporter.incrCounter(group, counter, amount);
-+    }
-+    @Override
-+    public float getProgress() {
-+      return reporter.getProgress();
 +    }
 +    public void setProgress(float progress) {
 +      reporter.setProgress(progress);
@@ -238,8 +232,7 @@ index 0000000..20adabe
 +      tryGetDelegateMapOutputCollector(JobConf job, TaskAttemptID taskId,
 +          MapOutputFile mapOutputFile) {
 +    try {
-+      Class<?> cls = Class.forName(
-+          "org.apache.hadoop.mapred.nativetask.NativeMapOutputCollector");
++      Class<?> cls = Class.forName("org.apache.hadoop.mapred.nativetask.NativeMapOutputCollector");
 +      Method canEnbaleMthd = cls.getMethod("canEnable", JobConf.class);
 +      Boolean can = (Boolean)canEnbaleMthd.invoke(null, job);
 +      if (can) {
@@ -252,7 +245,6 @@ index 0000000..20adabe
 +      }
 +      return null;
 +    } catch (Exception e) {
-+      e.printStackTrace(System.err);
 +      return null;
 +    }
 +  }
