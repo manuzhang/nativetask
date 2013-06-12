@@ -32,8 +32,8 @@ import org.apache.hadoop.mapred.RawKeyValueIterator;
 import org.apache.hadoop.mapred.RecordWriter;
 import org.apache.hadoop.mapred.Reporter;
 import org.apache.hadoop.mapred.nativetask.NativeRuntime;
-import org.apache.hadoop.mapred.nativetask.NativeTaskConfig;
-import org.apache.hadoop.mapred.nativetask.NativeReduceTaskDelegator.ReducerProcessor;
+import org.apache.hadoop.mapred.nativetask.Constants;
+import org.apache.hadoop.mapred.nativetask.handlers.NativeReduceOnlyHandler;
 import org.apache.hadoop.util.Progress;
 import org.apache.hadoop.util.Progressable;
 
@@ -134,50 +134,50 @@ public class TestNativeReduceTaskDelegator extends TestCase {
   public void testPassiveReducerProcessor() throws Exception {
     JobConf conf = new JobConf();
     conf.set("mapred.local.dir", "local");
-    conf.setBoolean(NativeTaskConfig.NATIVE_TASK_ENABLED, true);
+    conf.setBoolean(Constants.NATIVE_TASK_ENABLED, true);
     conf.setOutputKeyClass(Text.class);
     conf.setOutputValueClass(Text.class);
     // use passive reducer
-    conf.set(NativeTaskConfig.NATIVE_REDUCER_CLASS, "NativeTask.Mapper");
+    conf.set(Constants.NATIVE_REDUCER_CLASS, "NativeTask.Mapper");
 
     assertTrue(NativeRuntime.isNativeLibraryLoaded());
     NativeRuntime.configure(conf);
 
     int bufferCapacity = conf.getInt(
-        NativeTaskConfig.NATIVE_PROCESSOR_BUFFER_KB,
-        NativeTaskConfig.NATIVE_PROCESSOR_BUFFER_KB_DEFAULT) * 1024;
+        Constants.NATIVE_PROCESSOR_BUFFER_KB,
+        Constants.NATIVE_PROCESSOR_BUFFER_KB_DEFAULT) * 1024;
 
     List<Text[]> data = createData(INPUT_SIZE);
     RecordWriter<Text, Text> writer = createCheckRecordWriter(data);
     RawKeyValueIterator rIter = createRawKeyValueIterator(data);
 
-    ReducerProcessor<Text, Text, Text, Text> processor =
-        new ReducerProcessor<Text, Text, Text, Text>(bufferCapacity, bufferCapacity,
+    NativeReduceOnlyHandler<Text, Text, Text, Text> processor =
+        new NativeReduceOnlyHandler<Text, Text, Text, Text>(bufferCapacity, bufferCapacity,
             Text.class, Text.class, Text.class, Text.class, conf, writer, new NullProgress(), rIter);
     processor.run();
   }
 
   public void testActiveReducerProcessor() throws Exception {
     JobConf conf = new JobConf();
-    conf.setBoolean(NativeTaskConfig.NATIVE_TASK_ENABLED, true);
+    conf.setBoolean(Constants.NATIVE_TASK_ENABLED, true);
     conf.setOutputKeyClass(Text.class);
     conf.setOutputValueClass(Text.class);
     // use active reducer
-    conf.set(NativeTaskConfig.NATIVE_REDUCER_CLASS, "NativeTask.Reducer");
+    conf.set(Constants.NATIVE_REDUCER_CLASS, "NativeTask.Reducer");
 
     assertTrue(NativeRuntime.isNativeLibraryLoaded());
     NativeRuntime.configure(conf);
 
     int bufferCapacity = conf.getInt(
-        NativeTaskConfig.NATIVE_PROCESSOR_BUFFER_KB,
-        NativeTaskConfig.NATIVE_PROCESSOR_BUFFER_KB_DEFAULT) * 1024;
+        Constants.NATIVE_PROCESSOR_BUFFER_KB,
+        Constants.NATIVE_PROCESSOR_BUFFER_KB_DEFAULT) * 1024;
 
     List<Text[]> data = createData(INPUT_SIZE);
     RecordWriter<Text, Text> writer = createCheckRecordWriter(data);
     RawKeyValueIterator rIter = createRawKeyValueIterator(data);
 
-    ReducerProcessor<Text, Text, Text, Text> processor =
-        new ReducerProcessor<Text, Text, Text, Text>(bufferCapacity, bufferCapacity,
+    NativeReduceOnlyHandler<Text, Text, Text, Text> processor =
+        new NativeReduceOnlyHandler<Text, Text, Text, Text>(bufferCapacity, bufferCapacity,
             Text.class, Text.class, Text.class, Text.class, conf, writer, new NullProgress(), rIter);
     processor.run();
     writer.close(null);

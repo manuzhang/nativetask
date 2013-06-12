@@ -16,18 +16,26 @@
  * limitations under the License.
  */
 
-package org.apache.hadoop.mapred.nativetask;
 
-import org.apache.hadoop.mapred.JobConf;
-import junit.framework.TestCase;
+package org.apache.hadoop.mapred.nativetask.serde;
 
-public class TestNativeRuntime extends TestCase {
-  public void testLoad() {
-    JobConf conf = new JobConf();
-    NativeRuntime.configure(conf);
-    assertTrue(NativeRuntime.isNativeLibraryLoaded());
-    long obj = NativeRuntime.createNativeObject("NativeTask.MCollectorOutputHandler");
-    assertTrue(obj != 0);
-    NativeRuntime.releaseNativeObject(obj);    
-  }
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.IOException;
+
+import org.apache.hadoop.io.Writable;
+
+/**
+ * Note: if you implemented your customized NativeSerializer instead of
+ * DefaultSerializer, you have to make sure the native side can serialize it
+ * correctly.
+ * 
+ */
+public interface INativeSerializer<T extends Writable> {
+
+  public int getLength(T w) throws IOException;
+
+  public void serialize(T w, DataOutput out) throws IOException;
+
+  public void deserialize(T w, int length, DataInput in) throws IOException;
 }

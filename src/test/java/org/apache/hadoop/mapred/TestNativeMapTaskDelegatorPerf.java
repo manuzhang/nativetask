@@ -25,8 +25,8 @@ import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.MapOutputFile;
 import org.apache.hadoop.mapred.TaskAttemptID;
 import org.apache.hadoop.mapred.nativetask.NativeRuntime;
-import org.apache.hadoop.mapred.nativetask.NativeTaskConfig;
-import org.apache.hadoop.mapred.nativetask.NativeMapTaskDelegator.MapperOutputProcessor;
+import org.apache.hadoop.mapred.nativetask.Constants;
+import org.apache.hadoop.mapred.nativetask.handlers.NativeMapCollectHandler;
 
 import junit.framework.TestCase;
 
@@ -40,13 +40,13 @@ public class TestNativeMapTaskDelegatorPerf extends TestCase {
     JobConf conf = new JobConf();
     conf.set("mapred.local.dir", "local");
     conf.setNumReduceTasks(numReduce);
-    conf.setBoolean(NativeTaskConfig.NATIVE_TASK_ENABLED, true);
+    conf.setBoolean(Constants.NATIVE_TASK_ENABLED, true);
     conf.setMapOutputKeyClass(Text.class);
     conf.setMapOutputValueClass(Text.class);
     conf.setCompressMapOutput(true);
     conf.set("mapred.map.output.compression.codec", "org.apache.hadoop.io.compress.SnappyCodec");
     conf.setInt("io.sort.mb", 400);
-    conf.setInt(NativeTaskConfig.NATIVE_PROCESSOR_BUFFER_KB, 128);
+    conf.setInt(Constants.NATIVE_PROCESSOR_BUFFER_KB, 128);
     
 
     assertTrue(NativeRuntime.isNativeLibraryLoaded());
@@ -56,11 +56,12 @@ public class TestNativeMapTaskDelegatorPerf extends TestCase {
     mapOutputFile.setConf(conf);
 
     int bufferCapacity = conf.getInt(
-        NativeTaskConfig.NATIVE_PROCESSOR_BUFFER_KB,
-        NativeTaskConfig.NATIVE_PROCESSOR_BUFFER_KB_DEFAULT) * 1024;
+        Constants.NATIVE_PROCESSOR_BUFFER_KB,
+        Constants.NATIVE_PROCESSOR_BUFFER_KB_DEFAULT) * 1024;
 
-    MapperOutputProcessor<Text, Text> processor = new MapperOutputProcessor<Text, Text>(
+    NativeMapCollectHandler<Text, Text> processor = new NativeMapCollectHandler<Text, Text>(
         bufferCapacity, Text.class, Text.class, conf, taskid);
+    processor.init(conf);
 
     byte [] t = new byte[kvSize/2];
     for (int i=0;i<t.length;i++) {

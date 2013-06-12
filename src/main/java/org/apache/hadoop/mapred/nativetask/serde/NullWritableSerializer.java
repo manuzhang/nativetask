@@ -16,18 +16,18 @@
  * limitations under the License.
  */
 
-package org.apache.hadoop.mapred.nativetask;
 
-import org.apache.hadoop.mapred.JobConf;
-import junit.framework.TestCase;
+package org.apache.hadoop.mapred.nativetask.serde;
 
-public class TestNativeRuntime extends TestCase {
-  public void testLoad() {
-    JobConf conf = new JobConf();
-    NativeRuntime.configure(conf);
-    assertTrue(NativeRuntime.isNativeLibraryLoaded());
-    long obj = NativeRuntime.createNativeObject("NativeTask.MCollectorOutputHandler");
-    assertTrue(obj != 0);
-    NativeRuntime.releaseNativeObject(obj);    
+import java.io.IOException;
+
+import org.apache.hadoop.io.Writable;
+import org.apache.hadoop.mapred.nativetask.INativeComparable;
+
+public class NullWritableSerializer extends DefaultSerializer  implements INativeComparable {
+
+  @Override
+  public int getLength(Writable w) throws IOException {
+    return 0;
   }
 }

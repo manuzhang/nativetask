@@ -40,9 +40,9 @@ import org.apache.hadoop.mapred.Reporter;
 import org.apache.hadoop.mapred.SpillRecord;
 import org.apache.hadoop.mapred.TaskAttemptID;
 import org.apache.hadoop.mapred.nativetask.NativeRuntime;
-import org.apache.hadoop.mapred.nativetask.NativeTaskConfig;
-import org.apache.hadoop.mapred.nativetask.NativeMapTaskDelegator.MapperOutputProcessor;
-import org.apache.hadoop.mapred.nativetask.NativeMapTaskDelegator.MapperProcessor;
+import org.apache.hadoop.mapred.nativetask.Constants;
+import org.apache.hadoop.mapred.nativetask.handlers.NativeMapOnlyHandler;
+import org.apache.hadoop.mapred.nativetask.handlers.NativeMapCollectHandler;
 
 import junit.framework.TestCase;
 
@@ -113,7 +113,7 @@ public class TestNativeMapTaskDelegator extends TestCase {
     JobConf conf = new JobConf();
     conf.set("mapred.local.dir", "local");
     conf.setNumReduceTasks(NUM_REDUCE);
-    conf.setBoolean(NativeTaskConfig.NATIVE_TASK_ENABLED, true);
+    conf.setBoolean(Constants.NATIVE_TASK_ENABLED, true);
     conf.setMapOutputKeyClass(Text.class);
     conf.setMapOutputValueClass(Text.class);
     conf.setInt("io.sort.mb", 8);
@@ -125,11 +125,12 @@ public class TestNativeMapTaskDelegator extends TestCase {
     mapOutputFile.setConf(conf);
 
     int bufferCapacity = conf.getInt(
-        NativeTaskConfig.NATIVE_PROCESSOR_BUFFER_KB,
-        NativeTaskConfig.NATIVE_PROCESSOR_BUFFER_KB_DEFAULT) * 1024;
+        Constants.NATIVE_PROCESSOR_BUFFER_KB,
+        Constants.NATIVE_PROCESSOR_BUFFER_KB_DEFAULT) * 1024;
 
-    MapperOutputProcessor<Text, Text> processor = new MapperOutputProcessor<Text, Text>(
+    NativeMapCollectHandler<Text, Text> processor = new NativeMapCollectHandler<Text, Text>(
         bufferCapacity, Text.class, Text.class, conf, taskid);
+    processor.init(conf);
 
     RecordReader<Text, Text> reader = createReader(createData(INPUT_SIZE, true));
     try {
@@ -200,7 +201,7 @@ public class TestNativeMapTaskDelegator extends TestCase {
   public void testMapperProcessor() throws IOException, InterruptedException {
     JobConf conf = new JobConf();
     conf.setNumReduceTasks(0);
-    conf.setBoolean(NativeTaskConfig.NATIVE_TASK_ENABLED, true);
+    conf.setBoolean(Constants.NATIVE_TASK_ENABLED, true);
     conf.setMapOutputKeyClass(Text.class);
     conf.setMapOutputValueClass(Text.class);
 
@@ -208,14 +209,16 @@ public class TestNativeMapTaskDelegator extends TestCase {
     NativeRuntime.configure(conf);
 
     int bufferCapacity = conf.getInt(
-        NativeTaskConfig.NATIVE_PROCESSOR_BUFFER_KB,
-        NativeTaskConfig.NATIVE_PROCESSOR_BUFFER_KB_DEFAULT) * 1024;
+        Constants.NATIVE_PROCESSOR_BUFFER_KB,
+        Constants.NATIVE_PROCESSOR_BUFFER_KB_DEFAULT) * 1024;
 
     List<Text> data = createData(INPUT_SIZE, true);
-    MapperProcessor<Text, Text, Text, Text> processor = new 
-        MapperProcessor<Text, Text, Text, Text>(bufferCapacity, bufferCapacity,
+    NativeMapOnlyHandler<Text, Text, Text, Text> processor = new 
+        NativeMapOnlyHandler<Text, Text, Text, Text>(bufferCapacity, bufferCapacity,
             Text.class, Text.class, Text.class, Text.class, conf, 
             createCheckDataWriter(data));
+    
+    processor.init(conf);
 
     RecordReader<Text, Text> reader = createReader(data);
     try {

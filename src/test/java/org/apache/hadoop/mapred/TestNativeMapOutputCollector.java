@@ -33,8 +33,8 @@ import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.MapOutputFile;
 import org.apache.hadoop.mapred.SpillRecord;
 import org.apache.hadoop.mapred.TaskAttemptID;
-import org.apache.hadoop.mapred.nativetask.NativeMapOutputCollector;
 import org.apache.hadoop.mapred.nativetask.NativeRuntime;
+import org.apache.hadoop.mapred.nativetask.handlers.NativeMapOutputCollector;
 
 import junit.framework.TestCase;
 
@@ -72,6 +72,9 @@ public class TestNativeMapOutputCollector extends TestCase {
     mapOutputFile.setConf(conf);
     NativeMapOutputCollector<Text, Text> collector = 
         new NativeMapOutputCollector<Text, Text>(conf, taskid);
+    
+    collector.init(conf);
+    
     List<Text> inputData = createData(INPUT_SIZE, true);
     for (Text k: inputData) {
       int partition = (k.hashCode() & 0x7fffffff) % NUM_REDUCE;

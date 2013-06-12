@@ -16,18 +16,32 @@
  * limitations under the License.
  */
 
-package org.apache.hadoop.mapred.nativetask;
 
-import org.apache.hadoop.mapred.JobConf;
-import junit.framework.TestCase;
+package org.apache.hadoop.mapred.nativetask.util;
 
-public class TestNativeRuntime extends TestCase {
-  public void testLoad() {
-    JobConf conf = new JobConf();
-    NativeRuntime.configure(conf);
-    assertTrue(NativeRuntime.isNativeLibraryLoaded());
-    long obj = NativeRuntime.createNativeObject("NativeTask.MCollectorOutputHandler");
-    assertTrue(obj != 0);
-    NativeRuntime.releaseNativeObject(obj);    
+import java.io.UnsupportedEncodingException;
+
+public class BytesUtil {
+
+  public static byte[] toBytes(String str) {
+    if (str == null) {
+      return null;
+    }
+    try {
+      return str.getBytes("utf-8");
+    } catch (UnsupportedEncodingException e) {
+      throw new RuntimeException(e.getMessage());
+    }
+  }
+
+  public static String fromBytes(byte[] data) {
+    if (data == null) {
+      return null;
+    }
+    try {
+      return new String(data, "utf-8");
+    } catch (UnsupportedEncodingException e) {
+      throw new RuntimeException(e.getMessage());
+    }
   }
 }
