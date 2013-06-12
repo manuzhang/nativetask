@@ -30,7 +30,7 @@ private:
   MapOutputCollector * _collector;
   // state info for large KV pairs
   char * _dest;
-  uint32_t _remain;
+
 public:
   MCollectorOutputHandler();
   virtual ~MCollectorOutputHandler();

@@ -29,8 +29,7 @@ using std::vector;
 
 MCollectorOutputHandler::MCollectorOutputHandler() :
     _collector(NULL),
-    _dest(NULL),
-    _remain(0) {
+    _dest(NULL) {
 }
 
 MCollectorOutputHandler::~MCollectorOutputHandler() {
@@ -39,7 +38,6 @@ MCollectorOutputHandler::~MCollectorOutputHandler() {
 
 void MCollectorOutputHandler::reset() {
   _dest = NULL;
-  _remain = 0;
   delete _collector;
   _collector = NULL;
 }
@@ -64,22 +62,19 @@ void MCollectorOutputHandler::finish() {
 }
 
 void MCollectorOutputHandler::handleInput(char * buff, uint32_t length) {
-  if (_remain > 0) {
-    uint32_t cp = _remain < length ? _remain : length;
-    memcpy(_dest, buff, cp);
-    length -= cp;
-    buff += cp;
-    _dest += cp;
-    _remain -= cp;
-  }
+
   while (length>0) {
     if (unlikely(length<2*sizeof(uint32_t))) {
       THROW_EXCEPTION(IOException, "k/v meta information incomplete");
     }
-    uint32_t partition = ((uint32_t*)buff)[0];
-    uint32_t kvlength = ((uint32_t*)buff)[1];
-    buff += 2*sizeof(uint32_t);
-    length -= 2*sizeof(uint32_t);
+
+    // key value format
+    // keyLength(4 byte) + key + valueLength(4 byte) + value + partitionId(4 byte)
+    uint32_t keyLength = ((uint32_t*)buff)[0];
+    uint32_t valueLength = *((uint32_t*)(buff + keyLength + sizeof(uint32_t)));
+    uint32_t kvlength = keyLength + valueLength + 2 * sizeof(uint32_t);
+    uint32_t partition = *((uint32_t*)(buff + kvlength));
+
     char * dest = _collector->get_buffer_to_put(kvlength, partition);
     if (NULL == dest) {
       string spillpath = this->sendCommand("GetSpillPath");
@@ -96,23 +91,17 @@ void MCollectorOutputHandler::handleInput(char * buff, uint32_t length) {
         THROW_EXCEPTION(OutOfMemoryException, "key/value pair larger than io.sort.mb");
       }
     }
-    if (kvlength <= length) {
-      simple_memcpy(dest, buff, kvlength);
-      buff += kvlength;
-      length -= kvlength;
+
+    if (unlikely(kvlength > length)) {
+      //key and value must be able to flushed together.
+	  THROW_EXCEPTION(IOException, "k/v data incomplete");
     }
-    else {
-      if (length>0) {
-        memcpy(dest, buff, length);
-        _dest = dest + length;
-        _remain = kvlength - length;
-      }
-      else {
-        _dest = dest;
-        _remain = kvlength;
-      }
-      break;
-    }
+
+    simple_memcpy(dest, buff, kvlength);
+
+    //4 bytes for the partition id
+    buff += kvlength + sizeof(uint32_t);
+    length -= kvlength + sizeof(uint32_t);
   }
 }
 

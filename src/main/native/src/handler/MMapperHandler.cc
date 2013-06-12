@@ -111,41 +111,23 @@ void MMapperHandler::finish() {
 }
 
 void MMapperHandler::handleInput(char * buff, uint32_t length) {
-  if (unlikely(_remain > 0)) {
-    uint32_t cp = _remain < length ? _remain : length;
-    memcpy(_dest + _kvlength - _remain, buff, cp);
-    buff += cp;
-    length -= cp;
-    _remain -= cp;
-    if (0 == _remain) {
-      _mapper->map(_dest, _klength, _dest + _klength, _vlength);
-      delete _dest;
-      _dest = NULL;
-    }
-  }
+
   while (length > 0) {
     if (unlikely(length<2*sizeof(uint32_t))) {
       THROW_EXCEPTION(IOException, "k/v length information incomplete");
     }
     uint32_t klength = ((uint32_t*) buff)[0];
-    uint32_t vlength = ((uint32_t*) buff)[1];
-    buff += 2 * sizeof(uint32_t);
-    length -= 2 * sizeof(uint32_t);
-    uint32_t kvlength = klength + vlength;
-    // TODO: optimize length==0
+    uint32_t vlength = *((uint32_t*) (buff + klength + sizeof(uint32_t) ));
+    uint32_t kvlength = klength + vlength + 2 * sizeof(uint32_t);
+
+    if (kvlength > length) {
+        THROW_EXCEPTION(IOException, "k/v data incomplete");
+    }
+
     if (kvlength <= length) {
-      _mapper->map(buff, klength, buff + klength, vlength);
+      _mapper->map(buff + sizeof(uint32_t), klength, buff + klength + 2 * sizeof(uint32_t), vlength);
       buff += kvlength;
       length -= kvlength;
-    }
-    else {
-      _dest = new char[kvlength + 8];
-      _klength = klength;
-      _vlength = vlength;
-      _kvlength = kvlength;
-      simple_memcpy(_dest, buff, length);
-      _remain = kvlength - length;
-      return;
     }
   }
 }
@@ -176,6 +158,13 @@ void MMapperHandler::collect(const void * key, uint32_t keyLen,
 void MMapperHandler::collect(const void * key, uint32_t keyLen,
                      const void * value, uint32_t valueLen) {
   if (NULL == _moc) {
+
+    //flush output to make sure we have enough room to hold the key and value
+    if (_ob.position + keyLen + valueLen + 2 * sizeof(uint32_t) > _ob.capacity) {
+        flushOutput(_ob.position);
+        _ob.position = 0;
+    }
+
     putInt(keyLen);
     put((char *)key, keyLen);
     putInt(valueLen);
