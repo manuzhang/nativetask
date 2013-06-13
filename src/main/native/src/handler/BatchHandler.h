@@ -102,6 +102,8 @@ protected:
    */
   virtual std::string sendCommand(const std::string & cmd);
 
+  virtual std::string sendCommand(const char * data, size_t length);
+
   /**
    * Used by subclass, call java side flushOutput(int length)
    * @param length output buffer's available data length

@@ -101,10 +101,14 @@ void BatchHandler::onSetup(char * inputBuffer, uint32_t inputBufferCapacity,
 }
 
 std::string BatchHandler::sendCommand(const std::string & data) {
+  return this->sendCommand(data.c_str(), (size_t)data.length);
+}
+
+std::string BatchHandler::sendCommand(const char * data, size_t length) {
   JNIEnv * env = JNU_GetJNIEnv();
-  jbyteArray jcmdData = env->NewByteArray(data.length());
+  jbyteArray jcmdData = env->NewByteArray(length);
   env->SetByteArrayRegion(jcmdData, 0,
-      (jsize) data.length(), (jbyte*) data.c_str());
+      length, (jbyte*) data);
   jbyteArray ret = (jbyteArray) env->CallObjectMethod(
       (jobject) _processor, SendCommandToJavaMethodID, jcmdData);
   if (env->ExceptionCheck()) {

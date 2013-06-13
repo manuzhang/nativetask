@@ -31,7 +31,8 @@ RReducerHandler::RReducerHandler() :
   _writer(NULL),
   _current(NULL),
   _remain(0),
-  _kvlength(0),
+  _keyOffset(0),
+  _valueOffset(0),
   _klength(0),
   _vlength(0),
   _keyGroupIterState(NEW_KEY),
@@ -185,7 +186,7 @@ void RReducerHandler::run() {
     {
       char * kvpair;
       while(NULL != (kvpair = nextKeyValuePair())) {
-        _mapper->map(kvpair, _klength, kvpair + _klength, _vlength);
+        _mapper->map(kvpair + _keyOffset, _klength, kvpair + _valueOffset, _vlength);
       }
       _mapper->close();
     }
@@ -204,9 +205,18 @@ void RReducerHandler::run() {
   }
 }
 
-
+/**
+ * Java record writer
+ */
 void RReducerHandler::collect(const void * key, uint32_t keyLen,
     const void * value, uint32_t valueLen) {
+  // flush the output so that we have enough room to hold the KV
+  // The KV is flushed atomically.
+  if (_ob.position + keyLen + valueLen + 2 * sizeof(uint32_t) > _ob.capacity) {
+    flushOutput(_ob.position);
+    _ob.position = 0;
+  }
+
   putInt(keyLen);
   put((char *)key, keyLen);
   putInt(valueLen);
@@ -214,7 +224,13 @@ void RReducerHandler::collect(const void * key, uint32_t keyLen,
 }
 
 int32_t RReducerHandler::refill() {
-  string ret = sendCommand("r");
+  char command[1 + sizeof(int32_t)] = {0};
+  command[0] = 'r';
+
+  int32_t * expectLength = (int32_t *)(command + 1);
+  *expectLength = _ib.capacity;
+
+  string ret = sendCommand(command);
   int32_t retvalue = *((const int32_t*)ret.data());
   _current = _ib.buff;
   _remain = retvalue;
@@ -232,39 +248,19 @@ char * RReducerHandler::nextKeyValuePair() {
   }
   _reduceInputRecords->increase();
   _klength = ((uint32_t*)_current)[0];
-  _vlength = ((uint32_t*)_current)[1];
-  _kvlength = _klength + _vlength;
-  _current += 8;
-  _remain -= 8;
-  char * keyPos;
-  if (_kvlength <= _remain) {
+  _keyOffset = sizeof(uint32_t);
+  _vlength = *((uint32_t*)(_current + _klength + sizeof(uint32_t)));
+  _valueOffset = sizeof(uint32_t) + _klength + sizeof(uint32_t);
+  uint32_t _kvlength = _klength + _vlength + 2 * sizeof(uint32_t);
+
+  if (_kvlength  <= _remain) {
     _nextKeyValuePair = _current;
     _current += _kvlength;
     _remain -= _kvlength;
     return _nextKeyValuePair;
-  } else {
-    if (_KVBufferCapacity<_kvlength) {
-      delete _KVBuffer;
-      _KVBuffer = new char[(_kvlength+2)/2*3];
-      _KVBufferCapacity = (_kvlength+2)/2*3;
-    }
-    uint32_t need = _kvlength;
-    while (need>0) {
-      if (need <=_remain) {
-        memcpy(_KVBuffer+_kvlength-need,_current,need);
-        _current += need;
-        _remain -= need;
-        break;
-      } else {
-        memcpy(_KVBuffer+_kvlength-need,_current,_remain);
-        need -= _remain;
-        if (refill() <=0) {
-          THROW_EXCEPTION_EX(IOException, "refill reach EOF, kvlength: %u, still need: %u", _kvlength, need);
-        }
-      }
-    }
-    _nextKeyValuePair = _KVBuffer;
-    return _nextKeyValuePair;
+  }
+  else {
+      THROW_EXCEPTION(IOException, "not complete kv data");
   }
 }
 
@@ -280,7 +276,7 @@ bool RReducerHandler::nextKey() {
         return false;
       }
     }
-    _currentGroupKey.assign(_nextKeyValuePair, _klength);
+    _currentGroupKey.assign(_nextKeyValuePair + _keyOffset, _klength);
     return true;
   }
   return false;
@@ -298,9 +294,9 @@ const char * RReducerHandler::nextValue(uint32_t & len) {
     pos = nextKeyValuePair();
     if (pos != NULL) {
       if (_klength == _currentGroupKey.length()) {
-        if (fmemeq(pos, _currentGroupKey.c_str(), _klength)) {
+        if (fmemeq(pos + _keyOffset, _currentGroupKey.c_str(), _klength)) {
           len = _vlength;
-          return pos + _klength;
+          return pos + _valueOffset;
         }
       }
       _keyGroupIterState = NEW_KEY;
@@ -312,7 +308,7 @@ const char * RReducerHandler::nextValue(uint32_t & len) {
   case NEW_KEY: {
     len = _vlength;
     _keyGroupIterState = SAME_KEY;
-    return _nextKeyValuePair + _klength;
+    return _nextKeyValuePair + _valueOffset;
   }
   case NO_MORE:
     return false;

@@ -48,9 +48,11 @@ protected:
   // state info KV pairs
   char * _current;
   uint32_t _remain;
-  uint32_t _kvlength;
   uint32_t _klength;
   uint32_t _vlength;
+
+  uint32_t _keyOffset;
+  uint32_t _valueOffset;
 
   KeyGroupIterState _keyGroupIterState;
   std::string _currentGroupKey;
