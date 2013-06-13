@@ -20,6 +20,7 @@
 #include "org_apache_hadoop_mapred_nativetask_NativeBatchProcessor.h"
 #endif
 #include "commons.h"
+#include "jni_md.h"
 #include "jniutils.h"
 #include "BatchHandler.h"
 #include "NativeObjectFactory.h"
@@ -101,7 +102,7 @@ void BatchHandler::onSetup(char * inputBuffer, uint32_t inputBufferCapacity,
 }
 
 std::string BatchHandler::sendCommand(const std::string & data) {
-  return this->sendCommand(data.c_str(), (size_t)data.length);
+  return BatchHandler::sendCommand(data.c_str(), (size_t)data.length());
 }
 
 std::string BatchHandler::sendCommand(const char * data, size_t length) {
