@@ -80,8 +80,12 @@ public abstract class NativeBatchProcessor<IK, IV, OK, OV> implements
 
     };
 
-    this.serializer = new KVSerializer<IK, IV>(iKClass, iVClass);
-    this.deserializer = new KVSerializer<OK, OV>(oKClass, oVClass);
+    if (null != iKClass && null != iVClass) {
+      this.serializer = new KVSerializer<IK, IV>(iKClass, iVClass);
+    }
+    if (null != oKClass && null != oVClass) {
+      this.deserializer = new KVSerializer<OK, OV>(oKClass, oVClass);
+    }
   }
 
   @Override

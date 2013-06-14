@@ -41,6 +41,9 @@ public class NativeSerialization {
   @SuppressWarnings("unchecked")
   public INativeSerializer<Writable> getSerializer(Class<?> c) throws IOException {
 
+    if (null == c) {
+      return null;
+    }
     if (!Writable.class.isAssignableFrom(c)) {
       throw new IOException("Cannot serialize type " + c.getName()
           + ", we only accept subclass of Writable");
@@ -91,14 +94,14 @@ public class NativeSerialization {
   }
 
   private static void init() throws IOException {
-    NativeSerialization me = getInstance();
+    NativeSerialization me = instance;
     me.register(NullWritable.class.getName(), NullWritableSerializer.class);
     me.register(Text.class.getName(), TextSerializer.class);
     me.register(LongWritable.class.getName(), LongWritableSerializer.class);
     me.register(IntWritable.class.getName(), IntWritableSerializer.class);
     me.register("org.apache.hadoop.hbase.io.ImmutableBytesWritable",
         ImmutableBytesWritableSerializer.class);
-    me.register(Writable.class.getName(), Deserializer.class);
+    me.register(Writable.class.getName(), DefaultSerializer.class);
     me.register(BytesWritable.class.getName(), BytesWritableSerializer.class);
     me.register("org.apache.hadoop.hive.ql.io.HiveKey",
         BytesWritableSerializer.class);
