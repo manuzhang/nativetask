@@ -2,8 +2,7 @@ Preparation
 ------------
 
 1.Download source of Hadoop1.0.3 using link below 
-	http://svn.apache.org/repos/asf/hadoop/common/tags/release-1.0.3
-2.Checkout source code of nativetask by git clone
+	http://svn.apache.org/repos/asf/hadoop/common/tags/release-1.0.3¡¢2.Checkout source code of nativetask by git clone
 	https://github.com/clockfly/nativetask.git
 
 Compile Hadoop
@@ -11,7 +10,8 @@ Compile Hadoop
 1.Copy nativetask-branch-1.patch under nativetask/patch / to  dir of hadoop- 1.0.3.
 2.Execute "patch p1 < nativetask-branch-1.patch" under dir of hadoop-1.0.3
 3.Execute "ant compile-native" under dir of hadoop-1.0.3
-4.Execute "cp -r build/native/Linux-amd64-64/* lib/native/Linux-amd64-64/*" (make sure  dir 	of lib/native/Linux-amd64-64 exists)
+4.Execute "cp -r build/native/Linux-amd64-64/* lib/native/Linux-amd64-64/*" 
+£¨make sure  dir 	of lib/native/Linux-amd64-64 exists)
 5.Execute "ant jar" 
 
 Compile NativeTask
@@ -26,7 +26,7 @@ Add NativeTask to Hadoop
 3.install snappy as 
 	tar -zxcf  snappy-1.0.5.tar.gz
 	cd snappy-1.0.5
-	./configure --prefix=/usr/
+      ./configure --prefix=/usr/
 	sudo make
 	sudo make install
   verify installation
@@ -34,8 +34,7 @@ Add NativeTask to Hadoop
 	/tmp/a.out
   if there is no error ,it meas installation is ok
 
-
- now you can use hadoop with nativetask function.
+now you can use hadoop with nativetask function.
 
 
 Notice
