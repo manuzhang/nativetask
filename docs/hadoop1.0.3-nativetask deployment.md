@@ -2,7 +2,7 @@ Preparation
 ------------
 
 1.Download source of Hadoop1.0.3 using link below 
-	http://svn.apache.org/repos/asf/hadoop/common/tags/release-1.0.3¡¢2.Checkout source code of nativetask by git clone
+	http://svn.apache.org/repos/asf/hadoop/common/tags/release-1.0.3ï¿½ï¿½2.Checkout source code of nativetask by git clone
 	https://github.com/clockfly/nativetask.git
 
 Compile Hadoop
@@ -11,7 +11,7 @@ Compile Hadoop
 2.Execute "patch p1 < nativetask-branch-1.patch" under dir of hadoop-1.0.3
 3.Execute "ant compile-native" under dir of hadoop-1.0.3
 4.Execute "cp -r build/native/Linux-amd64-64/* lib/native/Linux-amd64-64/*" 
-£¨make sure  dir 	of lib/native/Linux-amd64-64 exists)
+  make sure dir of lib/native/Linux-amd64-64 exists
 5.Execute "ant jar" 
 
 Compile NativeTask
