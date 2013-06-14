@@ -109,6 +109,10 @@ public abstract class NativeBatchProcessor<IK, IV, OK, OV> implements
   }
 
   private void finishInput() throws IOException {
+    if (null == inputBuffer) {
+      return;
+    }
+    
     if (isInputFinished) {
       return;
     }
