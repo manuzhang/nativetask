@@ -67,8 +67,12 @@ public class NativeReduceOnlyHandler<IK, IV, OK, OV> extends
         inputBufferCapacity, outputBufferCapacity);
     this.rIter = rIter;
     this.writer = writer;
-    tmpOutputKey = (Writable) ReflectionUtils.newInstance(oKClass, conf);
-    tmpOutputValue = (Writable) ReflectionUtils.newInstance(oVClass, conf);
+    if (null != oKClass) {
+      tmpOutputKey = (Writable) ReflectionUtils.newInstance(oKClass, conf);
+    }
+    if (null != oVClass) {
+      tmpOutputValue = (Writable) ReflectionUtils.newInstance(oVClass, conf);
+    }
   }
 
   @SuppressWarnings("unchecked")

@@ -23,6 +23,7 @@ import java.io.IOException;
 import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.RawKeyValueIterator;
+import org.apache.hadoop.mapred.nativetask.NativeDataReader;
 import org.apache.hadoop.mapred.nativetask.util.BytesUtil;
 import org.apache.hadoop.util.Progressable;
 
@@ -46,4 +47,12 @@ public class NativeReduceWriteHandler<IK, IV> extends NativeReduceOnlyHandler<IK
   public void run() throws IOException {
     sendCommandToNative(BytesUtil.toBytes("run"));
   }
+  
+  @Override
+  protected boolean flushOutputAndProcess(NativeDataReader reader, int length)
+      throws IOException {
+    //we don't expect to do anything here.
+    return true;
+  }
+
 }
