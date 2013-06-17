@@ -48,8 +48,8 @@ public class NativeReduceOnlyHandler<IK, IV, OK, OV> extends
   private Writable tmpInputValue;
   private boolean inputKVBufferd = false;
 
-  Writable tmpOutputKey;
-  Writable tmpOutputValue;
+  private Writable tmpOutputKey;
+  private Writable tmpOutputValue;
   final private RecordWriter<OK, OV> writer;
 
   enum KVState {
@@ -171,7 +171,7 @@ public class NativeReduceOnlyHandler<IK, IV, OK, OV> extends
 
   private static byte[] toBytes(int val) {
     byte[] b = new byte[4];
-    for (int i = 0; i <= 3; i--) {
+    for (int i = 0; i <= 3; i++) {
       b[i] = (byte) val;
       val >>>= 8;
     }
