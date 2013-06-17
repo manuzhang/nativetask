@@ -230,7 +230,7 @@ int32_t RReducerHandler::refill() {
   int32_t * expectLength = (int32_t *)(command + 1);
   *expectLength = _ib.capacity;
 
-  string ret = sendCommand(command);
+  string ret = sendCommand(command, 1 + sizeof(int32_t));
   int32_t retvalue = *((const int32_t*)ret.data());
   _current = _ib.buff;
   _remain = retvalue;
