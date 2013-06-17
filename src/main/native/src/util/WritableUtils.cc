@@ -29,6 +29,14 @@ KeyValueType JavaClassToKeyValueType(const std::string & clazz) {
   if (clazz == "org.apache.hadoop.io.BytesWritable") {
     return BytesType;
   }
+  if(clazz == "org.apache.hadoop.io.ImmutableBytesWritable")
+  {
+	return BytesType;
+  }
+  if(clazz == "org.apache.hadoop.hive.ql.io.HiveKey")
+  {
+	return BytesType;
+  }
   if (clazz == "org.apache.hadoop.io.ByteWritable") {
     return ByteType;
   }

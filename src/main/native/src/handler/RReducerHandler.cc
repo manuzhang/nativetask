@@ -21,6 +21,7 @@
 #include "TaskCounters.h"
 #include "NativeObjectFactory.h"
 #include "RReducerHandler.h"
+#include <iostream>
 
 namespace NativeTask {
 
@@ -232,6 +233,7 @@ int32_t RReducerHandler::refill() {
 
   string ret = sendCommand(command, 1 + sizeof(int32_t));
   int32_t retvalue = *((const int32_t*)ret.data());
+
   _current = _ib.buff;
   _remain = retvalue;
   return retvalue;
