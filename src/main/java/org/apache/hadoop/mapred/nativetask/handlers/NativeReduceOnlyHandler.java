@@ -115,6 +115,9 @@ public class NativeReduceOnlyHandler<IK, IV, OK, OV> extends
   private int refill(NativeDataWriter out, int length) throws IOException {
     int remain = length;
 
+    int totalWritten = 0;
+    
+    try {
     if (inputKVBufferd) {
       int written = serializer.serializeKV(out, tmpInputKey, tmpInputValue);
       if (written == 0) {
@@ -130,15 +133,19 @@ public class NativeReduceOnlyHandler<IK, IV, OK, OV> extends
       int written = serializer.serializeKV(out, remain, tmpInputKey,
           tmpInputValue);
       if (written == 0) {
-        final int totalWritten = length - remain;
+        totalWritten = length - remain;
         return totalWritten;
       } else {
         inputKVBufferd = false;
       }
       remain -= written;
     }
-    final int totalWritten = length - remain;
+    totalWritten = length - remain;
     return totalWritten;
+    }
+    finally {
+  
+    }
   }
 
   @Override

@@ -166,6 +166,21 @@ public class NativeRuntime {
   }
 
   /**
+   * Register a customized library
+   * @param clazz
+   * @return
+   */
+  public synchronized static long registerLibrary(String libraryName, String clazz) {
+    assertNativeLibraryLoaded();
+    long ret = JNIRegisterModule(BytesUtil.toBytes(libraryName), BytesUtil.toBytes(clazz));
+    if (ret == 0) {
+      LOG.warn("Can't create NativeObject for class " + clazz
+          + ", prabobly not exist.");
+    }
+    return ret;
+  }
+  
+  /**
    * destroy native object We use to destory native handlers
    */
   public synchronized static void releaseNativeObject(long addr) {
