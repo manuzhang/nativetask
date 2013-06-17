@@ -1,6 +1,8 @@
 Introduction
 ============
 
+``TBD``
+
 Interfaces
 ============
 You need to include "NativeTask.h".
@@ -24,7 +26,7 @@ public:
 };
 </code></pre>
 
-TBD: How to support customized namespace??
+``TBD: How to support customized namespace??``
 
 ## Reducer
 *NativeTask.h*
@@ -54,7 +56,7 @@ public:
 
 ## Comparator
 
-TBD
+``TBD``
 
 ## Partitioner
 <pre><code>
@@ -118,7 +120,7 @@ Steps to develop custom library
 ### 1. Define customized mapper and reducer(or other class) in native
   *. include "NativeTask.h"
   *. Define mapper
-TBD
+``TBD``
 
 ### 2. Define custom libraries in native
 <pre><code>
