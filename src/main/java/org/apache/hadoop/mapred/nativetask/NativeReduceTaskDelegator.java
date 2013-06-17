@@ -65,6 +65,7 @@ public class NativeReduceTaskDelegator<IK, IV, OK, OV> implements
       NativeRuntime.configure("native.output.file.name", finalName);
       NativeReduceWriteHandler<IK, IV> processor = new NativeReduceWriteHandler<IK, IV>(
           bufferCapacity, 0, keyClass, valueClass, job, reporter, rIter);
+      processor.init(job);
       processor.run();
       processor.close();
     } else {
@@ -76,6 +77,7 @@ public class NativeReduceTaskDelegator<IK, IV, OK, OV> implements
       NativeReduceOnlyHandler<IK, IV, OK, OV> processor = new NativeReduceOnlyHandler<IK, IV, OK, OV>(
           bufferCapacity, bufferCapacity, keyClass, valueClass, okeyClass,
           ovalueClass, job, writer, reporter, rIter);
+      processor.init(job);
       processor.run();
       writer.close(reporter);
     }
