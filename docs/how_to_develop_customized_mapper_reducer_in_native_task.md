@@ -152,7 +152,7 @@ The mapper can be created on the fly on the java side by
 For mapper, we need to define
 `"native.mapper.class" as the name of the mapper`
 
-For a full list of configuration, check [Configurations]{#Configuration} section.
+For a full list of configuration, check [Configuration](#Configuration) section.
 
 Configuration
 ============
