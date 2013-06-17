@@ -67,6 +67,12 @@ public class NativeReduceOnlyHandler<IK, IV, OK, OV> extends
         inputBufferCapacity, outputBufferCapacity);
     this.rIter = rIter;
     this.writer = writer;
+    if (null != iKClass) {
+      tmpInputKey = (Writable) ReflectionUtils.newInstance(iKClass, conf);
+    }
+    if (null != iVClass) {
+      tmpInputValue = (Writable) ReflectionUtils.newInstance(iVClass, conf);
+    }
     if (null != oKClass) {
       tmpOutputKey = (Writable) ReflectionUtils.newInstance(oKClass, conf);
     }
@@ -119,8 +125,8 @@ public class NativeReduceOnlyHandler<IK, IV, OK, OV> extends
 
     while (rIter.next() && remain > 0) {
       inputKVBufferd = true;
-      tmpInputValue.readFields(rIter.getKey());
-      tmpInputKey.readFields(rIter.getValue());
+      tmpInputKey.readFields(rIter.getKey());
+      tmpInputValue.readFields(rIter.getValue());
       int written = serializer.serializeKV(out, remain, tmpInputKey,
           tmpInputValue);
       if (written == 0) {
