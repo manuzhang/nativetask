@@ -140,45 +140,36 @@ DEFINE_NATIVE_LIBRARY(CustomizedLibrary) {
 
 The handler name for CustomMapper Mapper will be "CustomizedLibrary.CustomMapperName". 
 The mapper can be created on the fly on the java side by 
-`long handler = NativeRuntime::JNICreateNativeObject("CustomizedLibrary.CustomMapperName";`
 
 ### 3. Build libraries to get xx.so
 
 
 ### 4. Register the library in java 
-`NativeRuntime.JNIRegisterModule("path_to_customized_library_so", "CustomizedLibrary")`
+`NativeRuntime.registerLibrary("path_to_customized_library_so", "CustomizedLibrary")`
 
 
 ### 5: Config custom mapper and custom reducer
 
 For mapper, we need to define
-`"native.mapper.class" as the name of the mapper`
+`"native.mapper.class"` using ``NativeRuntime.configure("native.mapper.class", "CustomMapperName")``
 
 For a full list of configuration, check [Configuration](#Configuration) section.
 
 Configuration
 ============
-* native.sort.type
-* native.spill.sort.first
-* native.spill.sort.first
-* native.sort.type
-* native.input.split
-* native.recordreader.class
-* native.recordreader.class
-* native.mapper.class
-* native.recordreader.class
-* native.sort.type
-* native.spill.sort.first
-* native.spill.sort.first
-* native.sort.type
-* native.input.split
-* native.recordreader.class
-* native.recordreader.class
 * native.mapper.class
 * native.reducer.class
-* native.combiner.class
 * native.recordreader.class
-
+* native.recordwriter.class
+* native.combiner.class
+* native.partitioner.class
+* native.sort.type
+* native.input.split
+* native.output.file.name
+* native.spill.sort.first
+* native.log.device
+* native.class.library
+* native.hadoop.version
 
 Example
 ===========
