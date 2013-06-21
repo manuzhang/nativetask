@@ -201,7 +201,8 @@ bin/hadoop jar lib/hadoop-nativetask-0.1.0.jar -reader NativeTask.LineRecordRead
 streaming cmd:  
 bin/hadoop jar hadoop-nativetask-0.1.0.jar -lib Streaming=libstreaming.dylib -reader Streaming.StreamingReader -writer Streaming.StreamingWriter -mapper Streaming.MStreamingMapper -reducer Streaming.MStreamingReducer -input terainput/part-00000 -output streamingoutput  
 
-Here is a full example:
+Attachment: Full code example
+========
 <pre></code>
 TBD
 </code></pre>
