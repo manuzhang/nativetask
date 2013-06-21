@@ -1,6 +1,15 @@
 Introduction
 ============
 
+This tutorial will cover the following items:
+1. native interface for native mapper, reducer, and etc.
+2. native task configurations
+3. How to develop customized native mapper, native reducer, and how to wrap them into a customized native library.
+4. How to submit customized native libraries to jobtracker containing native mapper and native reducer.
+5. How to use build-in native terasort, and wortcount
+6. How to use streaming in nativetask.
+7. A full code example containing all the code for a native library.
+
 ``TBD``
 
 Interfaces
@@ -200,6 +209,9 @@ bin/hadoop jar lib/hadoop-nativetask-0.1.0.jar -reader NativeTask.LineRecordRead
 ## Streaming
 streaming cmd:  
 bin/hadoop jar hadoop-nativetask-0.1.0.jar -lib Streaming=libstreaming.dylib -reader Streaming.StreamingReader -writer Streaming.StreamingWriter -mapper Streaming.MStreamingMapper -reducer Streaming.MStreamingReducer -input terainput/part-00000 -output streamingoutput  
+
+## Customized native libraries
+``TBD``
 
 Attachment: Full code example
 ========
