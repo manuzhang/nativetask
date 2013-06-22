@@ -149,7 +149,7 @@ static uint32_t SearchTrieInner(vector<string> & splits, string & trie,
 }
 
 void TotalOrderPartitioner::configure(Config & config) {
-  string path = config.get("total.order.partitioner.path", PARTITION_FILE_NAME);
+  string path = config.get(TOTAL_ORDER_PARTITIONER_PATH, PARTITION_FILE_NAME);
   uint32_t maxDepth = config.getInt("total.order.partitioner.max.trie.depth", 2);
   InputStream * is = FileSystem::getLocal().open(path);
   _splits.clear();

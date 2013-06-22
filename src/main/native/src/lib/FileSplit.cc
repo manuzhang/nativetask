@@ -27,7 +27,7 @@ namespace NativeTask {
 
 void FileSplit::readFields(const string & data) {
   InputBuffer input = InputBuffer(data);
-  string version = NativeObjectFactory::GetConfig().get("native.hadoop.version", "0.20");
+  string version = NativeObjectFactory::GetConfig().get(NATIVE_HADOOP_VERSION, "0.20");
   if (StringUtil::StartsWith(version, "0.20") ||
       StringUtil::StartsWith(version, "1.")) {
     _file = WritableUtils::ReadUTF8(&input);
@@ -41,7 +41,7 @@ void FileSplit::readFields(const string & data) {
 
 void FileSplit::writeFields(string & dest) {
   OutputStringStream out = OutputStringStream(dest);
-  string version = NativeObjectFactory::GetConfig().get("native.hadoop.version", "0.20");
+  string version = NativeObjectFactory::GetConfig().get(NATIVE_HADOOP_VERSION, "0.20");
   if (StringUtil::StartsWith(version, "0.20") ||
       StringUtil::StartsWith(version, "1.")) {
     WritableUtils::WriteUTF8(&out, _file);

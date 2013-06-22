@@ -94,7 +94,7 @@ void RReducerHandler::configure(Config & config) {
   initCounters();
 
   // writer
-  const char * writerClass = config.get("native.recordwriter.class");
+  const char * writerClass = config.get(NATIVE_RECORDWRITER);
   if (NULL != writerClass) {
     _writer = (RecordWriter*) NativeObjectFactory::CreateObject(writerClass);
     if (NULL == _writer) {
@@ -108,7 +108,7 @@ void RReducerHandler::configure(Config & config) {
                                          : (Collector*) this,
                                      _reduceOutputRecords);
   // reducer
-  const char * reducerClass = config.get("native.reducer.class");
+  const char * reducerClass = config.get(NATIVE_REDUCER);
   if (NULL != reducerClass) {
     NativeObject * obj = NativeObjectFactory::CreateObject(reducerClass);
     if (NULL == obj) {
@@ -233,7 +233,7 @@ int32_t RReducerHandler::refill() {
 
   string ret = sendCommand(command, 1 + sizeof(int32_t));
   int32_t retvalue = *((const int32_t*)ret.data());
-
+ 
   _current = _ib.buff;
   _remain = retvalue;
   return retvalue;
@@ -251,10 +251,10 @@ char * RReducerHandler::nextKeyValuePair() {
   _reduceInputRecords->increase();
   _klength = ((uint32_t*)_current)[0];
   _keyOffset = sizeof(uint32_t);
+
   _vlength = *((uint32_t*)(_current + _klength + sizeof(uint32_t)));
   _valueOffset = sizeof(uint32_t) + _klength + sizeof(uint32_t);
   uint32_t _kvlength = _klength + _vlength + 2 * sizeof(uint32_t);
-
   if (_kvlength  <= _remain) {
     _nextKeyValuePair = _current;
     _current += _kvlength;

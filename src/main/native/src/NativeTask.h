@@ -46,6 +46,39 @@ enum NativeObjectType {
   RecordWriterType = 8
 };
 
+#define NATIVE_COMBINER "native.combiner.class"
+#define NATIVE_PARTITIONER "native.partitioner.class"
+#define NATIVE_MAPPER "native.mapper.class"
+#define NATIVE_RECORDREADER "native.recordreader.class"
+#define NATIVE_RECORDWRITER "native.recordwriter.class"
+
+#define NATIVE_REDUCER "native.reducer.class"
+#define NATIVE_HADOOP_VERSION "native.hadoop.version"
+
+#define NATIVE_INPUT_SPLIT "native.input.split"
+#define INPUT_LINE_KV_SEPERATOR "key.value.separator.in.input.line"
+#define MAPRED_TEXTOUTPUT_FORMAT_SEPERATOR "mapred.textoutputformat.separator"
+#define MAPRED_WORK_OUT_DIR "mapred.work.output.dir"
+#define NATIVE_OUTPUT_FILE_NAME "native.output.file.name"
+#define MAPRED_OUTPUT_COMPRESSION_CODEC "mapred.output.compression.codec"
+#define TOTAL_ORDER_PARTITIONER_PATH "total.order.partitioner.path"
+#define FS_DEFAULT_NAME "fs.default.name"
+#define FS_DEFAULT_FS "fs.defaultFS"
+
+#define NATIVE_SORT_TYPE "native.sort.type"
+#define MAPRED_COMPRESS_MAP_OUTPUT "mapred.compress.map.output"
+#define MAPRED_MAP_OUTPUT_COMPRESSION_CODEC "mapred.map.output.compression.codec"
+#define MAPRED_MAPOUTPUT_KEY_CLASS "mapred.mapoutput.key.class"
+#define MAPRED_OUTPUT_KEY_CLASS "mapred.output.key.class"
+#define MAPRED_MAPOUTPUT_VALUE_CLASS "mapred.mapoutput.value.class"
+#define MAPRED_OUTPUT_VALUE_CLASS "mapred.output.value.class"
+
+#define NATIVE_LOG_DEVICE "native.log.device"
+
+//format: name=path,name=path,name=path
+#define NATIVE_CLASS_LIBRARY "native.class.library"
+
+
 extern const std::string NativeObjectTypeToString(NativeObjectType type);
 extern NativeObjectType NativeObjectTypeFromString(const std::string type);
 
@@ -501,6 +534,15 @@ public:
   virtual void folder(void * dest, const char * value, uint32_t valueLen) {}
 
   virtual void final(const char * key, uint32_t keyLen, void * dest) {}
+};
+
+
+/**
+ * Comparator used to compare key
+ */
+class Comparator {
+public:
+  virtual int operator()(const char * src, uint32_t srcLength, const char * dest, uint32_t destLength) = 0;
 };
 
 } // namespace NativeTask;

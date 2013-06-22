@@ -580,7 +580,7 @@ RawFileSystem RawFileSystemInstance = RawFileSystem();
 JavaFileSystem JavaFileSystemInstance = JavaFileSystem();
 
 string FileSystem::getDefaultFsUri(Config & config) {
-  const char * nm = config.get("fs.default.name");
+  const char * nm = config.get(FS_DEFAULT_NAME);
   if (nm == NULL) {
     nm = config.get("fs.defaultFS");
   }

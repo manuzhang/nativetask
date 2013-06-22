@@ -167,7 +167,21 @@ public:
 
   static void dump(FILE * out);
 
-  // TODO: extend last block
+
+  /**
+   * Comparator for BytesComparator, or Text
+   */
+  class BytesComparator : Comparator {
+  public:
+    virtual int operator()(const char * src, uint32_t srcLength, const char * dest, uint32_t destLength) {
+        uint32_t minlen = std::min(srcLength, destLength);
+        int ret = fmemcmp(src, dest, minlen);
+        if (ret) {
+          return ret;
+        }
+        return srcLength - destLength;
+    }
+  };
 
 
   /**

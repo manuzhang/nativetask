@@ -79,7 +79,7 @@ void MMapTaskHandler::configure(Config & config) {
   _config = &config;
   _numPartition = config.getInt("mapred.reduce.tasks", 1);
 
-  const char * readerClass = config.get("native.recordreader.class");
+  const char * readerClass = config.get(NATIVE_RECORDREADER);
   if (NULL == readerClass) {
     THROW_EXCEPTION(IOException, "native.recordreader.class not set");
   }
@@ -95,7 +95,7 @@ void MMapTaskHandler::configure(Config & config) {
     _moc->configure(config);
 
     // combiner
-    const char * combinerClass = config.get("native.combiner.class");
+    const char * combinerClass = config.get(NATIVE_COMBINER);
     if (NULL != combinerClass) {
       _combinerCreator = NativeObjectFactory::GetObjectCreator(combinerClass);
       if (NULL == _combinerCreator) {
@@ -104,7 +104,7 @@ void MMapTaskHandler::configure(Config & config) {
     }
 
     // partitioner
-    const char * partitionerClass = config.get("native.partitioner.class");
+    const char * partitionerClass = config.get(NATIVE_PARTITIONER);
     if (NULL != partitionerClass) {
       _partitioner
           = (Partitioner *) NativeObjectFactory::CreateObject(partitionerClass);
@@ -124,7 +124,7 @@ void MMapTaskHandler::configure(Config & config) {
         partitionerClass?partitionerClass:"default");
   }
   else {
-    const char * writerClass = config.get("native.recordwriter.class");
+    const char * writerClass = config.get(NATIVE_RECORDWRITER);
     if (NULL == writerClass) {
       THROW_EXCEPTION(IOException, "RecordWriter not found");
     }
@@ -134,7 +134,7 @@ void MMapTaskHandler::configure(Config & config) {
   }
 
   // mapper
-  const char * mapperClass = config.get("native.mapper.class");
+  const char * mapperClass = config.get(NATIVE_MAPPER);
   if (NULL != mapperClass) {
     _mapper = (Mapper *) NativeObjectFactory::CreateObject(mapperClass);
   }

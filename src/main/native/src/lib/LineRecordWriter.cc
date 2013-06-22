@@ -51,18 +51,18 @@ LineRecordWriter::~LineRecordWriter() {
 }
 
 void LineRecordWriter::configure(Config & config) {
-  _keyValueSeparator = config.get("mapred.textoutputformat.separator", "\t");
+  _keyValueSeparator = config.get(MAPRED_TEXTOUTPUT_FORMAT_SEPERATOR, "\t");
   bool isCompress = config.getBool("mapred.output.compress", false);
-  const char * workdir = config.get("mapred.work.output.dir");
+  const char * workdir = config.get(MAPRED_WORK_OUT_DIR);
   if (workdir == NULL) {
     THROW_EXCEPTION(IOException, "Can not find mapred.work.output.dir for LineRecordWriter");
   }
-  const char * outputname = config.get("native.output.file.name");
+  const char * outputname = config.get(NATIVE_OUTPUT_FILE_NAME);
   if (outputname == NULL) {
     THROW_EXCEPTION(IOException, "Can not find native.output.file.name for LineRecordWriter");
   }
   if (isCompress) {
-    string codec = config.get("mapred.output.compression.codec", Compressions::GzipCodec.name);
+    string codec = config.get(MAPRED_OUTPUT_COMPRESSION_CODEC, Compressions::GzipCodec.name);
     string ext = Compressions::getExtension(codec);
     string outputpath = StringUtil::Format("%s/%s%s", workdir, outputname, ext.c_str());
     init(outputpath, config);

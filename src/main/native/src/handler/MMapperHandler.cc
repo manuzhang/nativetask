@@ -58,7 +58,7 @@ void MMapperHandler::configure(Config & config) {
   _numPartition = config.getInt("mapred.reduce.tasks", 1);
   if (_numPartition > 0) {
     // combiner
-    const char * combinerClass = config.get("native.combiner.class");
+    const char * combinerClass = config.get(NATIVE_COMBINER);
     if (NULL != combinerClass) {
       _combinerCreator = NativeObjectFactory::GetObjectCreator(combinerClass);
       if (NULL == _combinerCreator) {
@@ -67,7 +67,7 @@ void MMapperHandler::configure(Config & config) {
     }
 
     // partitioner
-    const char * partitionerClass = config.get("native.partitioner.class");
+    const char * partitionerClass = config.get(NATIVE_PARTITIONER);
     if (NULL != partitionerClass) {
       _partitioner
           = (Partitioner *) NativeObjectFactory::CreateObject(partitionerClass);
@@ -90,7 +90,7 @@ void MMapperHandler::configure(Config & config) {
   }
 
   // mapper
-  const char * mapperClass = config.get("native.mapper.class");
+  const char * mapperClass = config.get(NATIVE_MAPPER);
   if (NULL != mapperClass) {
     _mapper = (Mapper *) NativeObjectFactory::CreateObject(mapperClass);
   }

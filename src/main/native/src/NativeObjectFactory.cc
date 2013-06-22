@@ -105,7 +105,7 @@ bool NativeObjectFactory::Init() {
   ScopeLock<Lock> autolocak(FactoryLock);
   if (Inited == false) {
     // setup log device
-    string device = GetConfig().get("native.log.device", "stderr");
+    string device = GetConfig().get(NATIVE_LOG_DEVICE, "stderr");
     if (device == "stdout") {
       LOG_DEVICE = stdout;
     } else if (device == "stderr") {
@@ -119,7 +119,7 @@ bool NativeObjectFactory::Init() {
     Libraries.push_back(library);
     Inited = true;
     // load extra user provided libraries
-    string libraryConf = GetConfig().get("native.class.library", "");
+    string libraryConf = GetConfig().get(NATIVE_CLASS_LIBRARY, "");
     if (libraryConf.length()>0) {
       vector<string> libraries;
       vector<string> pair;
@@ -142,7 +142,7 @@ bool NativeObjectFactory::Init() {
         }
       }
     }
-    const char * version = GetConfig().get("native.hadoop.version");
+    const char * version = GetConfig().get(NATIVE_HADOOP_VERSION);
     LOG("NativeTask library initialized with hadoop %s", version==NULL?"unkown":version);
   }
   return true;

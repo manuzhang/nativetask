@@ -170,7 +170,7 @@ void LineRecordReader::init(const string & file, uint64_t start,
 }
 
 void LineRecordReader::configure(Config & config) {
-  string splitData = config.get("native.input.split", "");
+  string splitData = config.get(NATIVE_INPUT_SPLIT, "");
   if (splitData == "") {
     THROW_EXCEPTION(IOException, "Input split info not found in config");
   }
@@ -219,7 +219,7 @@ void LineRecordReader::close() {
 
 void KeyValueLineRecordReader::configure(Config & config) {
   LineRecordReader::configure(config);
-  string sep = config.get("key.value.separator.in.input.line", "\t");
+  string sep = config.get(INPUT_LINE_KV_SEPERATOR, "\t");
   if (sep.length() > 0) {
     _kvSeparator = sep[0];
   }
