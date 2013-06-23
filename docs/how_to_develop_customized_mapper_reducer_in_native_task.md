@@ -1,6 +1,15 @@
 Introduction
 ============
 
+This tutorial will cover the following items:    
+1. native interface for native mapper, reducer, and etc.  
+2. native task configurations  
+3. How to develop customized native mapper, native reducer, and how to wrap them into a customized native library.  
+4. How to submit customized native libraries to jobtracker containing native mapper and native reducer.  
+5. How to use build-in native terasort, and wortcount  
+6. How to use streaming in nativetask.  
+7. A full code example containing all the code for a native library.  
+
 ``TBD``
 
 Interfaces
@@ -171,9 +180,39 @@ Configuration
 * native.class.library
 * native.hadoop.version
 
-Example
+Job submission
 ===========
-Here is a full example:
+
+## Usage
+TBD
+
+Examples
+===========
+### Terasort
+Test for Terasort  
+InputData 200G compressed(44G)  
+map.tasks=200 mapred.output.compression.codec=Snappy  
+cmds:
+bin/hadoop jar hadoop-examples-1.0.1-SNAPSHOT.jar teragen 2000000000 /tera200G-snappy  
+bin/hadoop jar lib/hadoop-nativetask-0.1.0.jar terasort /tera200G-snappy /terasort200G-nt-300  
+bin/hadoop jar lib/hadoop-nativetask-0.1.0.jar terasort /tera200G-snappy /terasort200G-nt  
+
+### WordCount
+Test for WordCount  
+InputData 100G compressed(52G)  
+bin/hadoop jar hadoop-examples-1.0.1-SNAPSHOT.jar randomtextwriter -Dtest.randomtextwrite.total_bytes=100000000000 -Dtest.randomtextwrite.bytes_per_map=500000000 -outFormat org.apache.hadoop.mapred.TextOutputFormat /text100G-snappy  
+map.tasks=200 mapred.output.compression.codec=Snappy  
+cmds:  
+bin/hadoop jar hadoop-examples-1.0.1-SNAPSHOT.jar wordcount /text100G-snappy /wordcount-java-300-opt  
+bin/hadoop jar hadoop-examples-1.0.1-SNAPSHOT.jar wordcount -Dwordcount.enable.fast.mapper=true /text100G-snappy /wordcount-java-300-opt  
+bin/hadoop jar lib/hadoop-nativetask-0.1.0.jar -reader NativeTask.LineRecordReader -writer NativeTask.TextIntRecordWriter -mapper NativeTask.WordCountMapper -reducer NativeTask.IntSumReducer -combiner NativeTask.IntSumReducer -input /text100G-snappy -output /wordcount-100G-nt  
+  
+### Streaming
+streaming cmd:  
+bin/hadoop jar hadoop-nativetask-0.1.0.jar -lib Streaming=libstreaming.dylib -reader Streaming.StreamingReader -writer Streaming.StreamingWriter -mapper Streaming.MStreamingMapper -reducer Streaming.MStreamingReducer -input terainput/part-00000 -output streamingoutput  
+
+### Attachment: Full code example for a customized native library
+========
 <pre></code>
 TBD
 </code></pre>
