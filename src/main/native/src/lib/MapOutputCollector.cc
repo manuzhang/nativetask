@@ -23,8 +23,55 @@
 #include "NativeObjectFactory.h"
 #include "MapOutputCollector.h"
 #include "Merge.h"
+#include "NativeTask.h"
 
 namespace NativeTask {
+
+int BytesComparator(const char * src, uint32_t srcLength, const char * dest, uint32_t destLength) {
+    uint32_t minlen = std::min(srcLength, destLength);
+    int ret = fmemcmp(src, dest, minlen);
+    if (ret) {
+      return ret;
+    }
+    return srcLength - destLength;
+};
+
+int IntComparator(const char * src, uint32_t srcLength, const char * dest, uint32_t destLength) {
+  if (srcLength != 4 || destLength != 4) {
+    THROW_EXCEPTION_EX(IOException, "int comparator, while src/dest lengt is not 4");
+  }
+  uint32_t * srcValue = (uint32_t *)src;
+  uint32_t * destValue = (uint32_t *)dest;
+  return (*srcValue) - (* destValue);
+};
+
+int LongComparator(const char * src, uint32_t srcLength, const char * dest, uint32_t destLength) {
+  if (srcLength != 8 || destLength != 8) {
+      THROW_EXCEPTION_EX(IOException, "Long comparator, while src/dest lengt is not 4");
+    }
+    int64_t * srcValue = (int64_t *)src;
+    int64_t * destValue = (int64_t *)dest;
+    return (*srcValue) - (* destValue);
+};
+
+int FloatComparator(const char * src, uint32_t srcLength, const char * dest, uint32_t destLength) {
+  if (srcLength != 4 || destLength != 4) {
+      THROW_EXCEPTION_EX(IOException, "float comparator, while src/dest lengt is not 4");
+    }
+    float * srcValue = (float *)src;
+    float * destValue = (float *)dest;
+    return (*srcValue) - (* destValue);
+};
+
+int DoubleComparator(const char * src, uint32_t srcLength, const char * dest, uint32_t destLength) {
+  if (srcLength != 8 || destLength != 8) {
+      THROW_EXCEPTION_EX(IOException, "double comparator, while src/dest lengt is not 4");
+    }
+    double * srcValue = (double *)src;
+    double * destValue = (double *)dest;
+    return (*srcValue) - (* destValue);
+};
+
 
 /////////////////////////////////////////////////////////////////
 // PartitionBucket
@@ -198,6 +245,7 @@ void PartitionBucket::dump(int fd, uint64_t offset, uint32_t & crc) {
 MapOutputCollector::MapOutputCollector(uint32_t num_partition) :
   _config(NULL),
   _buckets(NULL),
+  _keyComparator(NULL),
   _sortFirst(false) {
   _num_partition = num_partition;
   _buckets = new PartitionBucket*[num_partition];
@@ -224,7 +272,7 @@ void MapOutputCollector::delete_temp_spill_files() {
   }
 }
 
-void MapOutputCollector::init_memory(uint32_t memory_capacity) {
+void MapOutputCollector::init(uint32_t memory_capacity, ComparatorPtr keyComparator) {
   if (!MemoryBlockPool::inited()) {
     // At least DEFAULT_MIN_BLOCK_SIZE
     // TODO: at most  DEFUALT_MAX_BLOCK_SIZE
@@ -233,7 +281,9 @@ void MapOutputCollector::init_memory(uint32_t memory_capacity) {
     s = GetCeil(s, DEFAULT_MIN_BLOCK_SIZE);
     s = std::max(s, DEFAULT_MIN_BLOCK_SIZE);
     s = std::min(s, DEFAULT_MAX_BLOCK_SIZE);
-    MemoryBlockPool::init(memory_capacity, s);
+    //TODO: add support for customized comparator
+    this->_keyComparator = keyComparator;
+    MemoryBlockPool::init(memory_capacity, s, keyComparator);
   }
 }
 
@@ -250,8 +300,41 @@ void MapOutputCollector::configure(Config & config) {
   _config = &config;
   _sortFirst = config.getBool("native.spill.sort.first", true);
   MapOutputSpec::getSpecFromConfig(config, _mapOutputSpec);
-  init_memory(config.getInt("io.sort.mb", 300) * 1024 * 1024);
+
+  //TODO: add support for comparator
+
+
+  init(config.getInt("io.sort.mb", 300) * 1024 * 1024, getComparator(config, _mapOutputSpec));
   _collectTimer.reset();
+}
+
+ComparatorPtr MapOutputCollector::getComparator(Config & config, MapOutputSpec & spec) {
+  const char * comparatorName = config.get(NATIVE_MAPOUT_KEY_COMPARATOR);
+  if (NULL == comparatorName) {
+    if (spec.keyType == KeyValueType::BytesType ||
+        spec.keyType == KeyValueType::TextType ||
+        spec.keyType == KeyValueType::ByteType ||
+        spec.keyType == KeyValueType::BoolType) {
+      return &BytesComparator;
+    }
+    else if (spec.keyType == KeyValueType::IntType) {
+      return &IntComparator;
+    }
+    else if (spec.keyType == KeyValueType::LongType) {
+      return &LongComparator;
+    }
+    else if (spec.keyType == KeyValueType::FloatType) {
+      return &FloatComparator;
+    }
+    else if (spec.keyType == KeyValueType::DoubleType) {
+      return &DoubleComparator;
+    }
+  }
+  else {
+    void * func = NativeObjectFactory::GetFunction(comparatorName);
+    return (ComparatorPtr)func;
+  }
+  return NULL;
 }
 
 /**
@@ -403,7 +486,7 @@ void MapOutputCollector::final_merge_and_spill(std::vector<std::string> & filepa
     readers[i] = new IFileReader(inputStreams[i], spec.checksumType,
                                   spec.keyType, spec.valueType,
                                   spill->ranges[0], spec.codec);
-    MergeEntryPtr pme = new IFileMergeEntry(readers[i]);
+    MergeEntryPtr pme = new IFileMergeEntry(readers[i], _keyComparator);
     merger->addMergeEntry(pme);
   }
   if (spec.orderType==GROUPBY) {
@@ -413,7 +496,7 @@ void MapOutputCollector::final_merge_and_spill(std::vector<std::string> & filepa
     sort_all(spec.sortType);
     LOG("Sort %lu [%u,%u) time: %.3lf", _spills.size(), 0, _num_partition, (timer.now()-timer.last())/1000000000.0);
   }
-  merger->addMergeEntry(new MemoryMergeEntry(this));
+  merger->addMergeEntry(new MemoryMergeEntry(this, _keyComparator));
   merger->merge();
   delete merger;
   for (size_t i=0;i<_spills.size();i++) {

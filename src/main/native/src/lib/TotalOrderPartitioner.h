@@ -30,6 +30,10 @@ protected:
   string _trie;
   vector<string> _splits;
 
+private:
+  bool useTrieTree;
+  ComparatorPtr _keyComparator;
+
 public:
   virtual void configure(Config & config);
 

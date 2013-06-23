@@ -21,8 +21,10 @@
 
 #include "Buffers.h"
 #include "MapOutputSpec.h"
+#include "NativeTask.h"
 
 namespace NativeTask {
+
 
 /**
  * A block of memory used to store small(relatively) Buffers,
@@ -87,6 +89,9 @@ const uint32_t DEFAULT_MIN_BLOCK_SIZE = 16 * 1024;
 const uint32_t DEFAULT_MAX_BLOCK_SIZE = 1 * 1024 * 1024;
 const uint32_t NULL_BLOCK_INDEX = 0xffffffffU;
 
+
+
+
 /**
  * Class for allocating and manage MemoryBlocks
  */
@@ -98,10 +103,11 @@ private:
   static uint32_t _capacity;
   static uint32_t _used;
   static std::vector<MemoryBlock> _blocks;
+  static ComparatorPtr _keyComparator;
 
 public:
   static bool init(uint32_t capacity,
-      uint32_t min_block_size = DEFAULT_MIN_BLOCK_SIZE)
+      uint32_t min_block_size, ComparatorPtr keyComparator)
       throw (OutOfMemoryException);
 
   static void release();
@@ -167,35 +173,13 @@ public:
 
   static void dump(FILE * out);
 
-
-  /**
-   * Comparator for BytesComparator, or Text
-   */
-  class BytesComparator : Comparator {
-  public:
-    virtual int operator()(const char * src, uint32_t srcLength, const char * dest, uint32_t destLength) {
-        uint32_t minlen = std::min(srcLength, destLength);
-        int ret = fmemcmp(src, dest, minlen);
-        if (ret) {
-          return ret;
-        }
-        return srcLength - destLength;
-    }
-  };
-
-
   /**
    * c qsort compare function
    */
-  static int compare_offset(const void * plh, const void * prh) {
+  static inline  int compare_offset(const void * plh, const void * prh) {
     InplaceBuffer * lhb = (InplaceBuffer*) get_position(*(uint32_t*) plh);
     InplaceBuffer * rhb = (InplaceBuffer*) get_position(*(uint32_t*) prh);
-    uint32_t minlen = std::min(lhb->length, rhb->length);
-    int ret = fmemcmp(lhb->content, rhb->content, minlen);
-    if (ret) {
-      return ret;
-    }
-    return lhb->length - rhb->length;
+    return (*_keyComparator)(lhb->content, rhb->content, lhb->length, rhb->length);
   }
 
   /**
@@ -203,15 +187,10 @@ public:
    */
   class CompareOffset {
   public:
-    int operator()(uint32_t lhs, uint32_t rhs) {
-      InplaceBuffer * lhb = (InplaceBuffer*) get_position(lhs);
-      InplaceBuffer * rhb = (InplaceBuffer*) get_position(rhs);
-      uint32_t minlen = std::min(lhb->length, rhb->length);
-      int ret = fmemcmp(lhb->content, rhb->content, minlen);
-      if (ret) {
-        return ret;
-      }
-      return lhb->length - rhb->length;
+    inline int operator()(uint32_t lhs, uint32_t rhs) {
+        InplaceBuffer * lhb = (InplaceBuffer*) get_position(lhs);
+        InplaceBuffer * rhb = (InplaceBuffer*) get_position(rhs);
+        return (*_keyComparator)(lhb->content, rhb->content, lhb->length, rhb->length);
     }
   };
 
@@ -220,12 +199,11 @@ public:
    */
   class OffsetLessThan {
   public:
-    bool operator()(uint32_t lhs, uint32_t rhs) {
-      InplaceBuffer * lhb = (InplaceBuffer*) get_position(lhs);
-      InplaceBuffer * rhb = (InplaceBuffer*) get_position(rhs);
-      uint32_t minlen = std::min(lhb->length, rhb->length);
-      int ret = fmemcmp(lhb->content, rhb->content, minlen);
-      return ret < 0 || (ret == 0 && (lhb->length < rhb->length));
+    inline bool operator()(uint32_t lhs, uint32_t rhs) {
+        InplaceBuffer * lhb = (InplaceBuffer*) get_position(lhs);
+        InplaceBuffer * rhb = (InplaceBuffer*) get_position(rhs);
+        int ret =  (*_keyComparator)(lhb->content, rhb->content, lhb->length, rhb->length);
+        return ret < 0;
     }
   };
 

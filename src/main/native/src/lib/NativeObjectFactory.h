@@ -64,6 +64,7 @@ public:
   static Counter * GetCounter(const string & group, const string & name);
   static void RegisterClass(const string & clz, ObjectCreatorFunc func);
   static NativeObject * CreateObject(const string & clz);
+  static void * GetFunction(const string & clz);
   static ObjectCreatorFunc GetObjectCreator(const string & clz);
   static void ReleaseObject(NativeObject * obj);
   static bool RegisterLibrary(const string & path, const string & name);

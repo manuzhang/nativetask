@@ -35,19 +35,22 @@ public:
   const char *   _key;
   uint32_t _key_len;
   uint32_t _value_len;
+
+private:
+  ComparatorPtr _keyComparator;
 public:
-  MergeEntry() :
+  MergeEntry(ComparatorPtr keyComparator) :
       _key_len(0),
-      _key(NULL) {
+      _value_len(0),
+      _key(NULL),
+      _keyComparator(keyComparator){
   }
 
   virtual ~MergeEntry() {
   }
 
   inline bool operator<(const MergeEntry & rhs) const {
-    uint32_t minlen = std::min(_key_len, rhs._key_len);
-    int ret = fmemcmp(_key, rhs._key, minlen);
-    return ret < 0 || (ret == 0 && (_key_len < rhs._key_len));
+    return (*_keyComparator)(_key, _key_len, rhs._key, rhs._key_len) < 0;
   }
 
   /**
@@ -81,7 +84,8 @@ protected:
   int64_t              _cur_partition;
   int64_t              _cur_index;
 public:
-  MemoryMergeEntry(MapOutputCollector * moc) :
+  MemoryMergeEntry(MapOutputCollector * moc, ComparatorPtr keyComparator) :
+    MergeEntry(keyComparator),
       _moc(moc),
       _pb(NULL),
       _cur_partition(-1ULL),
@@ -152,7 +156,8 @@ public:
   /**
    * @param reader: managed by InterFileMergeEntry
    */
-  IFileMergeEntry(IFileReader * reader):_reader(reader) {
+  IFileMergeEntry(IFileReader * reader, ComparatorPtr keyComparator):
+    MergeEntry(keyComparator),_reader(reader) {
     new_partition = false;
   }
 
@@ -283,7 +288,7 @@ void pop_heap(T* begin, T* end, Compare Comp) {
  */
 typedef MergeEntry * MergeEntryPtr;
 
-class MergeEntryPtrLassThan {
+class MergeEntryPtrLessThan {
 public:
   bool operator()(const MergeEntryPtr lhs, const MergeEntryPtr rhs) {
     return *lhs < *rhs;

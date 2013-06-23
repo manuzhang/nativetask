@@ -16,15 +16,15 @@
 # limitations under the License.
 #
 
-AC_PREREQ([2.68])
+AC_PREREQ([2.63])
 AC_INIT
 
 AC_CONFIG_MACRO_DIR([m4])
 
-AC_CONFIG_SRCDIR([src/NativeTask.cc])
+AC_CONFIG_SRCDIR([src/NativeTask.h])
 AC_CONFIG_HEADERS(config.h)
 
-LT_PREREQ([2.4])
+LT_PREREQ([2.2])
 AC_PROG_LIBTOOL
 
 AM_INIT_AUTOMAKE(nativetask,0.1.0)
@@ -49,5 +49,7 @@ AC_CHECK_FUNCS([clock_gettime localtime_r memset strchr strtoul])
 export PLATFORM=`uname | tr [A-Z] [a-z]`
 AM_CONDITIONAL(PLATFORM_IS_MACOS, [test x"$PLATFORM" = xdarwin])
 AM_CONDITIONAL(PLATFORM_IS_LINUX, [test x"$PLATFORM" = xlinux])
+AM_CONDITIONAL(PLATFORM_IS_WIN, [ test "$PLATFORM" != "${PLATFORM/cywin/}" ])
+
 
 AC_OUTPUT(Makefile)

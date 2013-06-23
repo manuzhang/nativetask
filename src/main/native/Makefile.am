@@ -16,6 +16,13 @@ JNI_INCLUDE ?= -I$(JAVA_HOME)/include -I$(JAVA_HOME)/include/$(PLATFORM)
 PLATFORM_LDFLAGS = -lrt -L$(JAVA_HOME)/jre/lib/amd64/server -ljvm
 endif
 
+if PLATFORM_IS_WIN
+# windows
+PLATFORM="win32"
+JNI_INCLUDE ?= -I"$(JAVA_HOME)/include" -I$(JAVA_HOME)/include/$(PLATFORM)
+PLATFORM_LDFLAGS = -lrt -L$(JAVA_HOME)/jre/lib/amd64/server -ljvm
+endif
+
 # primatives configs 
 PRFLAGS=-DSIMPLE_MEMCPY 
 #-DSPILLRECORD_CHECKSUM_UINT
@@ -26,50 +33,50 @@ AM_CFLAGS = $(PRFLAGS) $(JNI_INCLUDE) -I$(SNAPPY_PREFIX)/include -Ijavah -I$(top
 COMMONSOURCES = \
 lz4/lz4.c                              \
 cityhash/city.cc                       \
-src/codec/GzipCodec.cc                 \
-src/codec/BlockCodec.cc                \
-src/codec/SnappyCodec.cc               \
-src/codec/Lz4Codec.cc                  \
-src/handler/BatchHandler.cc            \
-src/handler/EchoBatchHandler.cc        \
+src/codec/BlockCodec.cc \
+src/codec/GzipCodec.cc \
+src/codec/Lz4Codec.cc \
+src/codec/SnappyCodec.cc \
+src/handler/BatchHandler.cc \
+src/handler/EchoBatchHandler.cc \
 src/handler/MCollectorOutputHandler.cc \
-src/handler/MMapperHandler.cc          \
-src/handler/MMapTaskHandler.cc         \
-src/handler/RReducerHandler.cc         \
-src/lib/FileSplit.cc                   \
-src/lib/LineRecordWriter.cc            \
-src/lib/LineRecordReader.cc            \
-src/lib/TotalOrderPartitioner.cc       \
-src/lib/TeraSort.cc                    \
-src/lib/WordCount.cc                   \
-src/util/Checksum.cc                   \
-src/util/Hash.cc                       \
-src/util/Process.cc                    \
-src/util/Random.cc                     \
-src/util/StringUtil.cc                 \
-src/util/SyncUtils.cc                  \
-src/util/Timer.cc                      \
-src/util/WritableUtils.cc              \
-src/mempool.cc                         \
-src/jniutils.cc                        \
-src/NativeRuntimeJniImpl.cc            \
-src/Log.cc                             \
-src/Buffers.cc                         \
-src/Streams.cc                         \
-src/BufferStream.cc                    \
-src/Path.cc                            \
-src/FileSystem.cc                      \
-src/Compressions.cc                    \
-src/PartitionIndex.cc                  \
-src/KVFile.cc                          \
-src/IFile.cc                           \
-src/MapOutputSpec.cc                   \
-src/MapOutputCollector.cc              \
-src/Merge.cc                           \
-src/TaskCounters.cc                    \
-src/NativeObjectFactory.cc             \
-src/NativeLibrary.cc                   \
-src/NativeTask.cc                      
+src/handler/MMapperHandler.cc \
+src/handler/MMapTaskHandler.cc \
+src/handler/RReducerHandler.cc \
+src/lib/Buffers.cc \
+src/lib/BufferStream.cc \
+src/lib/Compressions.cc \
+src/lib/FileSplit.cc \
+src/lib/FileSystem.cc \
+src/lib/IFile.cc \
+src/lib/jniutils.cc \
+src/lib/KVFile.cc \
+src/lib/LineRecordReader.cc \
+src/lib/LineRecordWriter.cc \
+src/lib/Log.cc \
+src/lib/MapOutputCollector.cc \
+src/lib/MapOutputSpec.cc \
+src/lib/mempool.cc \
+src/lib/Merge.cc \
+src/lib/NativeLibrary.cc \
+src/lib/NativeObjectFactory.cc \
+src/lib/NativeRuntimeJniImpl.cc \
+src/lib/NativeTask.cc \
+src/lib/PartitionIndex.cc \
+src/lib/Path.cc \
+src/lib/Streams.cc \
+src/lib/TaskCounters.cc \
+src/lib/TeraSort.cc \
+src/lib/TotalOrderPartitioner.cc \
+src/lib/WordCount.cc \
+src/util/Checksum.cc \
+src/util/Hash.cc \
+src/util/Process.cc \
+src/util/Random.cc \
+src/util/StringUtil.cc \
+src/util/SyncUtils.cc \
+src/util/Timer.cc \
+src/util/WritableUtils.cc               
 
 
 
@@ -81,15 +88,15 @@ src/util/SyncUtils.h                  \
 src/util/WritableUtils.h              \
 src/lib/LineRecordReader.h            \
 src/lib/LineRecordWriter.h            \
-src/commons.h                         \
-src/Log.h                             \
-src/primitives.h                      \
-src/Buffers.h                         \
-src/BufferStream.h                    \
-src/Compressions.h                    \
-src/FileSystem.h                      \
-src/Streams.h                         \
-src/NativeObjectFactory.h             \
+src/lib/commons.h                         \
+src/lib/Log.h                             \
+src/lib/primitives.h                      \
+src/lib/Buffers.h                         \
+src/lib/BufferStream.h                    \
+src/lib/Compressions.h                    \
+src/lib/FileSystem.h                      \
+src/lib/Streams.h                         \
+src/lib/NativeObjectFactory.h             \
 src/NativeTask.h                      
 
 

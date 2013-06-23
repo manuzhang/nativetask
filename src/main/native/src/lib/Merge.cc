@@ -70,7 +70,7 @@ void Merger::initHeap() {
       _heap.push_back(pme);
     }
   }
-  make_heap(&(_heap[0]), &(_heap[0])+_heap.size(), MergeEntryPtrLassThan());
+  make_heap(&(_heap[0]), &(_heap[0])+_heap.size(), MergeEntryPtrLessThan());
 }
 
 bool Merger::next() {
@@ -87,11 +87,11 @@ bool Merger::next() {
           }
         } else {
           MergeEntryPtr * base = &(_heap[0]);
-          adjust_heap(base, 1, cur_heap_size, MergeEntryPtrLassThan());
+          adjust_heap(base, 1, cur_heap_size, MergeEntryPtrLessThan());
         }
       } else { // no more, pop heap
         MergeEntryPtr * base = &(_heap[0]);
-        pop_heap(base, base+cur_heap_size, MergeEntryPtrLassThan());
+        pop_heap(base, base+cur_heap_size, MergeEntryPtrLessThan());
         _heap.pop_back();
       }
     } else {
@@ -101,50 +101,6 @@ bool Merger::next() {
   }
   return false;
 }
-
-//void Merger::merge() {
-//  Timer timer;
-//  uint64_t total_record = 0;
-//  _heap.reserve(_entries.size());
-//  MergeEntryPtr * base = &(_heap[0]);
-//  while (0 == startPartition()) {
-//    initHeap();
-//    size_t cur_heap_size = _heap.size();
-//    while (cur_heap_size>0) {
-//      MergeEntryPtr top = base[0];
-//      _writer->writeKey(top->_key, top->_key_len, top->_value_len);
-//      _writer->writeValue(top->getValue(), top->_value_len);
-//      total_record++;
-//      if (0 == top->next()) { // have more, adjust heap
-//        if (cur_heap_size == 1) {
-//          continue;
-//        } else if (cur_heap_size == 2) {
-//          if (*(base[1]) < *(base[0])) {
-//            std::swap(base[0], base[1]);
-//          }
-//        } else {
-//          adjust_heap(base, 1, cur_heap_size, MergeEntryPtrLassThan());
-//        }
-//      } else { // no more, pop heap
-//        pop_heap(base, base+cur_heap_size, MergeEntryPtrLassThan());
-//        cur_heap_size--;
-//      }
-//    }
-//    endPartition();
-//  }
-//  double interval = (timer.now() - timer.last())/1000000000.0;
-//  uint64_t output_size;
-//  uint64_t real_output_size;
-//  _writer->getStatistics(output_size, real_output_size);
-//  LOG("Merge %lu segments: record %llu, avg %.3lf, size %llu, real %llu, time %.3lf",
-//      _entries.size(),
-//      total_record,
-//      (double)output_size/total_record,
-//      output_size,
-//      real_output_size,
-//      interval);
-//}
-
 
 bool Merger::nextKey() {
   uint32_t temp;

@@ -30,12 +30,14 @@ TEST(Perf, CRC) {
   char * buff = new char[len];
   memset(buff, 1, len);
   Timer timer;
-  for (int i=0;i<testTime;i++)
+  for (int i=0;i<testTime;i++) {
     TestChecksum(CHECKSUM_CRC32, buff, len);
+  }
   LOG("%s", timer.getSpeedM("CRC", len*testTime).c_str());
   timer.reset();
-  for (int i=0;i<testTime;i++)
+  for (int i=0;i<testTime;i++) {
     TestChecksum(CHECKSUM_CRC32C, buff, len);
+  }
   LOG("%s", timer.getSpeedM("CRC32C", len*testTime).c_str());
   delete [] buff;
 }

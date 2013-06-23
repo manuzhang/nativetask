@@ -92,12 +92,15 @@ HadoopException::HadoopException(const string & what) {
   _reason.append(what.c_str()+n, what.length()-n);
   void *array[64];
   size_t size;
+
+#ifdef _EXECINFO_H
   size = backtrace(array, 64);
   char ** traces = backtrace_symbols(array, size);
   for (size_t i = 0; i< size;i++) {
     _reason.append("\n\t");
     _reason.append(traces[i]);
   }
+#endif
 }
 
 ///////////////////////////////////////////////////////////

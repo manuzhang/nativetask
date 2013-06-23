@@ -166,22 +166,27 @@ class MapOutputCollector {
 private:
   Config * _config;
   PartitionBucket ** _buckets;
+  ComparatorPtr _keyComparator;
   uint32_t _num_partition;
   std::vector<PartitionIndex *> _spills;
   MapOutputSpec _mapOutputSpec;
   bool _sortFirst;
   Timer _collectTimer;
 private:
-  void init_memory(uint32_t memory_capacity);
+  void init(uint32_t memory_capacity, ComparatorPtr keyComparator);
 
   void reset();
 
   void delete_temp_spill_files();
 
+
+
 public:
   MapOutputCollector(uint32_t num_partition);
 
   ~MapOutputCollector();
+
+  static ComparatorPtr getComparator(Config & config, MapOutputSpec & spec);
 
   void configure(Config & config);
 

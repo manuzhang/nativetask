@@ -29,7 +29,7 @@ namespace NativeTask {
 //////////////////////////////////////////////////////////////////
 
 NativeLibrary::NativeLibrary(const string & path, const string & name)
-    :_path(path), _name(name), _getObjectCreatorFunc(NULL) {
+    :_path(path), _name(name), _getObjectCreatorFunc(NULL), _functionGetter(NULL) {
 
 }
 
@@ -48,6 +48,12 @@ bool NativeLibrary::init() {
     LOG("ObjectCreator function [%s] not found", create_object_func_name.c_str());
   }
 
+  string functionGetter = _name + "GetFunctionGetter";
+  _functionGetter = (FunctionGetter)dlsym(library, functionGetter.c_str());
+  if (NULL==_functionGetter) {
+    LOG("function getter [%s] not found", functionGetter.c_str());
+  }
+
   string init_library_func_name = _name + "Init";
   InitLibraryFunc init_library_func = (InitLibraryFunc)dlsym(library, init_library_func_name.c_str());
   if (NULL==init_library_func) {
@@ -64,6 +70,13 @@ NativeObject * NativeLibrary::createObject(const string & clz) {
     return NULL;
   }
   return (NativeObject*)((_getObjectCreatorFunc(clz))());
+}
+
+void * NativeLibrary::getFunction(const string & functionName) {
+  if (NULL == _functionGetter) {
+    return NULL;
+  }
+  return (void*)((_functionGetter(functionName))());
 }
 
 ObjectCreatorFunc NativeLibrary::getObjectCreator(const string & clz) {

@@ -35,12 +35,17 @@ void handler(int sig) {
   void *array[10];
   size_t size;
 
+  // print out all the frames to stderr
+  fprintf(stderr, "Error: signal %d:\n", sig);
+
+#ifdef _EXECINFO_H
   // get void*'s for all entries on the stack
   size = backtrace(array, 10);
 
-  // print out all the frames to stderr
-  fprintf(stderr, "Error: signal %d:\n", sig);
+
   backtrace_symbols_fd(array, size, 2);
+#endif
+
   exit(1);
 }
 }

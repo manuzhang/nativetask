@@ -18,6 +18,7 @@
 
 #include "commons.h"
 #include "MapOutputSpec.h"
+#include "NativeTask.h"
 
 namespace NativeTask {
 

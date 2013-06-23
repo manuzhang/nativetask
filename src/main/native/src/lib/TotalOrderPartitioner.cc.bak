@@ -36,6 +36,16 @@ struct TrieNode {
   Range offset[256];
 };
 
+class BinaryStringCompare {
+public:
+  bool operator()(const string & lhs, const string & rhs) {
+    size_t minlen = std::min(lhs.length(), rhs.length());
+    int ret = fmemcmp(lhs.data(), rhs.data(), minlen);
+    return ret < 0 || (ret == 0 && (lhs.length() < rhs.length()));
+  }
+};
+
+
 inline TrieNode * GetNode(string & trie, uint32_t offset) {
   return (TrieNode*) (trie.data() + offset);
 }

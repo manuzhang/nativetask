@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-#include <snappy-c.h>
+#include "snappy-c.h"
 #include "commons.h"
 #include "NativeTask.h"
 #include "SnappyCodec.h"

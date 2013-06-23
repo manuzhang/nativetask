@@ -55,7 +55,7 @@ TEST(Perf, MMapTaskTeraSort) {
   string inputfile = TestConfig.get("maptask.inputfile", "tera.input");
   string outputfile = TestConfig.get("maptask.outputfile", "map.output");
   string inputcodec = Compressions::getCodecByFile(inputfile);
-  string sorttype = TestConfig.get("native.sort.type", "DUALPIVOTSORT");
+  string sorttype = TestConfig.get(NATIVE_SORT_TYPE, "DUALPIVOTSORT");
   bool sortFirst = TestConfig.getBool("native.spill.sort.first", true);
   string inputtype = TestConfig.get("maptask.inputtype", "tera");
   int64_t inputLength = TestConfig.getInt("maptask.inputlength", 250000000);
@@ -91,23 +91,23 @@ TEST(Perf, MMapTaskTeraSort) {
   Config jobconf;
   jobconf.setInt("mapred.reduce.tasks", 200);
   jobconf.setInt("io.sort.mb", iosortmb);
-  jobconf.set("mapred.mapoutput.key.class", "org.apache.hadoop.io.Text");
-  jobconf.set("mapred.mapoutput.value.class", "org.apache.hadoop.io.Text");
+  jobconf.set(MAPRED_MAPOUTPUT_KEY_CLASS, "org.apache.hadoop.io.Text");
+  jobconf.set(MAPRED_MAPOUTPUT_VALUE_CLASS, "org.apache.hadoop.io.Text");
   jobconf.setBool("native.spill.sort.first", sortFirst);
-  jobconf.set("native.sort.type", sorttype);
-  jobconf.set("mapred.compress.map.output", "true");
-  jobconf.set("mapred.map.output.compression.codec", Compressions::SnappyCodec.name);
+  jobconf.set(NATIVE_SORT_TYPE, sorttype);
+  jobconf.set(MAPRED_COMPRESS_MAP_OUTPUT, "true");
+  jobconf.set(MAPRED_MAP_OUTPUT_COMPRESSION_CODEC, Compressions::SnappyCodec.name);
   FileSplit split = FileSplit(inputfile, 0, inputFileLength);
   string splitData;
   split.writeFields(splitData);
-  jobconf.set("native.input.split", splitData);
+  jobconf.set(NATIVE_INPUT_SPLIT, splitData);
   if (isTeraInput) {
-    jobconf.set("native.recordreader.class", "NativeTask.TeraRecordReader");
+    jobconf.set(NATIVE_RECORDREADER, "NativeTask.TeraRecordReader");
   } else if (inputtype == "word") {
-    jobconf.set("native.recordreader.class", "NativeTask.LineRecordReader");
-    jobconf.set("native.mapper.class", "NativeTask.WordCountMapper");
+    jobconf.set(NATIVE_RECORDREADER, "NativeTask.LineRecordReader");
+    jobconf.set(NATIVE_MAPPER, "NativeTask.WordCountMapper");
   } else {
-    jobconf.set("native.recordreader.class", "NativeTask.KeyValueLineRecordReader");
+    jobconf.set(NATIVE_RECORDREADER, "NativeTask.KeyValueLineRecordReader");
   }
   MMapTaskHandlerTest * mapRunner = new MMapTaskHandlerTest();
   mapRunner->setOutputFile(outputfile);
@@ -122,7 +122,7 @@ TEST(Perf, MMapTaskWordCount) {
   string inputfile = TestConfig.get("maptask.inputfile", "word.input");
   string outputfile = TestConfig.get("maptask.outputfile", "map.output");
   string inputcodec = Compressions::getCodecByFile(inputfile);
-  string sorttype = TestConfig.get("native.sort.type", "DUALPIVOTSORT");
+  string sorttype = TestConfig.get(NATIVE_SORT_TYPE, "DUALPIVOTSORT");
   bool sortFirst = TestConfig.getBool("native.spill.sort.first", true);
   bool usecombiner = TestConfig.getBool("maptask.enable.combiner",true);
   string inputtype = TestConfig.get("maptask.inputtype", "word");
@@ -159,25 +159,25 @@ TEST(Perf, MMapTaskWordCount) {
   Config jobconf;
   jobconf.setInt("mapred.reduce.tasks", 100);
   jobconf.setInt("io.sort.mb", iosortmb);
-  jobconf.set("mapred.mapoutput.key.class", "org.apache.hadoop.io.Text");
-  jobconf.set("mapred.mapoutput.value.class", "org.apache.hadoop.io.Text");
+  jobconf.set(MAPRED_MAPOUTPUT_KEY_CLASS, "org.apache.hadoop.io.Text");
+  jobconf.set(MAPRED_MAPOUTPUT_VALUE_CLASS, "org.apache.hadoop.io.Text");
   jobconf.setBool("native.spill.sort.first", sortFirst);
-  jobconf.set("native.sort.type", sorttype);
-  jobconf.set("mapred.compress.map.output", "true");
-  jobconf.set("mapred.map.output.compression.codec", Compressions::SnappyCodec.name);
+  jobconf.set(NATIVE_SORT_TYPE, sorttype);
+  jobconf.set(MAPRED_COMPRESS_MAP_OUTPUT, "true");
+  jobconf.set(MAPRED_MAP_OUTPUT_COMPRESSION_CODEC, Compressions::SnappyCodec.name);
   FileSplit split = FileSplit(inputfile, 0, inputFileLength);
   string splitData;
   split.writeFields(splitData);
-  jobconf.set("native.input.split", splitData);
+  jobconf.set(NATIVE_INPUT_SPLIT, splitData);
   if (isTeraInput) {
-    jobconf.set("native.recordreader.class", "NativeTask.TeraRecordReader");
+    jobconf.set(NATIVE_RECORDREADER, "NativeTask.TeraRecordReader");
   } else if (inputtype == "word") {
-    jobconf.set("native.recordreader.class", "NativeTask.LineRecordReader");
-    jobconf.set("native.mapper.class", "NativeTask.WordCountMapper");
-    jobconf.set("native.reducer.class", "NativeTask.IntSumReducer");
-    jobconf.set("native.combiner.class", "NativeTask.IntSumReducer");
+    jobconf.set(NATIVE_RECORDREADER, "NativeTask.LineRecordReader");
+    jobconf.set(NATIVE_MAPPER, "NativeTask.WordCountMapper");
+    jobconf.set(NATIVE_REDUCER, "NativeTask.IntSumReducer");
+    jobconf.set(NATIVE_COMBINER, "NativeTask.IntSumReducer");
   } else {
-    jobconf.set("native.recordreader.class", "NativeTask.KeyValueLineRecordReader");
+    jobconf.set(NATIVE_RECORDREADER, "NativeTask.KeyValueLineRecordReader");
   }
   MMapTaskHandlerTest * mapRunner = new MMapTaskHandlerTest();
   mapRunner->setOutputFile(outputfile);

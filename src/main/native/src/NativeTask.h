@@ -78,6 +78,8 @@ enum NativeObjectType {
 //format: name=path,name=path,name=path
 #define NATIVE_CLASS_LIBRARY "native.class.library"
 
+#define NATIVE_MAPOUT_KEY_COMPARATOR "native.map.output.key.comparator"
+
 
 extern const std::string NativeObjectTypeToString(NativeObjectType type);
 extern NativeObjectType NativeObjectTypeFromString(const std::string type);
@@ -103,6 +105,8 @@ NativeObject * ObjectCreator() {
 typedef NativeObject * (*ObjectCreatorFunc)();
 
 typedef ObjectCreatorFunc (*GetObjectCreatorFunc)(const std::string & name);
+
+typedef void * (*FunctionGetter)(const std::string & name);
 
 typedef int32_t (*InitLibraryFunc)();
 
@@ -537,13 +541,10 @@ public:
 };
 
 
-/**
- * Comparator used to compare key
- */
-class Comparator {
-public:
-  virtual int operator()(const char * src, uint32_t srcLength, const char * dest, uint32_t destLength) = 0;
-};
+typedef int (* ComparatorPtr)(const char * src, uint32_t srcLength, const char * dest, uint32_t destLength);
+
+
+  };
 
 } // namespace NativeTask;
 
@@ -566,6 +567,14 @@ public:
  */
 #define DEFINE_NATIVE_LIBRARY(Library) \
   static std::map<std::string, NativeTask::ObjectCreatorFunc> Library##ClassMap__; \
+  extern "C" void * Library##GetFunctionGetter(const std::string & name) { \
+      void * ret = NULL; \
+      std::map<std::string, NativeTask::ObjectCreatorFunc>::iterator itr = Library##ClassMap__.find(name); \
+      if (itr != Library##ClassMap__.end()) { \
+        return itr->second; \
+      } \
+      return NULL; \
+    } \
   extern "C" NativeTask::ObjectCreatorFunc Library##GetObjectCreator(const std::string & name) { \
     NativeObject * ret = NULL; \
     std::map<std::string, NativeTask::ObjectCreatorFunc>::iterator itr = Library##ClassMap__.find(name); \
@@ -577,5 +586,7 @@ public:
   extern "C" void Library##Init()
 
 #define REGISTER_CLASS(Type, Library) Library##ClassMap__[#Library"."#Type] = NativeTask::ObjectCreator<Type>
+
+#define REGISTER_FUNCTION(Type, Library) Library##ClassMap__[#Library"."#Type] = (void *)Type
 
 #endif /* NATIVETASK_H_ */

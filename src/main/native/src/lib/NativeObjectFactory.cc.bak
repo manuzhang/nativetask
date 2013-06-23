@@ -45,18 +45,25 @@ extern "C" void handler(int sig) {
   void *array[10];
   size_t size;
 
+  // print out all the frames to stderr
+  fprintf(stderr, "Error: signal %d:\n", sig);
+
+#ifdef _EXECINFO_H
   // get void*'s for all entries on the stack
   size = backtrace(array, 10);
 
-  // print out all the frames to stderr
-  fprintf(stderr, "Error: signal %d:\n", sig);
   backtrace_symbols_fd(array, size, 2);
+#endif
+
   exit(1);
 }
 
 
 DEFINE_NATIVE_LIBRARY(NativeTask) {
   //signal(SIGSEGV, handler);
+  REGISTER_FUNCTION(BytesComparator, NativeTask);
+  REGISTER_FUNCTION(IntComparator, NativeTask);
+  REGISTER_FUNCTION(LongComparator, NativeTask);
   REGISTER_CLASS(BatchHandler, NativeTask);
   REGISTER_CLASS(EchoBatchHandler, NativeTask);
   REGISTER_CLASS(MCollectorOutputHandler, NativeTask);
@@ -252,6 +259,20 @@ NativeObject * NativeObjectFactory::CreateObject(const string & clz) {
   return creator ? creator() : NULL;
 }
 
+void * NativeObjectFactory::GetFunction(const string & funcName) {
+  CheckInit();
+  {
+    for (vector<NativeLibrary*>::reverse_iterator ritr = Libraries.rbegin();
+        ritr != Libraries.rend(); ritr++) {
+      void * ret = (*ritr)->getFunction(funcName);
+      if (NULL!=ret) {
+        return ret;
+      }
+    }
+    return NULL;
+  }
+}
+
 ObjectCreatorFunc NativeObjectFactory::GetObjectCreator(const string & clz) {
   CheckInit();
   {
@@ -265,6 +286,7 @@ ObjectCreatorFunc NativeObjectFactory::GetObjectCreator(const string & clz) {
     return NULL;
   }
 }
+
 
 void NativeObjectFactory::ReleaseObject(NativeObject * obj) {
   delete obj;

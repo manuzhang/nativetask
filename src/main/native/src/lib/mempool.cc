@@ -32,9 +32,11 @@ uint32_t MemoryBlockPool::_capacity = 0;
 
 uint32_t MemoryBlockPool::_used = 0;
 
+ComparatorPtr MemoryBlockPool::_keyComparator = NULL;
+
 std::vector<MemoryBlock> MemoryBlockPool::_blocks = std::vector<MemoryBlock>();
 
-bool MemoryBlockPool::init(uint32_t capacity, uint32_t min_block_size)
+bool MemoryBlockPool::init(uint32_t capacity, uint32_t min_block_size, ComparatorPtr keyComparator)
     throw (OutOfMemoryException) {
   _min_block_size = min_block_size;
   LOG("Native MemoryBlockPool: min_block_size %uK, capacity %uM",
@@ -52,6 +54,7 @@ bool MemoryBlockPool::init(uint32_t capacity, uint32_t min_block_size)
   _capacity = capacity;
   _used = 0;
   _inited = true;
+  _keyComparator = keyComparator;
   return true;
 }
 

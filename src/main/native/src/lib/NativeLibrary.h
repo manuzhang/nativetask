@@ -36,12 +36,15 @@ private:
   string _path;
   string _name;
   GetObjectCreatorFunc _getObjectCreatorFunc;
+  FunctionGetter _functionGetter;
 public:
   NativeLibrary(const string & path, const string & name);
 
   bool init();
 
   NativeObject * createObject(const string & clz);
+
+  void * getFunction(const string & functionName);
 
   ObjectCreatorFunc getObjectCreator(const string & clz);
 
