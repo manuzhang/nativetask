@@ -76,7 +76,7 @@ void * NativeLibrary::getFunction(const string & functionName) {
   if (NULL == _functionGetter) {
     return NULL;
   }
-  return (void*)((_functionGetter(functionName))());
+  return (*_functionGetter)(functionName);
 }
 
 ObjectCreatorFunc NativeLibrary::getObjectCreator(const string & clz) {

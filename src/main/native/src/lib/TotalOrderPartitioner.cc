@@ -20,6 +20,10 @@
 #include "WritableUtils.h"
 #include "FileSystem.h"
 #include "TotalOrderPartitioner.h"
+#include "MapOutputSpec.h"
+#include "MapOutputCollector.h"
+#include "StringUtil.h"
+
 
 namespace NativeTask {
 
@@ -161,8 +165,8 @@ void TotalOrderPartitioner::configure(Config & config) {
 
   MapOutputSpec spec;
   MapOutputSpec::getSpecFromConfig(config, spec);
-  if (spec.keyType == KeyValueType::TextType ||
-      spec.keyType == KeyValueType::BytesType) {
+  if (spec.keyType == TextType ||
+      spec.keyType == BytesType) {
     this->useTrieTree = true;
   }
   else {
@@ -188,7 +192,7 @@ uint32_t TotalOrderPartitioner::getPartition(const char * key,
   }
 }
 
-uint32_t binarySearchPartition(vector<string> & splits, const char * key, uint32_t keyLen) {
+uint32_t TotalOrderPartitioner::binarySearchPartition(vector<string> & splits, const char * key, uint32_t keyLen) {
   //TODO: add support for other kv types.
   THROW_EXCEPTION_EX(UnsupportException, "TotalOrderPartitioner, current only support Text type key");
 }

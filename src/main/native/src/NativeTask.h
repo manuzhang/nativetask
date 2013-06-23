@@ -543,8 +543,7 @@ public:
 
 typedef int (* ComparatorPtr)(const char * src, uint32_t srcLength, const char * dest, uint32_t destLength);
 
-
-  };
+typedef void (*ANY_FUNC_PTR)();
 
 } // namespace NativeTask;
 
@@ -565,13 +564,15 @@ typedef int (* ComparatorPtr)(const char * src, uint32_t srcLength, const char *
  * Then you can set native.mapper.class to MyDemo.MyDemoMapper
  * in JobConf.
  */
+
+
 #define DEFINE_NATIVE_LIBRARY(Library) \
   static std::map<std::string, NativeTask::ObjectCreatorFunc> Library##ClassMap__; \
   extern "C" void * Library##GetFunctionGetter(const std::string & name) { \
       void * ret = NULL; \
       std::map<std::string, NativeTask::ObjectCreatorFunc>::iterator itr = Library##ClassMap__.find(name); \
       if (itr != Library##ClassMap__.end()) { \
-        return itr->second; \
+        return (void *)(itr->second); \
       } \
       return NULL; \
     } \

@@ -35,6 +35,8 @@ private:
   ComparatorPtr _keyComparator;
 
 public:
+  TotalOrderPartitioner();
+
   virtual void configure(Config & config);
 
   virtual uint32_t getPartition(const char * key, uint32_t & keyLen,
@@ -47,6 +49,9 @@ public:
   static void PrintTrie(vector<string> & splits, string & trie,
                         uint32_t pos = 0, uint32_t indent = 0);
   static void LoadPartitionFile(vector<string> & splits, InputStream * is);
+
+protected:
+  uint32_t binarySearchPartition(vector<string> & splits, const char * key, uint32_t keyLen);
 };
 
 } // namespace NativeTask

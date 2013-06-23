@@ -179,7 +179,7 @@ public:
   static inline  int compare_offset(const void * plh, const void * prh) {
     InplaceBuffer * lhb = (InplaceBuffer*) get_position(*(uint32_t*) plh);
     InplaceBuffer * rhb = (InplaceBuffer*) get_position(*(uint32_t*) prh);
-    return (*_keyComparator)(lhb->content, rhb->content, lhb->length, rhb->length);
+    return (*_keyComparator)(lhb->content, lhb->length,  rhb->content,  rhb->length);
   }
 
   /**
@@ -190,7 +190,7 @@ public:
     inline int operator()(uint32_t lhs, uint32_t rhs) {
         InplaceBuffer * lhb = (InplaceBuffer*) get_position(lhs);
         InplaceBuffer * rhb = (InplaceBuffer*) get_position(rhs);
-        return (*_keyComparator)(lhb->content, rhb->content, lhb->length, rhb->length);
+        return (*_keyComparator)(lhb->content, lhb->length, rhb->content, rhb->length);
     }
   };
 
@@ -202,7 +202,7 @@ public:
     inline bool operator()(uint32_t lhs, uint32_t rhs) {
         InplaceBuffer * lhb = (InplaceBuffer*) get_position(lhs);
         InplaceBuffer * rhb = (InplaceBuffer*) get_position(rhs);
-        int ret =  (*_keyComparator)(lhb->content, rhb->content, lhb->length, rhb->length);
+        int ret =  (*_keyComparator)(lhb->content, lhb->length, rhb->content,  rhb->length);
         return ret < 0;
     }
   };

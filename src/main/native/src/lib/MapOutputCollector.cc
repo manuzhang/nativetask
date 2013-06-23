@@ -24,6 +24,7 @@
 #include "MapOutputCollector.h"
 #include "Merge.h"
 #include "NativeTask.h"
+#include "WritableUtils.h"
 
 namespace NativeTask {
 
@@ -311,22 +312,22 @@ void MapOutputCollector::configure(Config & config) {
 ComparatorPtr MapOutputCollector::getComparator(Config & config, MapOutputSpec & spec) {
   const char * comparatorName = config.get(NATIVE_MAPOUT_KEY_COMPARATOR);
   if (NULL == comparatorName) {
-    if (spec.keyType == KeyValueType::BytesType ||
-        spec.keyType == KeyValueType::TextType ||
-        spec.keyType == KeyValueType::ByteType ||
-        spec.keyType == KeyValueType::BoolType) {
+    if (spec.keyType == BytesType ||
+        spec.keyType == TextType ||
+        spec.keyType == ByteType ||
+        spec.keyType == BoolType) {
       return &BytesComparator;
     }
-    else if (spec.keyType == KeyValueType::IntType) {
+    else if (spec.keyType == IntType) {
       return &IntComparator;
     }
-    else if (spec.keyType == KeyValueType::LongType) {
+    else if (spec.keyType == LongType) {
       return &LongComparator;
     }
-    else if (spec.keyType == KeyValueType::FloatType) {
+    else if (spec.keyType == FloatType) {
       return &FloatComparator;
     }
-    else if (spec.keyType == KeyValueType::DoubleType) {
+    else if (spec.keyType == DoubleType) {
       return &DoubleComparator;
     }
   }

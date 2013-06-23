@@ -61,11 +61,6 @@ extern "C" void handler(int sig) {
 
 DEFINE_NATIVE_LIBRARY(NativeTask) {
   //signal(SIGSEGV, handler);
-  REGISTER_FUNCTION(BytesComparator, NativeTask);
-  REGISTER_FUNCTION(IntComparator, NativeTask);
-  REGISTER_FUNCTION(LongComparator, NativeTask);
-  REGISTER_FUNCTION(FloatComparator, NativeTask);
-  REGISTER_FUNCTION(DoubleComparator, NativeTask);
   REGISTER_CLASS(BatchHandler, NativeTask);
   REGISTER_CLASS(EchoBatchHandler, NativeTask);
   REGISTER_CLASS(MCollectorOutputHandler, NativeTask);
