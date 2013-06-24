@@ -40,6 +40,7 @@ install() {
   targetlibs=$target/.libs
   echo "target folder: "$targetlibs
   rm -rf  $targetlibs
+  mkdir -p $targetlibs
   cp -r .libs $target
 }
 
