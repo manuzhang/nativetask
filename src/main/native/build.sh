@@ -35,6 +35,14 @@ clean() {
         echo 'done'
 }
 
+install() {
+  target=$1
+  targetlibs=$target/.libs
+  echo "target folder: "$targetlibs
+  rm -rf  $targetlibs
+  cp -r .libs $target
+}
+
 build() {
 .$basedir/configure
 make
@@ -50,6 +58,8 @@ xall)
         init
 	build
 	;;
+xinstall)
+	install $2
 esac
 
 

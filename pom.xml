@@ -221,6 +221,28 @@
 					</configuration>
 
 				</execution>
+				
+				<execution>
+						<id>install</id>
+						<phase>compile</phase>
+						<goals>
+							<goal>exec</goal>
+						</goals>
+
+						<configuration>
+							<executable>${basedir}/src/main/native/build.sh</executable>
+							<!-- optional -->
+							<workingDirectory>${basedir}/src/main/native/
+							</workingDirectory>
+							<arguments>
+								<argument>install</argument>
+								<argument>${project.build.directory}/native</argument>
+							</arguments>
+						</configuration>
+
+					</execution>
+
+				
 
 				<execution>
 					<id>clean</id>
