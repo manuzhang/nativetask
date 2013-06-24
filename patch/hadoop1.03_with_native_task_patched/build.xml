@@ -40,8 +40,6 @@
   <property name="tools.final.name" value="${name}-tools-${version}"/>
   <property name="ant.final.name" value="${name}-ant-${version}"/>
   <property name="streaming.final.name" value="${name}-streaming-${version}"/>
-  <property name="hadoop-client.final.name" value="${name}-client-${version}"/>
-  <property name="hadoop-minicluster.final.name" value="${name}-minicluster-${version}"/>
 
   <property name="src.dir" value="${basedir}/src"/>  	
   <property name="core.src.dir" value="${src.dir}/core"/>
@@ -102,7 +100,9 @@
   <property name="install.c++" value="${build.dir}/c++/${build.platform}"/>
   <property name="install.c++.examples" 
             value="${build.dir}/c++-examples/${build.platform}"/>
+	
 
+			  
   <property name="test.src.dir" value="${basedir}/src/test"/>
   <property name="test.lib.dir" value="${basedir}/src/test/lib"/>
   <property name="test.build.dir" value="${build.dir}/test"/>
@@ -117,6 +117,7 @@
   <property name="test.build.extraconf" value="${test.build.dir}/extraconf"/>
   <property name="test.build.javadoc" value="${test.build.dir}/docs/api"/>
   <property name="test.build.javadoc.dev" value="${test.build.dir}/docs/dev-api"/>
+  <property name="test.build.webapps" value="${build.dir}/test/test-webapps"/>
   <property name="test.include" value="Test*"/>
   <property name="test.classpath.id" value="test.classpath"/>
   <property name="test.output" value="no"/>
@@ -160,7 +161,7 @@
 
   <property name="jdiff.build.dir" value="${build.docs}/jdiff"/>
   <property name="jdiff.xml.dir" value="${lib.dir}/jdiff"/>
-  <property name="jdiff.stable" value="1.0.2"/>
+  <property name="jdiff.stable" value="0.20.205.0"/>
   <property name="jdiff.stable.javadoc" 
             value="http://hadoop.apache.org/core/docs/r${jdiff.stable}/api/"/>
 
@@ -169,6 +170,7 @@
   <property name="grep.cmd" value="grep"/>
   <property name="patch.cmd" value="patch"/>
   <property name="make.cmd" value="make"/>
+  <property name="maven.cmd" value="mvn"/>
 
   <property name="jsvc.build.dir" value="${build.dir}/jsvc.${os.arch}" />
   <property name="jsvc.install.dir" value="${dist.dir}/libexec" /> 
@@ -210,14 +212,18 @@
 
   <property name="package.buildroot" value="/tmp/hadoop_package_build_${user.name}"/>
   <property name="package.build.dir" value="/tmp/hadoop_package_build_${user.name}/BUILD"/>
-
   <!-- Indicate is Snappy native library should be bundled with Hadoop or not -->
   <property name="bundle.snappy" value="false"/>
 
   <!-- Snappy native library location -->
-  <property name="snappy.prefix" value="/usr/local"/>
-  <property name="snappy.lib" value="${snappy.prefix}/lib"/>
+  <property name="snappy.prefix" value="/usr"/>
+  <property name="snappy.lib" value="${snappy.prefix}/lib64"/>
   <property name="snappy.include" value="${snappy.prefix}/include"/>
+  
+  <!-- Snappy native library location -->
+  <property name="z.prefix" value="/usr"/>
+  <property name="z.lib" value="${z.prefix}/lib"/>
+  <property name="z.include" value="${z.prefix}/include"/>
 
   <!-- IVY properteis set here -->
   <property name="ivy.dir" location="ivy" />
@@ -270,18 +276,6 @@
     location="${ivy.dir}/hadoop-streaming-pom-template.xml"/>
   <property name="hadoop-streaming.jar" 
     location="${build.dir}/contrib/streaming/${streaming.final.name}.jar"/>
-  <property name="hadoop-client.pom"
-    location="${ivy.dir}/hadoop-client-pom.xml"/>
-  <property name="hadoop-client-pom-template.xml"
-    location="${ivy.dir}/hadoop-client-pom-template.xml"/>
-  <property name="hadoop-client.jar"
-    location="${build.dir}/${hadoop-client.final.name}.jar"/>
-  <property name="hadoop-minicluster.pom"
-    location="${ivy.dir}/hadoop-minicluster-pom.xml"/>
-  <property name="hadoop-minicluster-pom-template.xml"
-    location="${ivy.dir}/hadoop-minicluster-pom-template.xml"/>
-  <property name="hadoop-minicluster.jar"
-    location="${build.dir}/${hadoop-minicluster.final.name}.jar"/>
    
   <!--this is the naming policy for artifacts we want pulled down-->
   <property name="ivy.artifact.retrieve.pattern" 
@@ -352,6 +346,7 @@
     <pathelement location="${test.build.extraconf}"/>
     <pathelement location="${test.build.classes}" />
     <pathelement location="${test.src.dir}"/>
+    <pathelement location="${test.build.dir}"/>
     <pathelement location="${build.dir}"/>
     <pathelement location="${build.examples}"/>
     <pathelement location="${build.tools}"/>
@@ -611,6 +606,9 @@
     <antcall target="compile-core-native">
       <param name="compile.native" value="true"/>
     </antcall> 
+    <subant target="compile-nativetask">
+      <fileset dir="${basedir}/src/contrib" includes="build.xml"/>
+    </subant>
   </target>
 
   <target name="create-native-configure">
@@ -625,9 +623,10 @@
   	
     <mkdir dir="${build.native}/lib"/>
     <mkdir dir="${build.native}/src/org/apache/hadoop/io/compress/zlib"/>
-    <mkdir dir="${build.native}/src/org/apache/hadoop/io/compress/snappy"/>
+  	<mkdir dir="${build.native}/src/org/apache/hadoop/io/compress/snappy"/>
     <mkdir dir="${build.native}/src/org/apache/hadoop/io/nativeio"/>
     <mkdir dir="${build.native}/src/org/apache/hadoop/security"/>
+  	<mkdir dir="${build.native}/src/org/apache/hadoop/util"/>
 
   	<javah
   	  classpath="${build.classes}"
@@ -657,6 +656,15 @@
           >
           <class name="org.apache.hadoop.io.nativeio.NativeIO" />
         </javah>
+  	
+  	 <javah
+  	          classpath="${build.classes}"
+  	          destdir="${build.native}/src/org/apache/hadoop/util"
+  	       force="yes"
+  	          verbose="yes"
+  	          >
+  	          <class name="org.apache.hadoop.util.NativeCrc32" />
+  	  </javah>
   	<javah
   	  classpath="${build.classes}"
   	  destdir="${build.native}/src/org/apache/hadoop/security"
@@ -680,7 +688,7 @@
 	  <env key="OS_ARCH" value="${os.arch}"/>
 	  <env key="JVM_DATA_MODEL" value="${sun.arch.data.model}"/>
 	  <env key="HADOOP_NATIVE_SRCDIR" value="${native.src.dir}"/>
-      <arg line="${native.src.dir}/configure"/>
+		<arg line="${native.src.dir}/configure CPPFLAGS=-I${snappy.include} LDFLAGS=-L${snappy.lib}"/>
     </exec>
 
     <exec dir="${build.native}" executable="${make.cmd}" failonerror="true">
@@ -763,27 +771,6 @@
       <fileset dir="${conf.dir}" includes="${jar.properties.list}" />
       <fileset file="${jar.extra.properties.list}" />
       <zipfileset dir="${build.webapps}" prefix="webapps"/>
-    </jar>
-    <mkdir dir="${build.dir}/empty"/>
-    <jar jarfile="${build.dir}/${hadoop-client.final.name}.jar"
-         basedir="${build.dir}/empty">
-      <manifest>
-        <section name="org/apache/hadoop">
-          <attribute name="Implementation-Title" value="Hadoop Client"/>
-          <attribute name="Implementation-Version" value="${version}"/>
-          <attribute name="Implementation-Vendor" value="Apache"/>
-        </section>
-      </manifest>
-    </jar>
-    <jar jarfile="${build.dir}/${hadoop-minicluster.final.name}.jar"
-         basedir="${build.dir}/empty">
-      <manifest>
-        <section name="org/apache/hadoop">
-          <attribute name="Implementation-Title" value="Hadoop Minicluster"/>
-          <attribute name="Implementation-Version" value="${version}"/>
-          <attribute name="Implementation-Vendor" value="Apache"/>
-        </section>
-      </manifest>
     </jar>
   </target>
 
@@ -1051,6 +1038,9 @@
             todir="@{test.dir}/extraconf" />
       <copy file="${test.src.dir}/fi-site.xml"
             todir="@{test.dir}/extraconf" />
+      <copy todir="${test.build.webapps}">
+        <fileset dir="${test.src.dir}/test-webapps" includes="**/*" />
+      </copy>
       <junit showoutput="${test.output}"
              printsummary="${test.junit.printsummary}"
              haltonfailure="${test.junit.haltonfailure}"
@@ -1076,7 +1066,7 @@
                      value="@{test.krb5.conf.filename}"/>
         <sysproperty key="hadoop.policy.file" value="hadoop-policy.xml" />
         <sysproperty key="java.library.path"
-                     value="${build.native}/lib:${lib.dir}/native/${build.platform}:${lib.file.path}:${snappy.lib}" />
+        	value="${build.native}/lib:${lib.dir}/native/${build.platform}:${lib.file.path}:${snappy.lib}" />
         <sysproperty key="install.c++.examples"
                      value="${install.c++.examples}" />
         <sysproperty key="testjar"
@@ -1301,7 +1291,6 @@
     </echo>
     <exec dir="${docs.src}" executable="${forrest.home}/bin/forrest"
 	  failonerror="true">
-      <env key="JAVA_HOME" value="${java5.home}"/>
     </exec>
     <copy todir="${build.docs}">
       <fileset dir="${docs.src}/build/site/" />
@@ -1321,7 +1310,6 @@
         if="forrest.home">
     <exec dir="${src.docs.cn}" executable="${forrest.home}/bin/forrest" failonerror="true">
       <env key="LANG" value="en_US.utf8"/>
-      <env key="JAVA_HOME" value="${java5.home}"/>
     </exec>
     <copy todir="${build.docs.cn}">
       <fileset dir="${src.docs.cn}/build/site/" />
@@ -1335,14 +1323,10 @@
     <antcall target="changes-to-html"/>
   </target>
 
-  <target name="forrest.check" unless="forrest.home" depends="java5.check">
+  <target name="forrest.check" unless="forrest.home">
     <fail message="'forrest.home' is not defined. Please pass -Dforrest.home=&lt;base of Apache Forrest installation&gt; to Ant on the command-line." />
   </target>
 
-  <target name="java5.check" unless="java5.home">
-    <fail message="'java5.home' is not defined.  Forrest requires Java 5.  Please pass -Djava5.home=&lt;base of Java 5 distribution&gt; to Ant on the command-line." />
-  </target>
-	
   <target name="javadoc-dev" description="Generate javadoc for hadoop developers">
     <mkdir dir="${build.javadoc.dev}"/>
     <javadoc
@@ -1495,16 +1479,16 @@
   <!--                                                                    -->
   <!-- ================================================================== -->
   <target name="package" depends="compile, jar, javadoc, docs, cn-docs, api-report, examples, tools-jar, jar-test, ant-tasks, package-librecordio"
-	  description="assembles multi-platform artifacts for distribution">
+	  description="Build distribution">
     <delete dir="${dist.dir}"/>
     <mkdir dir="${dist.dir}"/>
-    <mkdir dir="${dist.dir}/bin"/>
+    <mkdir dir="${dist.dir}/lib"/>
+    <mkdir dir="${dist.dir}/libexec"/>
     <mkdir dir="${dist.dir}/contrib"/>
+    <mkdir dir="${dist.dir}/bin"/>
     <mkdir dir="${dist.dir}/docs"/>
     <mkdir dir="${dist.dir}/docs/api"/>
     <mkdir dir="${dist.dir}/docs/jdiff"/>
-    <mkdir dir="${dist.dir}/lib"/>
-    <mkdir dir="${dist.dir}/libexec"/>
     <mkdir dir="${dist.dir}/sbin"/>
     <mkdir dir="${dist.dir}/share/${name}/templates/conf"/>
 
@@ -1528,8 +1512,11 @@
 	  <env key="BASE_NATIVE_LIB_DIR" value="${lib.dir}/native"/>
 	  <env key="BUILD_NATIVE_DIR" value="${build.dir}/native"/>
 	  <env key="DIST_LIB_DIR" value="${dist.dir}/lib/native"/>
-      <env key="BUNDLE_SNAPPY_LIB" value="${bundle.snappy}"/>
-      <env key="SNAPPY_LIB_DIR" value="${snappy.prefix}/lib"/>
+  	  <env key="BUNDLE_SNAPPY_LIB" value="${bundle.snappy}"/>
+  	  <env key="SNAPPY_LIB_DIR" value="${snappy.lib}"/>
+  	  <env key="BUNDLE_Z_LIB" value="${bundle.z}"/>
+  	  <env key="Z_LIB_DIR" value="${z.prefix}/lib"/>
+      <env key="PLATFORM" value="${build.platform}"/>
 	  <arg line="${native.src.dir}/packageNativeHadoop.sh"/>
     </exec>
 
@@ -1556,6 +1543,9 @@
     <copy todir="${dist.dir}/libexec">
       <fileset dir="bin">
         <include name="hadoop-config.sh"/>
+      </fileset>
+      <fileset dir="libexec">
+        <include name="jsvc*"/>
       </fileset>
     </copy>
 
@@ -1620,8 +1610,7 @@
   <!-- ================================================================== -->
   <!-- Make release tarball                                               -->
   <!-- ================================================================== -->
-  <target name="tar" depends="package" description="Make multi-platform release tarballs, both source and binary">
-    <!-- build source tarball -->
+  <target name="tar" depends="package" description="Make release tarball">
     <macro_tar param.destfile="${build.dir}/${final.name}.tar.gz">
       <param.listofitems>
         <tarfileset dir="${build.dir}" mode="664">
@@ -1643,38 +1632,15 @@
         </tarfileset>
       </param.listofitems>
     </macro_tar>
-    <!-- build multi-platform binary tarball -->
-    <macro_tar param.destfile="${build.dir}/${final.name}-bin.tar.gz">
-      <param.listofitems>
-        <tarfileset dir="${build.dir}" mode="664">
-          <exclude name="${final.name}/src/**" />
-          <exclude name="${final.name}/docs/**" />
-          <exclude name="${final.name}/bin/*" />
-          <exclude name="${final.name}/sbin/*" />
-          <exclude name="${final.name}/libexec/*" />
-          <exclude name="${final.name}/contrib/*/bin/*" />
-          <include name="${final.name}/**" />
-        </tarfileset>
-        <tarfileset dir="${build.dir}" mode="755">
-          <include name="${final.name}/bin/*" />
-          <include name="${final.name}/sbin/*" />
-          <include name="${final.name}/libexec/*" />
-          <include name="${final.name}/contrib/*/bin/*" />
-          <include name="${final.name}/src/contrib/ec2/bin/*" />
-          <include name="${final.name}/src/contrib/ec2/bin/image/*" />
-        </tarfileset>
-      </param.listofitems>
-    </macro_tar>
   </target>
 
   <target name="bin-package" depends="compile, jar, examples, tools-jar, jar-test, ant-tasks, package-librecordio" 
-		description="assembles platform-specific artifacts for binary targets">
+		description="assembles artifacts for binary target">
     <delete dir="${dist.dir}"/>
     <mkdir dir="${dist.dir}"/>
     <mkdir dir="${dist.dir}/bin"/>
     <mkdir dir="${dist.dir}/etc/hadoop"/>
     <mkdir dir="${dist.dir}/lib"/>
-    <mkdir dir="${dist.dir}/lib64"/>
     <mkdir dir="${dist.dir}/libexec"/>
     <mkdir dir="${dist.dir}/sbin"/>
     <mkdir dir="${dist.dir}/share/${name}/contrib"/>
@@ -1697,19 +1663,19 @@
       </fileset>
     </copy>
 
-    <condition property="lib.data.model" value="lib64" else="lib" >
-      <and>
-        <equals arg1="${sun.arch.data.model}" arg2="64" />
-      </and>
-    </condition>
-
     <exec dir="${dist.dir}" executable="sh" failonerror="true">
       <env key="BASE_NATIVE_LIB_DIR" value="${lib.dir}/native"/>
       <env key="BUILD_NATIVE_DIR" value="${build.dir}/native"/>
-      <env key="DIST_LIB_DIR" value="${dist.dir}/${lib.data.model}"/>
-      <env key="NATIVE_PLATFORM" value="${build.platform}" />
-      <arg line="${native.src.dir}/packageBinNativeHadoop.sh"/>
+      <env key="DIST_LIB_DIR" value="${dist.dir}/native"/>
+      <arg line="${native.src.dir}/packageNativeHadoop.sh"/>
     </exec>
+
+    <move todir="${dist.dir}/lib" flatten="true">
+      <fileset dir="${dist.dir}/native">
+        <include name="*/*"/>
+      </fileset>
+    </move>
+    <delete dir="${dist.dir}/native"/>
 
     <subant target="package">
       <!--Pass down the version in case its needed again and the target
@@ -1765,9 +1731,9 @@
       </fileset>
     </copy>
 
-    <copy todir="${dist.dir}/${lib.data.model}" includeEmptyDirs="false" flatten="true">
+    <copy todir="${dist.dir}/lib" includeEmptyDirs="false" flatten="true">
       <fileset dir="${build.dir}/c++">
-        <include name="${build.platform}/lib/*"/>
+        <include name="**/lib/*"/>
       </fileset>
     </copy>
 
@@ -1787,7 +1753,7 @@
   </target>
 
   <target name="binary-system" depends="bin-package, jar-system, jar-test-system"
-     description="make platform-specific system test package for deployment">
+     description="make system test package for deployment">
     <copy todir="${system-test-build-dir}/${final.name}">
       <fileset dir="${dist.dir}">
       </fileset>
@@ -1797,7 +1763,7 @@
     <copy todir="${system-test-build-dir}/${final.name}"
       file="${system-test-build-dir}/${test.final.name}.jar" overwrite="true"/>
     <macro_tar 
-      param.destfile="${system-test-build-dir}/${final.name}-${os-arch}-bin.tar.gz">
+      param.destfile="${system-test-build-dir}/${final.name}-bin.tar.gz">
         <param.listofitems>
           <tarfileset dir="${system-test-build-dir}" mode="664">
             <exclude name="${final.name}/bin/*" />
@@ -1812,8 +1778,8 @@
       </macro_tar>
   </target>
   
-  <target name="binary" depends="bin-package" description="Make platform-specific binary tarball without source and documentation">
-    <macro_tar param.destfile="${build.dir}/${final.name}-${os-arch}-bin.tar.gz">
+  <target name="binary" depends="bin-package" description="Make tarball without source and documentation">
+    <macro_tar param.destfile="${build.dir}/${final.name}-bin.tar.gz">
       <param.listofitems>
         <tarfileset dir="${build.dir}" mode="664">
           <exclude name="${final.name}/bin/*" />
@@ -1843,14 +1809,13 @@
     </macro_tar>
     <copy todir="${package.buildroot}/SOURCES">
       <fileset dir="${build.dir}">
-        <include name="${final.name}-${os-arch}-bin.tar.gz" />
+        <include name="${final.name}-bin.tar.gz" />
       </fileset>
     </copy>
     <copy file="${src.dir}/packages/rpm/spec/hadoop.spec" todir="${package.buildroot}/SPECS">
       <filterchain>
         <replacetokens>
           <token key="final.name" value="${final.name}" />
-          <token key="build.arch" value="${os-arch}" />
           <token key="version" value="${hadoop.version}" />
           <token key="package.release" value="${package.release}" />
           <token key="package.build.dir" value="${package.build.dir}" />
@@ -1873,7 +1838,7 @@
     <delete dir="${package.buildroot}" quiet="true" verbose="false"/>
   </target>
 
-  <target name="deb" depends="ant-tasks, bin-package" description="Make deb package">
+  <target name="deb" depends="ant-tasks, binary" description="Make deb package">
     <taskdef name="deb"
            classname="org.vafer.jdeb.ant.DebAntTask">
       <classpath refid="classpath" />
@@ -1958,7 +1923,7 @@
   <!-- ================================================================== -->
   <!-- Clean.  Delete the build files, and their directories              -->
   <!-- ================================================================== -->
-  <target name="clean" depends="clean-contrib, clean-sign, clean-fi" description="Clean.  Delete the build files, and their directories">
+  <target name="clean" depends="clean-contrib, clean-sign, clean-fi" description="Clean.  Delete the build files, and their directories and call mvn clean to clean native task">
     <delete dir="${build.dir}"/>
     <delete dir="${docs.src}/build"/>
     <delete dir="${src.docs.cn}/build"/>
@@ -1968,8 +1933,6 @@
     <delete file="${basedir}/ivy/hadoop-examples-pom.xml"/>
     <delete file="${basedir}/ivy/hadoop-tools-pom.xml"/>
     <delete file="${basedir}/ivy/hadoop-streaming-pom.xml"/>
-    <delete file="${basedir}/ivy/hadoop-client-pom.xml"/>
-    <delete file="${basedir}/ivy/hadoop-minicluster-pom.xml"/>
   </target>
 
   <target name="clean-sign" description="Clean.  Delete .asc files">
@@ -2279,7 +2242,6 @@
     <arg value="${findbugs.home}"/>
     <arg value="${forrest.home}"/>
     <arg value="${basedir}"/>
-    <arg value="${java5.home}"/>
   </exec>
 </target>
 
@@ -2302,7 +2264,6 @@
     <arg value="${basedir}"/>
     <arg value="${trigger.url}"/>
     <arg value="${jira.passwd}"/>
-    <arg value="${java5.home}"/>
   </exec>
 </target>
 	
@@ -2423,7 +2384,7 @@
   To avoid Ivy leaking things across big projects, always load Ivy in the same classloader.
   Also note how we skip loading Ivy if it is already there, just to make sure all is well.
   -->
-  <target name="ivy-init-antlib" depends="ivy-download,ivy-init-dirs,ivy-probe-antlib" unless="ivy.found">
+  <target name="ivy-init-antlib" depends="ivy-init-dirs,ivy-probe-antlib" unless="ivy.found">
     <typedef uri="antlib:org.apache.ivy.ant" onerror="fail"
       loaderRef="ivyLoader">
       <classpath>
@@ -2554,8 +2515,6 @@
      <artifact:pom file="${hadoop-examples.pom}" id="hadoop.examples"/>
      <artifact:pom file="${hadoop-tools.pom}" id="hadoop.tools"/>
      <artifact:pom file="${hadoop-streaming.pom}" id="hadoop.streaming"/>
-     <artifact:pom file="${hadoop-client.pom}" id="hadoop.client"/>
-     <artifact:pom file="${hadoop-minicluster.pom}" id="hadoop.minicluster"/>
 
      <artifact:install file="${hadoop-core.jar}">
         <pom refid="hadoop.core"/>
@@ -2572,12 +2531,6 @@
      <artifact:install file="${hadoop-streaming.jar}">
         <pom refid="hadoop.streaming"/>
      </artifact:install>
-     <artifact:install file="${hadoop-client.jar}">
-        <pom refid="hadoop.client"/>
-     </artifact:install>
-     <artifact:install file="${hadoop-minicluster.jar}">
-        <pom refid="hadoop.minicluster"/>
-     </artifact:install>
   </target>
 
   <target name="mvn-deploy" depends="mvn-taskdef, bin-package, set-version, signanddeploy, simpledeploy"
@@ -2589,8 +2542,6 @@
      <artifact:pom file="${hadoop-examples.pom}" id="hadoop.examples"/>
      <artifact:pom file="${hadoop-tools.pom}" id="hadoop.tools"/>
      <artifact:pom file="${hadoop-streaming.pom}" id="hadoop.streaming"/>
-     <artifact:pom file="${hadoop-client.pom}" id="hadoop.client"/>
-     <artifact:pom file="${hadoop-minicluster.pom}" id="hadoop.minicluster"/>
      <artifact:install-provider artifactId="wagon-http"
        version="${wagon-http.version}"/>
      <artifact:deploy file="${hadoop-core.jar}">
@@ -2622,18 +2573,6 @@
          <pom refid="hadoop.streaming"/>
          <attach file="${hadoop-streaming.jar}.asc" type="jar.asc"/>
          <attach file="${hadoop-streaming.pom}.asc" type="pom.asc"/>
-     </artifact:deploy>
-     <artifact:deploy file="${hadoop-client.jar}">
-         <remoteRepository id="apache.staging.https" url="${asfstagingrepo}"/>
-         <pom refid="hadoop.client"/>
-         <attach file="${hadoop-client.jar}.asc" type="jar.asc"/>
-         <attach file="${hadoop-client.pom}.asc" type="pom.asc"/>
-     </artifact:deploy>
-     <artifact:deploy file="${hadoop-minicluster.jar}">
-         <remoteRepository id="apache.minicluster.https" url="${asfstagingrepo}"/>
-         <pom refid="hadoop.minicluster"/>
-         <attach file="${hadoop-minicluster.jar}.asc" type="jar.asc"/>
-         <attach file="${hadoop-minicluster.pom}.asc" type="pom.asc"/>
      </artifact:deploy>
   </target>
 
@@ -2668,10 +2607,6 @@
      output.file="${hadoop-examples.jar}.asc" gpg.passphrase="${gpg.passphrase}"/>
     <sign-artifact input.file="${hadoop-streaming.jar}" 
      output.file="${hadoop-streaming.jar}.asc" gpg.passphrase="${gpg.passphrase}"/>
-    <sign-artifact input.file="${hadoop-client.jar}" 
-     output.file="${hadoop-client.jar}.asc" gpg.passphrase="${gpg.passphrase}"/>
-    <sign-artifact input.file="${hadoop-minicluster.jar}" 
-     output.file="${hadoop-minicluster.jar}.asc" gpg.passphrase="${gpg.passphrase}"/>
     <sign-artifact input.file="${hadoop-core.pom}" 
      output.file="${hadoop-core.pom}.asc" gpg.passphrase="${gpg.passphrase}"/>
     <sign-artifact input.file="${hadoop-test.pom}" 
@@ -2682,10 +2617,6 @@
      output.file="${hadoop-examples.pom}.asc" gpg.passphrase="${gpg.passphrase}"/>
     <sign-artifact input.file="${hadoop-streaming.pom}" 
      output.file="${hadoop-streaming.pom}.asc" gpg.passphrase="${gpg.passphrase}"/>
-    <sign-artifact input.file="${hadoop-client.pom}"
-     output.file="${hadoop-client.pom}.asc" gpg.passphrase="${gpg.passphrase}"/>
-    <sign-artifact input.file="${hadoop-minicluster.pom}"
-     output.file="${hadoop-minicluster.pom}.asc" gpg.passphrase="${gpg.passphrase}"/>
   </target>
 
   <target name="simpledeploy" unless="staging">
@@ -2694,8 +2625,6 @@
      <artifact:pom file="${hadoop-examples.pom}" id="hadoop.examples"/>
      <artifact:pom file="${hadoop-tools.pom}" id="hadoop.tools"/>
      <artifact:pom file="${hadoop-streaming.pom}" id="hadoop.streaming"/>
-     <artifact:pom file="${hadoop-client.pom}" id="hadoop.client"/>
-     <artifact:pom file="${hadoop-minicluster.pom}" id="hadoop.minicluster"/>
 
      <artifact:install-provider artifactId="wagon-http" version="${wagon-http.version}"/>
      <artifact:deploy file="${hadoop-core.jar}">
@@ -2718,31 +2647,20 @@
          <remoteRepository id="apache.snapshots.https" url="${asfsnapshotrepo}"/>
          <pom refid="hadoop.streaming"/>
      </artifact:deploy>
-     <artifact:deploy file="${hadoop-client.jar}">
-         <remoteRepository id="apache.snapshots.https" url="${asfsnapshotrepo}"/>
-         <pom refid="hadoop.client"/>
-     </artifact:deploy>
-     <artifact:deploy file="${hadoop-minicluster.jar}">
-         <remoteRepository id="apache.snapshots.https" url="${asfsnapshotrepo}"/>
-         <pom refid="hadoop.minicluster"/>
-     </artifact:deploy>
   </target>
 
+ 
   <target name="set-version">
     <delete file="${hadoop-core.pom}"/>
     <delete file="${hadoop-test.pom}"/>
     <delete file="${hadoop-examples.pom}"/>
     <delete file="${hadoop-tools.pom}"/>
     <delete file="${hadoop-streaming.pom}"/>
-    <delete file="${hadoop-client.pom}"/>
-    <delete file="${hadoop-minicluster.pom}"/>
     <copy file="${hadoop-core-pom-template.xml}" tofile="${hadoop-core.pom}"/>
     <copy file="${hadoop-test-pom-template.xml}" tofile="${hadoop-test.pom}"/>
     <copy file="${hadoop-examples-pom-template.xml}" tofile="${hadoop-examples.pom}"/>
     <copy file="${hadoop-tools-pom-template.xml}" tofile="${hadoop-tools.pom}"/>
     <copy file="${hadoop-streaming-pom-template.xml}" tofile="${hadoop-streaming.pom}"/>
-    <copy file="${hadoop-client-pom-template.xml}" tofile="${hadoop-client.pom}"/>
-    <copy file="${hadoop-minicluster-pom-template.xml}" tofile="${hadoop-minicluster.pom}"/>
     <replaceregexp byline="true">
       <regexp pattern="@version"/>
       <substitution expression="${version}"/>
@@ -2752,8 +2670,6 @@
         <include name="hadoop-tools-pom.xml"/>
         <include name="hadoop-examples-pom.xml"/>
         <include name="hadoop-streaming-pom.xml"/>
-        <include name="hadoop-client-pom.xml"/>
-        <include name="hadoop-minicluster-pom.xml"/>
       </fileset>
     </replaceregexp>
   </target>
@@ -2794,12 +2710,14 @@
   <!-- end of task-controller targets -->
 
   <target name="jsvc" >
+  <!--
     <mkdir dir="${jsvc.build.dir}" />
     <get src="${jsvc.location}" dest="${jsvc.build.dir}/${jsvc.dest.name}" />
 
     <untar compression="gzip" src="${jsvc.build.dir}/${jsvc.dest.name}" dest="${jsvc.build.dir}" />
 
     <copy file="${jsvc.build.dir}/jsvc" toFile="${jsvc.install.dir}/jsvc.${os.arch}" verbose="true" />
+ -->
     <chmod perm="ugo+x" type="file">
       <fileset file="${jsvc.install.dir}/jsvc.${os.arch}"/>
     </chmod>
