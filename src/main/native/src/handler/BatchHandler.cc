@@ -16,6 +16,9 @@
  * limitations under the License.
  */
 
+#ifndef QUICK_BUILD
+#include "org_apache_hadoop_mapred_nativetask_NativeBatchProcessor.h"
+#endif
 #include "commons.h"
 #include "jni_md.h"
 #include "jniutils.h"
