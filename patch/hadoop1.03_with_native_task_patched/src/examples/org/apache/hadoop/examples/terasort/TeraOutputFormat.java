@@ -30,6 +30,11 @@ import org.apache.hadoop.mapred.RecordWriter;
 import org.apache.hadoop.mapred.TextOutputFormat;
 import org.apache.hadoop.util.Progressable;
 
+
+import org.apache.hadoop.io.compress.CompressionCodec;
+import org.apache.hadoop.io.compress.SnappyCodec;
+import org.apache.hadoop.util.*;
+
 /**
  * A streamlined text output format that writes key, value, and "\r\n".
  */
@@ -80,9 +85,30 @@ public class TeraOutputFormat extends TextOutputFormat<Text,Text> {
                                                  String name,
                                                  Progressable progress
                                                  ) throws IOException {
-    Path dir = getWorkOutputPath(job);
-    FileSystem fs = dir.getFileSystem(job);
-    FSDataOutputStream fileOut = fs.create(new Path(dir, name), progress);
-    return new TeraRecordWriter(fileOut, job);
+       // Path dir = getWorkOutputPath(job);
+   // FileSystem fs = dir.getFileSystem(job);
+   // FSDataOutputStream fileOut = fs.create(new Path(dir, name), progress);
+   // return new TeraRecordWriter(fileOut, job);
+
+    boolean isCompressed = getCompressOutput(job);
+    if (!isCompressed)
+    {
+      Path dir = getWorkOutputPath(job);
+      FileSystem fs = dir.getFileSystem(job);
+      FSDataOutputStream fileOut = fs.create(new Path(dir, name),  progress);
+      return new TeraRecordWriter(fileOut, job);
+    }
+    else
+    {
+      Class<? extends CompressionCodec> codecClass =
+        getOutputCompressorClass(job, SnappyCodec.class);
+      // create the named codec
+      CompressionCodec codec = ReflectionUtils.newInstance(codecClass, job);
+      // build the filename including the extension
+      Path file = getWorkOutputPath(job);
+      FileSystem fs = file.getFileSystem(job);
+      FSDataOutputStream fileOut = fs.create(new Path(file, name+".snappy"), progress);
+      return new TeraRecordWriter(new DataOutputStream(codec.createOutputStream(fileOut)), job);
+    }
   }
 }

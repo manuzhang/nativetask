@@ -29,10 +29,12 @@ import static org.apache.hadoop.mapred.Task.Counter.MAP_OUTPUT_RECORDS;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.DataOutputStream;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
+import java.nio.IntBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.locks.Condition;
@@ -41,6 +43,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.filecache.TaskDistributedCacheManager;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
@@ -56,6 +59,7 @@ import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.SequenceFile.CompressionType;
 import org.apache.hadoop.io.compress.CompressionCodec;
 import org.apache.hadoop.io.compress.DefaultCodec;
+import org.apache.hadoop.io.crypto.CryptoCodec;
 import org.apache.hadoop.io.serializer.Deserializer;
 import org.apache.hadoop.io.serializer.SerializationFactory;
 import org.apache.hadoop.io.serializer.Serializer;
@@ -63,12 +67,14 @@ import org.apache.hadoop.mapred.IFile.Writer;
 import org.apache.hadoop.mapred.Merger.Segment;
 import org.apache.hadoop.mapred.SortedRanges.SkipRangeIterator;
 import org.apache.hadoop.mapred.FileInputFormat;
+import org.apache.hadoop.mapreduce.cryptocontext.CryptoContextHelper;
 import org.apache.hadoop.mapreduce.split.JobSplit;
 import org.apache.hadoop.mapreduce.split.JobSplit.SplitMetaInfo;
 import org.apache.hadoop.mapreduce.split.JobSplit.TaskSplitIndex;
 import org.apache.hadoop.mapreduce.split.JobSplit.TaskSplitMetaInfo;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.security.UserGroupInformation;
+import org.apache.hadoop.util.IndexedCountingSortable;
 import org.apache.hadoop.util.IndexedSortable;
 import org.apache.hadoop.util.IndexedSorter;
 import org.apache.hadoop.util.Progress;
@@ -366,6 +372,18 @@ class MapTask extends Task {
       return;
     }
 
+    if (TaskDelegation.canDelegateMapTask(job)) {
+      TaskDelegation.delegateMapTask(
+          this,
+          job,
+          umbilical,
+          reporter,
+          getSplitDetails(
+              new Path(splitMetaInfo.getSplitLocation()),
+                       splitMetaInfo.getStartOffset()));
+      done(umbilical, reporter);
+      return;
+    }
     if (useNewApi) {
       runNewMapper(job, splitMetaInfo, umbilical, reporter);
     } else {
@@ -419,13 +437,14 @@ class MapTask extends Task {
         new SkippingRecordReader<INKEY,INVALUE>(inputSplit, umbilical, reporter) :
         new TrackedRecordReader<INKEY,INVALUE>(inputSplit, job, reporter);
     job.setBoolean("mapred.skip.on", isSkipping());
-
-
+    
     int numReduceTasks = conf.getNumReduceTasks();
     LOG.info("numReduceTasks: " + numReduceTasks);
     MapOutputCollector collector = null;
     if (numReduceTasks > 0) {
-      collector = new MapOutputBuffer(umbilical, job, reporter);
+      collector = TaskDelegation.tryGetDelegateMapOutputCollector(job, getTaskID(), mapOutputFile);
+      if (collector == null)
+        collector = new MapOutputBuffer(umbilical, job, reporter);
     } else { 
       collector = new DirectMapOutputCollector(umbilical, job, reporter);
     }
@@ -441,6 +460,30 @@ class MapTask extends Task {
       collector.close();
     }
   }
+/*
+    int numReduceTasks = conf.getNumReduceTasks();
+    LOG.info("numReduceTasks: " + numReduceTasks);
+    MapOutputCollector<OUTKEY, OUTVALUE> collector = null;
+    if (numReduceTasks > 0) {
+      collector = new MapOutputBuffer<OUTKEY, OUTVALUE>(umbilical, job, reporter);
+    } else if(job.getBoolean("map.sort.force", false)){ 
+      // run sort and combine in map-only jobs
+      collector = new DirectMapOutputBufferedCollector<OUTKEY, OUTVALUE>(umbilical, job, reporter); 
+    } else {
+      collector = new DirectMapOutputCollector<OUTKEY, OUTVALUE>(umbilical, job, reporter);  
+    }
+    MapRunnable<INKEY,INVALUE,OUTKEY,OUTVALUE> runner =
+      ReflectionUtils.newInstance(job.getMapRunnerClass(), job);
+
+    try {
+      runner.run(in, new OldOutputCollector<OUTKEY, OUTVALUE>(collector, conf), reporter);
+      collector.flush();
+    } finally {
+      //close
+      in.close();                               // close input
+      collector.close();
+    }
+  }*/
 
   /**
    * Update the job with details about the file split
@@ -528,6 +571,7 @@ class MapTask extends Task {
     public boolean nextKeyValue() throws IOException, InterruptedException {
       boolean result = false;
       try {
+        reporter.setProgress(getProgress());
         long bytesInPrev = getInputBytes(fsStats);
         result = real.nextKeyValue();
         long bytesInCurr = getInputBytes(fsStats);
@@ -536,7 +580,7 @@ class MapTask extends Task {
           inputRecordCounter.increment(1);
           fileInputByteCounter.increment(bytesInCurr - bytesInPrev);
         }
-        reporter.setProgress(getProgress());
+        
       } catch (IOException ioe) {
         if (inputSplit instanceof FileSplit) {
           FileSplit fileSplit = (FileSplit) inputSplit;
@@ -671,7 +715,8 @@ class MapTask extends Task {
                        TaskUmbilicalProtocol umbilical,
                        TaskReporter reporter
                        ) throws IOException, ClassNotFoundException {
-      collector = new MapOutputBuffer<K,V>(umbilical, job, reporter);
+      MapOutputCollector<K,V> tc = TaskDelegation.tryGetDelegateMapOutputCollector(job, getTaskID(), mapOutputFile);
+      collector = tc != null ? tc : new MapOutputBuffer<K,V>(umbilical, job, reporter);
       partitions = jobContext.getNumReduceTasks();
       if (partitions > 0) {
         partitioner = (org.apache.hadoop.mapreduce.Partitioner<K,V>)
@@ -702,6 +747,45 @@ class MapTask extends Task {
       }
       collector.close();
     }
+  }
+  
+  private class NewDirectBufferedOutputCollector<K,V>
+    extends org.apache.hadoop.mapreduce.RecordWriter<K,V> {
+      private final DirectMapOutputBufferedCollector<K,V> collector;
+      private final org.apache.hadoop.mapreduce.Partitioner<K,V> partitioner;
+      private final int partitions = 1;
+      @SuppressWarnings("unchecked")
+      NewDirectBufferedOutputCollector(org.apache.hadoop.mapreduce.JobContext jobContext,
+                         JobConf job,
+                         TaskUmbilicalProtocol umbilical,
+                         TaskReporter reporter
+                         ) throws IOException, ClassNotFoundException {
+        collector = new DirectMapOutputBufferedCollector<K,V>(umbilical, job, reporter);
+        partitioner = new org.apache.hadoop.mapreduce.Partitioner<K,V>() {
+            @Override
+            public int getPartition(K key, V value, int numPartitions) {
+              return 0;
+            }
+          };
+
+      }
+
+      @Override
+      public void write(K key, V value) throws IOException, InterruptedException {
+        collector.collect(key, value,
+                          partitioner.getPartition(key, value, partitions));
+      }
+
+      @Override
+      public void close(TaskAttemptContext context
+                        ) throws IOException,InterruptedException {
+        try {
+          collector.flush();
+        } catch (ClassNotFoundException cnf) {
+          throw new IOException("can't find class ", cnf);
+        }
+        collector.close();
+      }  
   }
 
   @SuppressWarnings("unchecked")
@@ -752,8 +836,11 @@ class MapTask extends Task {
       if (job.getNumReduceTasks() == 0) {
          output =
            new NewDirectOutputCollector(taskContext, job, umbilical, reporter);
+      } else if(job.getBoolean("map.sort.force", false)){
+         output = 
+           new NewDirectBufferedOutputCollector(taskContext, job, umbilical, reporter);  
       } else {
-        output = new NewOutputCollector(taskContext, job, umbilical, reporter);
+         output = new NewOutputCollector(taskContext, job, umbilical, reporter); 
       }
 
       mapperContext = contextConstructor.newInstance(mapper, job, getTaskID(),
@@ -852,66 +939,70 @@ class MapTask extends Task {
 
   class MapOutputBuffer<K extends Object, V extends Object> 
   implements MapOutputCollector<K, V>, IndexedSortable {
-    private final int partitions;
-    private final JobConf job;
-    private final TaskReporter reporter;
-    private final Class<K> keyClass;
-    private final Class<V> valClass;
-    private final RawComparator<K> comparator;
-    private final SerializationFactory serializationFactory;
-    private final Serializer<K> keySerializer;
-    private final Serializer<V> valSerializer;
-    private final CombinerRunner<K,V> combinerRunner;
-    private final CombineOutputCollector<K, V> combineCollector;
+    protected int partitions;
+    protected final JobConf job;
+    protected final TaskReporter reporter;
+    protected final Class<K> keyClass;
+    protected final Class<V> valClass;
+    protected final RawComparator<K> comparator;
+    protected final SerializationFactory serializationFactory;
+    protected final Serializer<K> keySerializer;
+    protected final Serializer<V> valSerializer;
+    protected final CombinerRunner<K,V> combinerRunner;
+    protected final CombineOutputCollector<K, V> combineCollector;
     
     // Compression for map-outputs
-    private CompressionCodec codec = null;
+    protected CompressionCodec codec = null;
 
     // k/v accounting
-    private volatile int kvstart = 0;  // marks beginning of spill
-    private volatile int kvend = 0;    // marks beginning of collectable
-    private int kvindex = 0;           // marks end of collected
-    private final int[] kvoffsets;     // indices into kvindices
-    private final int[] kvindices;     // partition, k/v offsets into kvbuffer
-    private volatile int bufstart = 0; // marks beginning of spill
-    private volatile int bufend = 0;   // marks beginning of collectable
-    private volatile int bufvoid = 0;  // marks the point where we should stop
+    protected volatile int kvstart = 0;  // marks beginning of spill
+    protected volatile int kvend = 0;    // marks beginning of collectable
+    protected int kvindex = 0;           // marks end of collected
+    protected final int[] kvoffsets;     // indices into kvindices
+    protected final int[] kvindices;     // partition, k/v offsets into kvbuffer
+    protected volatile int bufstart = 0; // marks beginning of spill
+    protected volatile int bufend = 0;   // marks beginning of collectable
+    protected volatile int bufvoid = 0;  // marks the point where we should stop
                                        // reading at the end of the buffer
-    private int bufindex = 0;          // marks end of collected
-    private int bufmark = 0;           // marks end of record
-    private byte[] kvbuffer;           // main output buffer
-    private static final int PARTITION = 0; // partition offset in acct
-    private static final int KEYSTART = 1;  // key offset in acct
-    private static final int VALSTART = 2;  // val offset in acct
-    private static final int ACCTSIZE = 3;  // total #fields in acct
-    private static final int RECSIZE =
+    protected int bufindex = 0;          // marks end of collected
+    protected int bufmark = 0;           // marks end of record
+    protected byte[] kvbuffer;           // main output buffer
+    protected static final int PARTITION = 0; // partition offset in acct
+    protected static final int KEYSTART = 1;  // key offset in acct
+    protected static final int VALSTART = 2;  // val offset in acct
+    protected static final int ACCTSIZE = 3;  // total #fields in acct
+    protected static final int RECSIZE =
                        (ACCTSIZE + 1) * 4;  // acct bytes per record
 
     // spill accounting
-    private volatile int numSpills = 0;
-    private volatile Throwable sortSpillException = null;
-    private final int softRecordLimit;
-    private final int softBufferLimit;
-    private final int minSpillsForCombine;
-    private final IndexedSorter sorter;
-    private final ReentrantLock spillLock = new ReentrantLock();
-    private final Condition spillDone = spillLock.newCondition();
-    private final Condition spillReady = spillLock.newCondition();
-    private final BlockingBuffer bb = new BlockingBuffer();
-    private volatile boolean spillThreadRunning = false;
-    private final SpillThread spillThread = new SpillThread();
+    protected volatile int numSpills = 0;
+    protected volatile Throwable sortSpillException = null;
+    protected final int softRecordLimit;
+    protected final int softBufferLimit;
+    protected final int minSpillsForCombine;
+    protected final IndexedSorter sorter;
+    protected final ReentrantLock spillLock = new ReentrantLock();
+    protected final Condition spillDone = spillLock.newCondition();
+    protected final Condition spillReady = spillLock.newCondition();
+    protected final BlockingBuffer bb = new BlockingBuffer();
+    protected volatile boolean spillThreadRunning = false;
+    protected final SpillThread spillThread = new SpillThread();
 
-    private final FileSystem localFs;
-    private final FileSystem rfs;
+    protected final FileSystem localFs;
+    protected final FileSystem rfs;
    
-    private final Counters.Counter mapOutputByteCounter;
-    private final Counters.Counter mapOutputRecordCounter;
-    private final Counters.Counter combineOutputCounter;
-    private final Counters.Counter fileOutputByteCounter;
+    protected final Counters.Counter mapOutputByteCounter;
+    protected final Counters.Counter mapOutputRecordCounter;
+    protected final Counters.Counter combineOutputCounter;
+    protected final Counters.Counter fileOutputByteCounter;
     
-    private ArrayList<SpillRecord> indexCacheList;
-    private int totalIndexCacheMemory;
-    private static final int INDEX_CACHE_MEMORY_LIMIT = 1024 * 1024;
+    protected ArrayList<SpillRecord> indexCacheList;
+    protected int totalIndexCacheMemory;
+    protected static final int INDEX_CACHE_MEMORY_LIMIT = 1024 * 1024;
+    
+    private final boolean avoidsort;
+    private int[] kvCounts;
+    private volatile int[] oldKvCounts;
 
     @SuppressWarnings("unchecked")
     public MapOutputBuffer(TaskUmbilicalProtocol umbilical, JobConf job,
@@ -921,7 +1012,11 @@ class MapTask extends Task {
       this.reporter = reporter;
       localFs = FileSystem.getLocal(job);
       partitions = job.getNumReduceTasks();
-       
+      this.avoidsort = job.getBoolean("mapreduce.sort.avoidance", false);
+      LOG.info("Sort avoidance is turn " + (avoidsort ? "on" : "off"));
+      kvCounts = avoidsort ? new int[partitions]:null;
+      oldKvCounts = kvCounts;
+      
       rfs = ((LocalFileSystem)localFs).getRaw();
 
       indexCacheList = new ArrayList<SpillRecord>();
@@ -929,7 +1024,7 @@ class MapTask extends Task {
       //sanity checks
       final float spillper = job.getFloat("io.sort.spill.percent",(float)0.8);
       final float recper = job.getFloat("io.sort.record.percent",(float)0.05);
-      final int sortmb = job.getInt("io.sort.mb", 100);
+      final int sortmb = job.getInt("io.sort.mb", 200);
       if (spillper > (float)1.0 || spillper < (float)0.0) {
         throw new IOException("Invalid \"io.sort.spill.percent\": " + spillper);
       }
@@ -976,6 +1071,9 @@ class MapTask extends Task {
         Class<? extends CompressionCodec> codecClass =
           job.getMapOutputCompressorClass(DefaultCodec.class);
         codec = ReflectionUtils.newInstance(codecClass, job);
+        
+        if(codec instanceof CryptoCodec)
+          CryptoContextHelper.resetMapOutputCryptoContext((CryptoCodec)codec, job, null);
       }
       // combiner
       combinerRunner = CombinerRunner.create(job, getTaskID(), 
@@ -1086,6 +1184,9 @@ class MapTask extends Task {
         kvindices[ind + KEYSTART] = keystart;
         kvindices[ind + VALSTART] = valstart;
         kvindex = kvnext;
+        if (kvCounts != null) {
+          kvCounts[partition]++;
+        }
       } catch (MapBufferTooSmallException e) {
         LOG.info("Record too large for in-memory buffer: " + e.getMessage());
         spillSingleRecord(key, value, partition);
@@ -1104,7 +1205,7 @@ class MapTask extends Task {
       final int ii = kvoffsets[i % kvoffsets.length];
       final int ij = kvoffsets[j % kvoffsets.length];
       // sort by partition
-      if (kvindices[ii + PARTITION] != kvindices[ij + PARTITION]) {
+      if (avoidsort || kvindices[ii + PARTITION] != kvindices[ij + PARTITION]) {
         return kvindices[ii + PARTITION] - kvindices[ij + PARTITION];
       }
       // sort by key
@@ -1295,6 +1396,9 @@ class MapTask extends Task {
         if (kvend != kvindex) {
           kvend = kvindex;
           bufend = bufmark;
+          if (kvCounts != null) {
+            oldKvCounts = kvCounts;
+          }
           sortAndSpill();
         }
       } catch (InterruptedException e) {
@@ -1325,7 +1429,7 @@ class MapTask extends Task {
       fileOutputByteCounter.increment(rfs.getFileStatus(outputPath).getLen());
     }
 
-    public void close() { }
+    public void close() throws IOException { }
 
     protected class SpillThread extends Thread {
 
@@ -1367,17 +1471,21 @@ class MapTask extends Task {
       }
     }
 
-    private synchronized void startSpill() {
+    protected synchronized void startSpill() {
       LOG.info("bufstart = " + bufstart + "; bufend = " + bufmark +
                "; bufvoid = " + bufvoid);
       LOG.info("kvstart = " + kvstart + "; kvend = " + kvindex +
                "; length = " + kvoffsets.length);
       kvend = kvindex;
       bufend = bufmark;
+      if (kvCounts != null) {
+        oldKvCounts = kvCounts;
+        kvCounts = new int[partitions];
+      }
       spillReady.signal();
     }
 
-    private void sortAndSpill() throws IOException, ClassNotFoundException,
+    protected void sortAndSpill() throws IOException, ClassNotFoundException,
                                        InterruptedException {
       //approximate the length of the output file to be the length of the
       //buffer + header lengths for the partitions
@@ -1396,7 +1504,11 @@ class MapTask extends Task {
         final int endPosition = (kvend > kvstart)
           ? kvend
           : kvoffsets.length + kvend;
-        sorter.sort(MapOutputBuffer.this, kvstart, endPosition, reporter);
+        if (avoidsort) {
+          sortByPartition(kvstart, endPosition);
+        } else {
+          sorter.sort(MapOutputBuffer.this, kvstart, endPosition, reporter);
+        }
         int spindex = kvstart;
         IndexRecord rec = new IndexRecord();
         InMemValBytes value = new InMemValBytes();
@@ -1469,13 +1581,34 @@ class MapTask extends Task {
         if (out != null) out.close();
       }
     }
+    
+    private void sortByPartition(final int l, final int r) {
+      IndexedCountingSortable sortable = new IndexedCountingSortable(
+          oldKvCounts, l,r) {
+        @Override
+        public int get(int i) {
+          return kvoffsets[i % kvoffsets.length];
+        }
+
+        @Override
+        public void put(int i, int v) {
+          kvoffsets[i % kvoffsets.length]= v;
+        }
+
+        @Override
+        public int getKey(int i) {
+          return kvindices[get(i) + PARTITION];
+        }
+      };
+      sortable.sort();
+    }
 
     /**
      * Handles the degenerate case where serialization fails to fit in
      * the in-memory buffer, so we must spill the record from collect
      * directly to a spill file. Consider this "losing".
      */
-    private void spillSingleRecord(final K key, final V value,
+    protected void spillSingleRecord(final K key, final V value,
                                    int partition) throws IOException {
       long size = kvbuffer.length + partitions * APPROX_HEADER_LENGTH;
       FSDataOutputStream out = null;
@@ -1538,7 +1671,7 @@ class MapTask extends Task {
      * Given an offset, populate vbytes with the associated set of
      * deserialized value bytes. Should only be called during a spill.
      */
-    private void getVBytesForOffset(int kvoff, InMemValBytes vbytes) {
+    protected void getVBytesForOffset(int kvoff, InMemValBytes vbytes) {
       final int nextindex = (kvoff / ACCTSIZE ==
                             (kvend - 1 + kvoffsets.length) % kvoffsets.length)
         ? bufend
@@ -1602,7 +1735,7 @@ class MapTask extends Task {
       public void close() { }
     }
 
-    private void mergeParts() throws IOException, InterruptedException, 
+    protected void mergeParts() throws IOException, InterruptedException, 
                                      ClassNotFoundException {
       // get the approximate size of the final output/index files
       long finalOutFileSize = 0;
@@ -1676,9 +1809,9 @@ class MapTask extends Task {
           for(int i = 0; i < numSpills; i++) {
             IndexRecord indexRecord = indexCacheList.get(i).getIndex(parts);
 
-            Segment<K,V> s =
-              new Segment<K,V>(job, rfs, filename[i], indexRecord.startOffset,
-                               indexRecord.partLength, codec, true);
+            Segment<K, V> s = new Segment<K, V>(job, rfs, filename[i],
+                                indexRecord.startOffset, indexRecord.partLength,
+                                indexRecord.rawLength, codec, true);
             segmentList.add(i, s);
 
             if (LOG.isDebugEnabled()) {
@@ -1689,26 +1822,36 @@ class MapTask extends Task {
           }
 
           //merge
-          @SuppressWarnings("unchecked")
-          RawKeyValueIterator kvIter = Merger.merge(job, rfs,
-                         keyClass, valClass, codec,
-                         segmentList, job.getInt("io.sort.factor", 100),
-                         new Path(mapId.toString()),
-                         job.getOutputKeyComparator(), reporter,
-                         null, spilledRecordsCounter);
-
-          //write merged output to disk
           long segmentStart = finalOut.getPos();
-          Writer<K, V> writer =
-              new Writer<K, V>(job, finalOut, keyClass, valClass, codec,
-                               spilledRecordsCounter);
-          if (combinerRunner == null || numSpills < minSpillsForCombine) {
-            Merger.writeFile(kvIter, writer, reporter, job);
-          } else {
-            combineCollector.setWriter(writer);
-            combinerRunner.combine(kvIter, combineCollector);
-          }
 
+          Writer<K, V> writer = null;
+          if (avoidsort) {
+            writer = new Writer<K, V>(job, finalOut, keyClass, valClass, codec,
+                spilledRecordsCounter);
+            Merger.unsortedMerge(writer, segmentList, reporter,
+                spilledRecordsCounter, job);
+          }else{
+            //merge
+            @SuppressWarnings("unchecked")
+            RawKeyValueIterator kvIter = Merger.merge(job, rfs,
+              keyClass, valClass, codec,
+              segmentList, job.getInt("io.sort.factor", 100),
+              new Path(mapId.toString()),
+              job.getOutputKeyComparator(), reporter,
+              null, spilledRecordsCounter);
+            
+            //write merged output to disk
+            writer =
+                new Writer<K, V>(job, finalOut, keyClass, valClass, codec,
+                        spilledRecordsCounter);
+            if (combinerRunner == null || numSpills < minSpillsForCombine) {
+                Merger.writeFile(kvIter, writer, reporter, job);
+            } else {
+                combineCollector.setWriter(writer);
+                combinerRunner.combine(kvIter, combineCollector);
+            }
+          }
+          
           //close
           writer.close();
 
@@ -1728,6 +1871,70 @@ class MapTask extends Task {
 
   } // MapOutputBuffer
   
+  class DirectMapOutputBufferedCollector<K extends Object, V extends Object> extends MapOutputBuffer{
+    private DirectMapOutputCollector<K, V> out =  null;
+    private K key;
+    private V value;
+    
+    public DirectMapOutputBufferedCollector(TaskUmbilicalProtocol umbilical,
+            JobConf job, TaskReporter reporter) throws IOException,
+            ClassNotFoundException {
+        super(umbilical, job, reporter);
+        // TODO Auto-generated constructor stub
+        this.partitions = 1;
+        this.out = new DirectMapOutputCollector<K, V>(umbilical, job, reporter);
+    }
+    
+    public synchronized void flush() throws IOException, ClassNotFoundException,
+    InterruptedException {
+        super.flush();
+        
+        Path local_outputfile = mapOutputFile.getOutputFile();
+        Path local_indexfile = mapOutputFile.getOutputIndexFile();
+        
+        FSDataInputStream mapOutputIn = rfs.open(local_outputfile);
+        //
+        // write the output file into HDFS
+        for (int parts = 0; parts < partitions; parts++) {
+            //read index file to find current parts
+            SpillRecord spillRec = new SpillRecord(local_indexfile, job, null);
+            IndexRecord rec = spillRec.getIndex(parts);
+            
+            //read key,value pair
+            mapOutputIn.skip(rec.startOffset);
+            IFile.Reader<K, V> reader = new IFile.Reader<K, V>(job, mapOutputIn, rec.partLength, codec, null);
+            DataInputBuffer keyIn = new DataInputBuffer();
+            DataInputBuffer valueIn = new DataInputBuffer();
+            
+            SerializationFactory serializationFactory = new SerializationFactory(job);
+            Deserializer<K> keyDeserializer = serializationFactory.getDeserializer(keyClass);
+            Deserializer<V> valDeserializer = serializationFactory.getDeserializer(valClass);
+
+            while(reader.next(keyIn, valueIn)){
+                keyDeserializer.open(keyIn);
+                valDeserializer.open(valueIn);
+                key = keyDeserializer.deserialize(key);
+                value = valDeserializer.deserialize(value);
+                //collect out
+                this.out.collect(key, value, parts);
+            }
+            
+        }
+        
+        this.out.flush();
+        
+        //cleanup the local file
+        rfs.delete(local_outputfile, true);
+        rfs.delete(local_indexfile,true); 
+    }
+    
+    public void close() throws IOException{ 
+        this.out.close();
+        super.close();
+    }
+    
+     
+  }
   /**
    * Exception indicating that the allocated sort buffer is insufficient
    * to hold the current record.

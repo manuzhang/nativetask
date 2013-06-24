@@ -1,0 +1,262 @@
+diff --git a/src/core/org/apache/hadoop/io/Text.java b/src/core/org/apache/hadoop/io/Text.java
+index 19faa87..a058d22 100644
+--- a/src/core/org/apache/hadoop/io/Text.java
++++ b/src/core/org/apache/hadoop/io/Text.java
+@@ -21,6 +21,7 @@ package org.apache.hadoop.io;
+ import java.io.IOException;
+ import java.io.DataInput;
+ import java.io.DataOutput;
++import java.io.InputStream;
+ import java.nio.ByteBuffer;
+ import java.nio.CharBuffer;
+ import java.nio.charset.CharacterCodingException;
+@@ -219,6 +220,30 @@ public class Text extends BinaryComparable
+   }
+ 
+   /**
++   * Append some bytes from inputstream to the end of the given text
++   * @param stream bytes source stream
++   * @param len the number of bytes to append
++   * @throws IOException
++   */
++  public void append(InputStream stream, int len) throws IOException {
++    setCapacity(length+len,  true);
++    stream.read(bytes, length, len);
++    length += len;
++  }
++
++  /**
++   * Append some bytes from ByteBuffer to the end of the given text
++   * @param buffer source ByteBuffer
++   * @param len the number of bytes to append
++   * @throws IOException
++   */
++  public void append(ByteBuffer buffer, int len) throws IOException {
++    setCapacity(length+len,  true);
++    buffer.get(bytes, length, len);
++    length += len;
++  }
++
++  /**
+    * Clear the string to empty.
+    */
+   public void clear() {
+diff --git a/src/mapred/org/apache/hadoop/mapred/MapTask.java b/src/mapred/org/apache/hadoop/mapred/MapTask.java
+index 8a469ac..727f84c 100644
+--- a/src/mapred/org/apache/hadoop/mapred/MapTask.java
++++ b/src/mapred/org/apache/hadoop/mapred/MapTask.java
+@@ -41,6 +41,7 @@ import java.util.concurrent.locks.ReentrantLock;
+ import org.apache.commons.logging.Log;
+ import org.apache.commons.logging.LogFactory;
+ import org.apache.hadoop.conf.Configuration;
++import org.apache.hadoop.filecache.TaskDistributedCacheManager;
+ import org.apache.hadoop.fs.FSDataInputStream;
+ import org.apache.hadoop.fs.FSDataOutputStream;
+ import org.apache.hadoop.fs.FileSystem;
+@@ -366,6 +367,18 @@ class MapTask extends Task {
+       return;
+     }
+ 
++    if (TaskDelegation.canDelegateMapTask(job)) {
++      TaskDelegation.delegateMapTask(
++          this,
++          job,
++          umbilical,
++          reporter,
++          getSplitDetails(
++              new Path(splitMetaInfo.getSplitLocation()),
++                       splitMetaInfo.getStartOffset()));
++      done(umbilical, reporter);
++      return;
++    }
+     if (useNewApi) {
+       runNewMapper(job, splitMetaInfo, umbilical, reporter);
+     } else {
+@@ -425,7 +438,9 @@ class MapTask extends Task {
+     LOG.info("numReduceTasks: " + numReduceTasks);
+     MapOutputCollector collector = null;
+     if (numReduceTasks > 0) {
+-      collector = new MapOutputBuffer(umbilical, job, reporter);
++      collector = TaskDelegation.tryGetDelegateMapOutputCollector(job, getTaskID(), mapOutputFile);
++      if (collector == null)
++        collector = new MapOutputBuffer(umbilical, job, reporter);
+     } else { 
+       collector = new DirectMapOutputCollector(umbilical, job, reporter);
+     }
+@@ -671,7 +686,8 @@ class MapTask extends Task {
+                        TaskUmbilicalProtocol umbilical,
+                        TaskReporter reporter
+                        ) throws IOException, ClassNotFoundException {
+-      collector = new MapOutputBuffer<K,V>(umbilical, job, reporter);
++      MapOutputCollector<K,V> tc = TaskDelegation.tryGetDelegateMapOutputCollector(job, getTaskID(), mapOutputFile);
++      collector = tc != null ? tc : new MapOutputBuffer<K,V>(umbilical, job, reporter);
+       partitions = jobContext.getNumReduceTasks();
+       if (partitions > 0) {
+         partitioner = (org.apache.hadoop.mapreduce.Partitioner<K,V>)
+diff --git a/src/mapred/org/apache/hadoop/mapred/ReduceTask.java b/src/mapred/org/apache/hadoop/mapred/ReduceTask.java
+index 980b988..e6182bc 100644
+--- a/src/mapred/org/apache/hadoop/mapred/ReduceTask.java
++++ b/src/mapred/org/apache/hadoop/mapred/ReduceTask.java
+@@ -413,6 +413,11 @@ class ReduceTask extends Task {
+     Class valueClass = job.getMapOutputValueClass();
+     RawComparator comparator = job.getOutputValueGroupingComparator();
+ 
++    if (TaskDelegation.catDelegateReduceTask(job)) {
++      TaskDelegation.delegateReduceTask(this, job, umbilical, reporter, rIter);
++      done(umbilical, reporter);
++      return;
++    }
+     if (useNewApi) {
+       runNewReducer(job, umbilical, reporter, rIter, comparator, 
+                     keyClass, valueClass);
+diff --git a/src/mapred/org/apache/hadoop/mapred/TaskDelegation.java b/src/mapred/org/apache/hadoop/mapred/TaskDelegation.java
+new file mode 100644
+index 0000000..e3c8e87
+--- /dev/null
++++ b/src/mapred/org/apache/hadoop/mapred/TaskDelegation.java
+@@ -0,0 +1,145 @@
++/**
++ * Licensed to the Apache Software Foundation (ASF) under one
++ * or more contributor license agreements.  See the NOTICE file
++ * distributed with this work for additional information
++ * regarding copyright ownership.  The ASF licenses this file
++ * to you under the Apache License, Version 2.0 (the
++ * "License"); you may not use this file except in compliance
++ * with the License.  You may obtain a copy of the License at
++ *
++ *     http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++
++package org.apache.hadoop.mapred;
++
++import java.io.IOException;
++import java.lang.reflect.Constructor;
++import java.lang.reflect.Method;
++
++import org.apache.hadoop.mapred.Counters.Counter;
++import org.apache.hadoop.mapred.Task.TaskReporter;
++import org.apache.hadoop.util.ReflectionUtils;
++
++public class TaskDelegation {
++  /**
++   * Add setProgress interface, cause Reporter don't have this,
++   * and TaskReporter is protected
++   */
++  public static class DelegateReporter implements Reporter {
++    private TaskReporter reporter;
++    public DelegateReporter(TaskReporter reporter) {
++      this.reporter = reporter;
++    }
++    @Override
++    public void setStatus(String status) {
++      reporter.setStatus(status);
++    }
++    @Override
++    public void progress() {
++      reporter.progress();
++    }
++    @Override
++    public InputSplit getInputSplit() throws UnsupportedOperationException {
++      return reporter.getInputSplit();
++    }
++    @Override
++    public Counter getCounter(Enum<?> name) {
++      return reporter.getCounter(name);
++    }
++    @Override
++    public Counter getCounter(String group, String name) {
++      return reporter.getCounter(group, name);
++    }
++    @Override
++    public void incrCounter(Enum<?> key, long amount) {
++      reporter.incrCounter(key, amount);
++    }
++    @Override
++    public void incrCounter(String group, String counter, long amount) {
++      reporter.incrCounter(group, counter, amount);
++    }
++    public void setProgress(float progress) {
++      reporter.setProgress(progress);
++    }
++  }
++  
++  public static interface MapTaskDelegator {
++    public void run(TaskAttemptID taskID, JobConf job,
++        TaskUmbilicalProtocol umbilical, DelegateReporter reporter, Object split)
++        throws IOException, InterruptedException;
++  }
++
++  public static boolean canDelegateMapTask(JobConf job) {
++    return job.get("mapreduce.map.task.delegator.class", null) != null;
++  }
++
++  @SuppressWarnings("unchecked")
++  public static void delegateMapTask(MapTask mapTask, JobConf job,
++      TaskUmbilicalProtocol umbilical, TaskReporter reporter,
++      Object split)
++      throws IOException, InterruptedException {
++    Class<? extends MapTaskDelegator> delegatorClass = (Class<? extends MapTaskDelegator>) 
++        job.getClass("mapreduce.map.task.delegator.class", null);
++    MapTaskDelegator delegator = ReflectionUtils.newInstance(delegatorClass, job);
++    delegator.run(mapTask.getTaskID(), job, umbilical, new DelegateReporter(
++        reporter), split);
++  }
++
++  public static interface ReduceTaskDelegator {
++    public void run(TaskAttemptID taskID, JobConf job,
++        TaskUmbilicalProtocol umbilical, DelegateReporter reporter,
++        RawKeyValueIterator rIter) 
++        throws IOException, InterruptedException;
++  }
++
++  public static boolean catDelegateReduceTask(JobConf job) {
++    return job.get("mapreduce.reduce.task.delegator.class", null) != null;
++  }
++
++  @SuppressWarnings("unchecked")
++  public static void delegateReduceTask(ReduceTask reduceTask, JobConf job,
++      TaskUmbilicalProtocol umbilical, TaskReporter reporter,
++      RawKeyValueIterator rIter) throws IOException, ClassNotFoundException,
++      InterruptedException {
++    Class<? extends ReduceTaskDelegator> delegatorClass = 
++        (Class<? extends ReduceTaskDelegator>)job.getClass(
++            "mapreduce.reduce.task.delegator.class", null);
++    ReduceTaskDelegator delegator = ReflectionUtils
++        .newInstance(delegatorClass, job);
++    delegator.run(reduceTask.getTaskID(), job, umbilical, new DelegateReporter(
++        reporter), rIter);
++  }
++
++  public interface MapOutputCollectorDelegator<K, V> extends
++      MapTask.MapOutputCollector<K, V> {
++  }
++
++  @SuppressWarnings("unchecked")
++  public static <K, V> MapTask.MapOutputCollector<K, V> 
++      tryGetDelegateMapOutputCollector(JobConf job, TaskAttemptID taskId,
++          MapOutputFile mapOutputFile) {
++    try {
++      Class<?> cls = Class.forName(
++          "org.apache.hadoop.mapred.NativeMapOutputCollector");
++      Method canEnbaleMthd = cls.getMethod("canEnable", JobConf.class);
++      Boolean can = (Boolean)canEnbaleMthd.invoke(null, job);
++      if (can) {
++        Constructor<?> cons = cls.getConstructor(JobConf.class,
++            TaskAttemptID.class, MapOutputFile.class);
++        MapTask.MapOutputCollector<K, V> moc = 
++            (MapTask.MapOutputCollector<K, V>) cons.newInstance(
++                job, taskId, mapOutputFile);
++        return moc;
++      }
++      return null;
++    } catch (Exception e) {
++      return null;
++    }
++  }
++}

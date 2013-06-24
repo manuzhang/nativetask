@@ -1,0 +1,29 @@
+TODOs:
+
+extract LineReader from LineRecordReader
+add example 
+
+input progress
+Counters
+job submitter
+Terasort TotalOrderPartitioner
+add google sparse hash
+add test for partition bucket combiner
+support parallel sort & compression
+SequenceFile reader
+
+reimpl simple_memcpy & fmemcmp & fmemequ
+mvn package
+add synchronize to important methods
+use inline functor rather than function in merge
+Java input/output stream
+iobuffer refactor to use input/output stream
+compress refactor
+compress support zlib
+record reader/writer interface
+include file api
+
+
+
+  
+

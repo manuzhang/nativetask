@@ -19,6 +19,41 @@
 
 <project name="hadoopcontrib" default="compile" basedir=".">
   
+  <property name="maven.cmd" value="mvn"/>	
+  <property name="nativetask.dir" value="${basedir}/nativetask"/>	
+  <property name="nativetask.dir.lib" value="${nativetask.dir}/target/native/.libs"/>
+  <property name="hadoop.root" location="${root}/../../../"/>
+  <property name="build.nativetask.lib" value="${hadoop.root}/build/native/${os.name}-${os.arch}-${sun.arch.data.model}/lib"/>  
+   
+  <target name="compile-nativetask" description="call maven to compile native task">
+    <echo>
+     call maven to build native task
+    </echo>
+    <exec dir="${nativetask.dir}" executable="${maven.cmd}">
+        <arg line="clean compile" />
+    </exec>	
+    <echo>
+     copy nativetask lib to build/native/$(os.name)-$(os.arch)-${sun.arch.data.model}/lib
+    </echo>
+    <copy todir="${build.nativetask.lib}">
+      <fileset dir="${nativetask.dir.lib}" >
+        <exclude name="**/*.o"/>
+        <exclude name="**/*.a"/>
+        <exclude name="**/*.la"/>
+      </fileset>
+    </copy>
+  </target>
+  
+  <target name="clean-nativetask"  description="call mvn clean to clean native task">
+    <echo>
+     call maven to remove native task
+    </echo>
+    <exec dir="${nativetask.dir}" executable="${maven.cmd}">
+      <arg line="clean" />
+    </exec>
+  </target>
+  
+  
   <!-- In case one of the contrib subdirectories -->
   <!-- fails the build or test targets and you cannot fix it: -->
   <!-- Then add to fileset: excludes="badcontrib/build.xml" -->
@@ -55,6 +90,7 @@
       <fileset dir="." includes="fairscheduler/build.xml"/>
       <fileset dir="." includes="capacity-scheduler/build.xml"/>
       <fileset dir="." includes="gridmix/build.xml"/>
+      <fileset dir="." includes="mrunit/build.xml"/>
     </subant>
      <available file="${build.contrib.dir}/testsfailed" property="testsfailed"/>
      <fail if="testsfailed">Tests failed!</fail>
