@@ -71,7 +71,6 @@ import org.apache.hadoop.io.compress.CodecPool;
 import org.apache.hadoop.io.compress.CompressionCodec;
 import org.apache.hadoop.io.compress.Decompressor;
 import org.apache.hadoop.io.compress.DefaultCodec;
-import org.apache.hadoop.io.crypto.CryptoCodec;
 import org.apache.hadoop.mapred.IFile.*;
 import org.apache.hadoop.mapred.Merger.Segment;
 import org.apache.hadoop.mapred.SortedRanges.SkipRangeIterator;
@@ -84,7 +83,6 @@ import org.apache.hadoop.util.ReflectionUtils;
 import org.apache.hadoop.util.StringUtils;
 
 import org.apache.hadoop.mapred.FileOutputFormat;
-import org.apache.hadoop.mapreduce.cryptocontext.CryptoContextHelper;
 import org.apache.hadoop.mapreduce.security.SecureShuffleUtils;
 import org.apache.hadoop.metrics2.MetricsException;
 import org.apache.hadoop.metrics2.MetricsRecordBuilder;
@@ -153,7 +151,6 @@ class ReduceTask extends Task {
   // A sorted set for keeping a set of map output files on disk
   private final SortedSet<FileStatus> mapOutputFilesOnDisk = 
     new TreeSet<FileStatus>(mapOutputFileComparator);
-  private boolean avoidsort;
 
   public ReduceTask() {
     super();
@@ -170,12 +167,7 @@ class ReduceTask extends Task {
     if (conf.getCompressMapOutput()) {
       Class<? extends CompressionCodec> codecClass =
         conf.getMapOutputCompressorClass(DefaultCodec.class);
-      CompressionCodec codec = ReflectionUtils.newInstance(codecClass, conf);
-      
-      if(codec instanceof CryptoCodec)
-        CryptoContextHelper.resetReduceInputCryptoContext((CryptoCodec)codec, conf, null);
-      
-      return codec;
+      return ReflectionUtils.newInstance(codecClass, conf);
     } 
 
     return null;
@@ -388,44 +380,14 @@ class ReduceTask extends Task {
     codec = initCodec();
 
     boolean isLocal = "local".equals(job.get("mapred.job.tracker", "local"));
-    this.avoidsort = job.getBoolean("mapreduce.sort.avoidance", false);
-    LOG.info("Sort avoidance is turned " + (avoidsort ? "on" : "off"));
-    reduceCopier = new ReduceCopier(umbilical, job, reporter);
     if (!isLocal) {
-      if(!avoidsort){
-        if (!reduceCopier.fetchOutputs()) {
-          if(reduceCopier.mergeThrowable instanceof FSError) {
-            throw (FSError)reduceCopier.mergeThrowable;
-          }
-          throw new IOException("Task: " + getTaskID() + 
-              " - The reduce copier failed", reduceCopier.mergeThrowable);
+      reduceCopier = new ReduceCopier(umbilical, job, reporter);
+      if (!reduceCopier.fetchOutputs()) {
+        if(reduceCopier.mergeThrowable instanceof FSError) {
+          throw (FSError)reduceCopier.mergeThrowable;
         }
-      }else{
-        Thread shuffleThread = new Thread(new Runnable() {
-          @Override
-          public void run() {
-            try {
-              if (!reduceCopier.fetchOutputs()) {
-                if(reduceCopier.mergeThrowable instanceof FSError) {
-                  throw (FSError)reduceCopier.mergeThrowable;
-                }
-                throw new IOException("Task: " + getTaskID() + 
-                    " - The reduce copier failed", reduceCopier.mergeThrowable);
-              }
-              LOG.info("Thread reduce copier finished ");
-            } catch (IOException e) {
-              String logMsg = "Task " + getTaskID() + " failed : " 
-                  + StringUtils.stringifyException(e);
-              reportFatalError(getTaskID(), e, logMsg);
-            } catch (FSError e) {
-              String logMsg = "Task " + getTaskID() + " failed : " 
-                  + StringUtils.stringifyException(e);
-              reportFatalError(getTaskID(), e, logMsg);
-            }
-          }
-        });
-        shuffleThread.setName("Shuffle thread");
-        shuffleThread.start();
+        throw new IOException("Task: " + getTaskID() + 
+            " - The reduce copier failed", reduceCopier.mergeThrowable);
       }
     }
     copyPhase.complete();                         // copy is already complete
@@ -433,38 +395,31 @@ class ReduceTask extends Task {
     statusUpdate(umbilical);
 
     final FileSystem rfs = FileSystem.getLocal(job).getRaw();
-    RawKeyValueIterator rIter=null;
-    if(isLocal){
-      rIter=Merger.merge(job, rfs, job.getMapOutputKeyClass(),
+    RawKeyValueIterator rIter = isLocal
+      ? Merger.merge(job, rfs, job.getMapOutputKeyClass(),
           job.getMapOutputValueClass(), codec, getMapFiles(rfs, true),
           !conf.getKeepFailedTaskFiles(), job.getInt("io.sort.factor", 100),
           new Path(getTaskID().toString()), job.getOutputKeyComparator(),
-          reporter, spilledRecordsCounter, null);
-    }else{
-      if(!avoidsort){
-        rIter=reduceCopier.createKVIterator(job, rfs, reporter);
-      }else{
-        rIter = reduceCopier.getUnsortedKVIterator(job, rfs, reporter);
-      }
-    }
-    
-    if(!this.avoidsort){
+          reporter, spilledRecordsCounter, null)
+      : reduceCopier.createKVIterator(job, rfs, reporter);
+        
     // free up the data structures
-      mapOutputFilesOnDisk.clear();
-    }
+    mapOutputFilesOnDisk.clear();
+    
     sortPhase.complete();                         // sort is complete
     setPhase(TaskStatus.Phase.REDUCE); 
     statusUpdate(umbilical);
     Class keyClass = job.getMapOutputKeyClass();
     Class valueClass = job.getMapOutputValueClass();
-    RawComparator comparator = avoidsort ? null:job.getOutputValueGroupingComparator();
+    RawComparator comparator = job.getOutputValueGroupingComparator();
+
     
     if (TaskDelegation.catDelegateReduceTask(job)) {
       TaskDelegation.delegateReduceTask(this, job, umbilical, reporter, rIter);
       done(umbilical, reporter);
       return;
     }
-
+    
     if (useNewApi) {
       runNewReducer(job, umbilical, reporter, rIter, comparator, 
                     keyClass, valueClass);
@@ -560,11 +515,11 @@ class ReduceTask extends Task {
       
       ReduceValuesIterator<INKEY,INVALUE> values = isSkipping() ? 
           new SkippingReduceValuesIterator<INKEY,INVALUE>(rIter, 
-              avoidsort ? null : comparator, keyClass, valueClass, 
+              comparator, keyClass, valueClass, 
               job, reporter, umbilical) :
           new ReduceValuesIterator<INKEY,INVALUE>(rIter, 
-          avoidsort ? null : job.getOutputValueGroupingComparator(), keyClass, valueClass, 
-              job, reporter);
+          job.getOutputValueGroupingComparator(), keyClass, valueClass, 
+          job, reporter);
       values.informReduceProgress();
       while (values.more()) {
         reduceInputKeyCounter.increment(1);
@@ -736,9 +691,6 @@ class ReduceTask extends Task {
      *  the results of dispatched copy attempts
      */
     private List<CopyResult> copyResults;
-    
-    int numEventsFetched = 0;
-    private Object copyResultsOrNewEventsLock = new Object();
     
     /**
      *  the number of outputs to copy in parallel
@@ -939,10 +891,6 @@ class ReduceTask extends Task {
      * The interval for logging in the shuffle
      */
     private static final int MIN_LOG_TIME = 60000;
-    
-    private final boolean avoidsort;
-    private final Object avoidSortLock=new Object();
-    
 
     /** 
      * List of in-memory map-outputs.
@@ -1322,10 +1270,6 @@ class ReduceTask extends Task {
           Class<? extends CompressionCodec> codecClass =
             job.getMapOutputCompressorClass(DefaultCodec.class);
           codec = ReflectionUtils.newInstance(codecClass, job);
-          
-          if(codec instanceof CryptoCodec)
-            CryptoContextHelper.resetReduceInputCryptoContext((CryptoCodec)codec, conf, null);
-          
           decompressor = CodecPool.getDecompressor(codec);
         }
       }
@@ -1357,9 +1301,9 @@ class ReduceTask extends Task {
       private synchronized void finish(long size, CopyOutputErrorType error) {
         if (currentLocation != null) {
           LOG.debug(getName() + " finishing " + currentLocation + " =" + size);
-          synchronized (copyResultsOrNewEventsLock) {
+          synchronized (copyResults) {
             copyResults.add(new CopyResult(currentLocation, size, error));
-            copyResultsOrNewEventsLock.notifyAll();
+            copyResults.notify();
           }
           currentLocation = null;
         }
@@ -1507,11 +1451,6 @@ class ReduceTask extends Task {
             }
           }
 
-          if(avoidsort){
-            synchronized (avoidSortLock) { 
-              avoidSortLock.notify();
-            }
-          }
           // Note that we successfully copied the map-output
           noteCopiedMapOutput(loc.getTaskId());
         }
@@ -1999,8 +1938,7 @@ class ReduceTask extends Task {
           new CombineOutputCollector(reduceCombineOutputCounter, reporter, conf);
       }
       
-      this.avoidsort = conf.getBoolean("mapreduce.sort.avoidance", false);
-      this.ioSortFactor = conf.getInt("io.sort.factor", 100);
+      this.ioSortFactor = conf.getInt("io.sort.factor", 10);
       
       this.abortFailureLimit = Math.max(30, numMaps / 10);
 
@@ -2075,16 +2013,11 @@ class ReduceTask extends Task {
       }
       
       //start the on-disk-merge thread
-      if(avoidsort){
-        localFSMergerThread=null;
-        inMemFSMergeThread=null;
-      } else {
-        localFSMergerThread = new LocalFSMerger((LocalFileSystem) localFileSys);
-        localFSMergerThread.start();
-        // start the in memory merger thread
-        inMemFSMergeThread = new InMemFSMergeThread();
-        inMemFSMergeThread.start();
-      }
+      localFSMergerThread = new LocalFSMerger((LocalFileSystem)localFileSys);
+      //start the in memory merger thread
+      inMemFSMergeThread = new InMemFSMergeThread();
+      localFSMergerThread.start();
+      inMemFSMergeThread.start();
       
       // start the map events thread
       getMapEventsThread = new GetMapEventsThread();
@@ -2098,10 +2031,6 @@ class ReduceTask extends Task {
       
         // loop until we get all required outputs
         while (copiedMapOutputs.size() < numMaps && mergeThrowable == null) {
-          int numEventsAtStartOfScheduling;
-          synchronized (copyResultsOrNewEventsLock) {
-              numEventsAtStartOfScheduling = numEventsFetched;
-          }
           
           currentTime = System.currentTimeMillis();
           boolean logNow = false;
@@ -2259,7 +2188,7 @@ class ReduceTask extends Task {
             //So, when getCopyResult returns null, we can be sure that
             //we aren't busy enough and we should go and get more mapcompletion
             //events from the tasktracker
-            CopyResult cr = getCopyResult(numInFlight, numEventsAtStartOfScheduling);
+            CopyResult cr = getCopyResult(numInFlight);
 
             if (cr == null) {
               break;
@@ -2408,33 +2337,29 @@ class ReduceTask extends Task {
         ramManager.close();
         
         //Do a merge of in-memory files (if there are any)
-      if (mergeThrowable == null) {
-        try {
-          // Wait for the on-disk merge to complete
-          if (localFSMergerThread != null) {
+        if (mergeThrowable == null) {
+          try {
+            // Wait for the on-disk merge to complete
             localFSMergerThread.join();
-            LOG.info("Interleaved on-disk merge complete: "
-                + mapOutputFilesOnDisk.size() + " files left.");
-          }
-          if (inMemFSMergeThread != null) {
-            // wait for an ongoing merge (if it is in flight) to complete
+            LOG.info("Interleaved on-disk merge complete: " + 
+                     mapOutputFilesOnDisk.size() + " files left.");
+            
+            //wait for an ongoing merge (if it is in flight) to complete
             inMemFSMergeThread.join();
-            LOG.info("In-memory merge complete: "
-                + mapOutputsFilesInMemory.size() + " files left.");
+            LOG.info("In-memory merge complete: " + 
+                     mapOutputsFilesInMemory.size() + " files left.");
+            } catch (InterruptedException ie) {
+            LOG.warn(reduceTask.getTaskID() +
+                     " Final merge of the inmemory files threw an exception: " + 
+                     StringUtils.stringifyException(ie));
+            // check if the last merge generated an error
+            if (mergeThrowable != null) {
+              mergeThrowable = ie;
+            }
+            return false;
           }
-
-        } catch (InterruptedException ie) {
-          LOG.warn(reduceTask.getTaskID()
-              + " Final merge of the inmemory files threw an exception: "
-              + StringUtils.stringifyException(ie));
-          // check if the last merge generated an error
-          if (mergeThrowable != null) {
-            mergeThrowable = ie;
-          }
-          return false;
         }
-      }
-      return mergeThrowable == null && copiedMapOutputs.size() == numMaps;
+        return mergeThrowable == null && copiedMapOutputs.size() == numMaps;
     }
     
     // Notify the JobTracker
@@ -2483,96 +2408,6 @@ class ReduceTask extends Task {
       return totalSize;
     }
 
-    public RawKeyValueIterator getUnsortedKVIterator( final JobConf job, final FileSystem fs, final Reporter reporter) {
-      LOG.info("getUnsortedKVIterator");
-      return new RawKeyValueIterator() {
-        private Segment<K, V> current = null;
-        private Progress progress = new Progress();
-        private int count = 0;
-        private final int totalMaps = job.getNumMapTasks();
-
-        @Override
-        public boolean next() throws IOException {
-          if (current == null) {
-            current =getMapOutputs(job,fs,reporter);
-            if (current == null)
-              return false;
-            current.init(null);
-            count++;
-            progress.set((float) count / totalMaps);
-          }
-
-          if (!current.next()) {
-            current.close();
-            current = null;
-            return next();
-          }
-          return true;
-        }
-
-        @Override
-        public DataInputBuffer getKey() throws IOException {
-          return current.getKey();
-        }
-
-        @Override
-        public DataInputBuffer getValue() throws IOException {
-          return current.getValue();
-        }
-
-        @Override
-        public Progress getProgress() {
-          return progress;
-        }
-
-        @Override
-        public void close() throws IOException {
-          // nothing
-        }
-      };
-    }
-    
-    public synchronized Segment<K, V> getMapOutputs(JobConf job, FileSystem fs, Reporter reporter) throws IOException { 
-      while (mapOutputsFilesInMemory.size() == 0 && mapOutputFilesOnDisk.size() == 0) {
-        if (copiedMapOutputs.size() == numMaps) {
-          return null;
-        }
-        try {
-          synchronized (avoidSortLock) {
-            avoidSortLock.wait();
-          }
-        } catch (InterruptedException e) {
-          throw new IOException(e);
-        }
-      }
-      return pickOneSegment(job,fs);
-    }
-    
-    private Segment<K, V> pickOneSegment(JobConf job, FileSystem fs) throws IOException
-    {
-      Segment<K, V> result = null;
-      if (mapOutputsFilesInMemory.size() > 0) {
-        synchronized (mapOutputsFilesInMemory) {
-          MapOutput mo = ((List<MapOutput>)mapOutputsFilesInMemory).remove(0);
-          Reader<K, V> reader = 
-              new InMemoryReader<K, V>(ramManager, mo.mapAttemptId,
-                                       mo.data, 0, mo.data.length);
-          result =  new Segment<K, V>(reader, true);
-          LOG.info("Feed in memory data -> size :"+mo.data.length+" to reduce");
-        }    
-      } else {
-        synchronized (mapOutputFilesOnDisk) {
-          FileStatus onDiskFile = ((TreeSet<FileStatus>)mapOutputFilesOnDisk).first();
-          mapOutputFilesOnDisk.remove(onDiskFile);
-          boolean keepInputs = job.getKeepFailedTaskFiles();
-          result=new Segment<K, V>(job, fs, onDiskFile.getPath(), codec, keepInputs);
-          LOG.info("Feed on disk file -> size "+fs.getFileStatus(onDiskFile.getPath())
-              .getLen()+" to reduce");
-        } 
-      }
-      return result;
-    }
-    
     /**
      * Create a RawKeyValueIterator from copied map outputs. All copying
      * threads have exited, so all of the map outputs are available either in
@@ -2724,28 +2559,14 @@ class ReduceTask extends Task {
       }
     }
 
-    private CopyResult getCopyResult(int numInFlight, int numEventsAtStartOfScheduling) {
-        boolean waitedForNewEvents = false;
-        synchronized (copyResultsOrNewEventsLock) {
+    private CopyResult getCopyResult(int numInFlight) {  
+      synchronized (copyResults) {
         while (copyResults.isEmpty()) {
           try {
             //The idea is that if we have scheduled enough, we can wait until
-            // we hear from one of the copiers, or until there are new
-            // map events ready to be scheduled
+            //we hear from one of the copiers.
             if (busyEnough(numInFlight)) {
-              // All of the fetcher threads are busy. So, no sense trying
-              // to schedule more until one finishes.
-              copyResultsOrNewEventsLock.wait();
-            } else if (numEventsFetched == numEventsAtStartOfScheduling &&
-                       !waitedForNewEvents) {
-              // no sense trying to schedule more, since there are no
-              // new events to even try to schedule.
-              // We could handle this with a normal wait() without a timeout,
-              // but since this code is being introduced in a stable branch,
-              // we want to be very conservative. A 2-second wait is enough
-              // to prevent the busy-loop experienced before.
-              waitedForNewEvents = true;
-              copyResultsOrNewEventsLock.wait(2000);
+              copyResults.wait();
             } else {
               return null;
             }
@@ -2994,13 +2815,6 @@ class ReduceTask extends Task {
         do {
           try {
             int numNewMaps = getMapCompletionEvents();
-            if (numNewMaps > 0) {
-              synchronized (copyResultsOrNewEventsLock) {
-                numEventsFetched += numNewMaps;
-                copyResultsOrNewEventsLock.notifyAll();
-              }
-            }
-
             if (LOG.isDebugEnabled()) {
               if (numNewMaps > 0) {
                 LOG.debug(reduceTask.getTaskID() + ": " +  
