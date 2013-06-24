@@ -657,14 +657,7 @@
           <class name="org.apache.hadoop.io.nativeio.NativeIO" />
         </javah>
   	
-  	 <javah
-  	          classpath="${build.classes}"
-  	          destdir="${build.native}/src/org/apache/hadoop/util"
-  	       force="yes"
-  	          verbose="yes"
-  	          >
-  	          <class name="org.apache.hadoop.util.NativeCrc32" />
-  	  </javah>
+  	 
   	<javah
   	  classpath="${build.classes}"
   	  destdir="${build.native}/src/org/apache/hadoop/security"
