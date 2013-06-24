@@ -188,11 +188,12 @@
 								</goals>
 
 								<configuration>
-									<executable>${basedir}/src/main/native/build.sh</executable>
+									<executable>sh</executable>
 									<!-- optional -->
 									<workingDirectory>${basedir}/src/main/native/
 									</workingDirectory>
 									<arguments>
+									<argument>${basedir}/src/main/native/build.sh</argument>
 										<argument>all</argument>
 									</arguments>
 								</configuration>
@@ -207,11 +208,12 @@
 						</goals>
 
 						<configuration>
-							<executable>${basedir}/src/main/native/build.sh</executable>
+							<executable>sh</executable>
 							<!-- optional -->
 							<workingDirectory>${basedir}/src/main/native/
 							</workingDirectory>
 							<arguments>
+								<argument>${basedir}/src/main/native/build.sh</argument>
 								<argument>install</argument>
 								<argument>${project.build.directory}/native</argument>
 							</arguments>
@@ -227,12 +229,13 @@
 								</goals>
 
 								<configuration>
-									<executable>${basedir}/src/main/native/build.sh</executable>
+									<executable>sh</executable>
 									<!-- optional -->
 									<workingDirectory>${basedir}/src/main/native/
 									</workingDirectory>
 									<arguments>
-										<argument>clean</argument>
+									<argument>${basedir}/src/main/native/build.sh</argument>
+									<argument>clean</argument>
 									</arguments>
 								</configuration>
 
