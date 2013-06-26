@@ -19,132 +19,121 @@
 package org.apache.hadoop.mapred;
 
 import java.io.IOException;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Method;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.mapred.Counters.Counter;
+import org.apache.hadoop.conf.Configurable;
+import org.apache.hadoop.io.RawComparator;
 import org.apache.hadoop.mapred.Task.TaskReporter;
 import org.apache.hadoop.util.ReflectionUtils;
 
 public class TaskDelegation {
-  /**
-   * Add setProgress interface, cause Reporter don't have this,
-   * and TaskReporter is protected
-   */
+
   private static final Log LOG = LogFactory.getLog(TaskDelegation.class);
-  public static class DelegateReporter implements Reporter {
-    private TaskReporter reporter;
-    public DelegateReporter(TaskReporter reporter) {
-      this.reporter = reporter;
-    }
-    @Override
-    public void setStatus(String status) {
-      reporter.setStatus(status);
-    }
-    @Override
-    public void progress() {
-      reporter.progress();
-    }
-    @Override
-    public InputSplit getInputSplit() throws UnsupportedOperationException {
-      return reporter.getInputSplit();
-    }
-    @Override
-    public Counter getCounter(Enum<?> name) {
-      return reporter.getCounter(name);
-    }
-    @Override
-    public Counter getCounter(String group, String name) {
-      return reporter.getCounter(group, name);
-    }
-    @Override
-    public void incrCounter(Enum<?> key, long amount) {
-      reporter.incrCounter(key, amount);
-    }
-    @Override
-    public void incrCounter(String group, String counter, long amount) {
-      reporter.incrCounter(group, counter, amount);
-    }
-    public void setProgress(float progress) {
-      reporter.setProgress(progress);
-    }
+  
+  public final static String MAP_TASK_DELEGATPR = "mapreduce.map.task.delegator.class";
+  public final static String REDUCE_TASK_DELEGATPR = "mapreduce.reduce.task.delegator.class";
+  public final static String MAP_OUTPUT_COLLECTOR_DELEGATPR = "mapreduce.map.output.collector.delegator.class";
+  
+
+  /**
+   * inteface for map task delegator
+   *
+   */
+  public static interface MapTaskDelegator extends Configurable {
+    
+    public void run(TaskAttemptID taskID,  
+        TaskUmbilicalProtocol umbilical, TaskReporter reporter,
+        Object split)
+            throws IOException;
   }
   
-  public static interface MapTaskDelegator {
-    public void run(TaskAttemptID taskID, JobConf job,
-        TaskUmbilicalProtocol umbilical, DelegateReporter reporter, Object split)
-        throws IOException, InterruptedException;
+  /**
+   * inteface for map reduce task delegator
+   *
+   */
+  public static interface ReduceTaskDelegator extends Configurable {
+
+    public void run(TaskAttemptID taskID,  
+        TaskUmbilicalProtocol umbilical, TaskReporter reporter, 
+        RawKeyValueIterator rIter, RawComparator comparator, 
+        Class keyClass, Class valueClass)
+        throws IOException;
   }
 
-  public static boolean canDelegateMapTask(JobConf job) {
-    return job.get("mapreduce.map.task.delegator.class", null) != null;
+  /**
+   * inteface for map output collector delegator
+   *
+   */
+  public static interface MapOutputCollectorDelegator<K, V> extends
+    MapTask.MapOutputCollector<K, V>, Configurable {
   }
-
-  @SuppressWarnings("unchecked")
-  public static void delegateMapTask(MapTask mapTask, JobConf job,
-      TaskUmbilicalProtocol umbilical, TaskReporter reporter,
-      Object split)
-      throws IOException, InterruptedException {
-    Class<? extends MapTaskDelegator> delegatorClass = (Class<? extends MapTaskDelegator>) 
-        job.getClass("mapreduce.map.task.delegator.class", null);
-    MapTaskDelegator delegator = ReflectionUtils.newInstance(delegatorClass, job);
-    FileSplit fileSplit = (FileSplit)split;
-    System.out.println("File split: " + fileSplit.getPath().toString());
-      
-    delegator.run(mapTask.getTaskID(), job, umbilical, new DelegateReporter(
-        reporter), split);
-  }
-
-  public static interface ReduceTaskDelegator {
-    public void run(TaskAttemptID taskID, JobConf job,
-        TaskUmbilicalProtocol umbilical, DelegateReporter reporter,
-        RawKeyValueIterator rIter) 
-        throws IOException, InterruptedException;
-  }
-
-  public static boolean catDelegateReduceTask(JobConf job) {
-    return job.get("mapreduce.reduce.task.delegator.class", null) != null;
-  }
-
-  @SuppressWarnings("unchecked")
-  public static void delegateReduceTask(ReduceTask reduceTask, JobConf job,
-      TaskUmbilicalProtocol umbilical, TaskReporter reporter,
-      RawKeyValueIterator rIter) throws IOException, ClassNotFoundException,
-      InterruptedException {
-    Class<? extends ReduceTaskDelegator> delegatorClass = 
-        (Class<? extends ReduceTaskDelegator>)job.getClass(
-            "mapreduce.reduce.task.delegator.class", null);
-    ReduceTaskDelegator delegator = ReflectionUtils
-        .newInstance(delegatorClass, job);
-    delegator.run(reduceTask.getTaskID(), job, umbilical, new DelegateReporter(
-        reporter), rIter);
-  }
-
-  public interface MapOutputCollectorDelegator<K, V> extends
-      MapTask.MapOutputCollector<K, V> {
-  }
-
-  @SuppressWarnings("unchecked")
-  public static <K, V> MapTask.MapOutputCollector<K, V> 
-      tryGetDelegateMapOutputCollector(JobConf job, TaskAttemptID taskId,
-          MapOutputFile mapOutputFile) {
-    try {
-      Class<?> cls = Class.forName("org.apache.hadoop.mapred.nativetask.NativeMapOutputCollector");
-      Method canEnbaleMthd = cls.getMethod("canEnable", JobConf.class);
-      Boolean can = (Boolean)canEnbaleMthd.invoke(null, job);
-      if (can) {
-        Constructor<?> cons = cls.getConstructor(JobConf.class,
-            TaskAttemptID.class);
-        MapTask.MapOutputCollector<K, V> moc = 
-            (MapTask.MapOutputCollector<K, V>) cons.newInstance(
-                job, taskId);
-        return moc;
-      }
-      return null;
-    } catch (Exception e) {
+  
+  public static MapTaskDelegator getMapTaskDelegator(JobConf job) {
+    String delegateMapClazz = job.get(MAP_TASK_DELEGATPR, null);
+    if (null == delegateMapClazz || delegateMapClazz.isEmpty()) {
       return null;
     }
+    Class<? extends MapTaskDelegator> delegatorClass = (Class<? extends MapTaskDelegator>) 
+        job.getClass(delegateMapClazz, null);
+    if (null == delegatorClass) {
+      return null;
+    }
+    MapTaskDelegator delegator = null;
+    try {
+      delegator = ReflectionUtils.newInstance(delegatorClass, job);
+      LOG.info("MapTaskDelegator " + delegateMapClazz + " is enabled");
+    }
+    catch(RuntimeException e) {
+      LOG.error("MapTaskDelegator " + delegateMapClazz + " is not enabled", e);
+    }
+    return delegator;
+  }
+
+
+  public static ReduceTaskDelegator getReduceTaskDelegator(JobConf job) {
+    String delegateReducerClazz = job.get(REDUCE_TASK_DELEGATPR, null);
+    if (null == delegateReducerClazz || delegateReducerClazz.isEmpty()) {
+      return null;
+    }
+    Class<? extends ReduceTaskDelegator> delegatorClass = (Class<? extends ReduceTaskDelegator>) 
+        job.getClass(delegateReducerClazz, null);
+    if (null == delegatorClass) {
+      return null;
+    }
+    
+    ReduceTaskDelegator delegator = null;
+    try {
+      delegator = ReflectionUtils.newInstance(delegatorClass, job);
+      LOG.info("ReduceTaskDelegator " + delegateReducerClazz + " is enabled");
+    }
+    catch(RuntimeException e) {
+      LOG.warn("ReduceTaskDelegator " + delegateReducerClazz + " is not enabled", e);
+    }
+    return delegator;
+  }
+
+  @SuppressWarnings("unchecked")
+  public static <K, V> MapOutputCollectorDelegator<K, V> 
+      getOutputCollectorDelegator(JobConf job) {
+    
+    String delegatorClazz = job.get(MAP_OUTPUT_COLLECTOR_DELEGATPR, null);
+    if (null == delegatorClazz || delegatorClazz.isEmpty()) {
+      return null;
+    }
+    Class<? extends MapOutputCollectorDelegator> delegatorClass = (Class<? extends MapOutputCollectorDelegator>) 
+        job.getClass(delegatorClazz, null);
+    if (null == delegatorClass) {
+      return null;
+    }
+    MapOutputCollectorDelegator delegator = null;
+    try {
+      delegator = ReflectionUtils.newInstance(delegatorClass, job);
+      LOG.info("MapOutputCollectorDelegator " + delegatorClazz + " is enabled");
+    }
+    catch(RuntimeException e) {
+      LOG.error("MapOutputCollectorDelegator " + delegatorClazz + " is not enabled", e);
+    }
+    return delegator;
   }
 }

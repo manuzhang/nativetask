@@ -25,7 +25,6 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.Writable;
-import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.TaskAttemptID;
 import org.apache.hadoop.mapred.nativetask.NativeBatchProcessor;
 import org.apache.hadoop.mapred.nativetask.util.BytesUtil;
@@ -47,7 +46,7 @@ public class NativeMapAndCollectHandler<IK, IV> extends NativeBatchProcessor<IK,
   private int spillNumber = 0;
   
   public NativeMapAndCollectHandler(int bufferCapacity, Class<IK> keyClass,
-      Class<IV> valueClass, JobConf conf, TaskAttemptID taskAttemptID)
+      Class<IV> valueClass, Configuration conf, TaskAttemptID taskAttemptID)
       throws IOException {
     super(keyClass, 
         valueClass, 

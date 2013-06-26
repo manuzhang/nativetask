@@ -23,7 +23,6 @@ public class Constants {
   public static String MAPRED_MAPTASK_DELEGATOR_CLASS = "mapreduce.map.task.delegator.class";
   public static String MAPRED_REDUCETASK_DELEGATOR_CLASS = "mapreduce.reduce.task.delegator.class";
   public static String NATIVE_TASK_ENABLED = "native.task.enabled";
-  public static String NATIVE_MAPOUTPUT_COLLECTOR_ENABLED = "native.mapoutput.collector.enabled";
   public static String NATIVE_LOG_DEVICE = "native.log.device";
 
   public static String NATIVE_MAPPER_CLASS = "native.mapper.class";

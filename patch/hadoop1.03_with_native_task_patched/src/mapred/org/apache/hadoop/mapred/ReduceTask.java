@@ -74,6 +74,7 @@ import org.apache.hadoop.io.compress.DefaultCodec;
 import org.apache.hadoop.mapred.IFile.*;
 import org.apache.hadoop.mapred.Merger.Segment;
 import org.apache.hadoop.mapred.SortedRanges.SkipRangeIterator;
+import org.apache.hadoop.mapred.TaskDelegation.ReduceTaskDelegator;
 import org.apache.hadoop.mapred.TaskTracker.TaskInProgress;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.metrics2.MetricsBuilder;
@@ -413,14 +414,14 @@ class ReduceTask extends Task {
     Class valueClass = job.getMapOutputValueClass();
     RawComparator comparator = job.getOutputValueGroupingComparator();
 
+    ReduceTaskDelegator reduceDelegator = TaskDelegation.getReduceTaskDelegator(job);
     
-    if (TaskDelegation.catDelegateReduceTask(job)) {
-      TaskDelegation.delegateReduceTask(this, job, umbilical, reporter, rIter);
-      done(umbilical, reporter);
-      return;
-    }
-    
-    if (useNewApi) {
+    if (null != reduceDelegator) {
+      reduceDelegator.run(this.getTaskID(), umbilical, reporter, 
+          rIter, comparator, 
+          keyClass, valueClass);
+      
+    } else if (useNewApi) {
       runNewReducer(job, umbilical, reporter, rIter, comparator, 
                     keyClass, valueClass);
     } else {

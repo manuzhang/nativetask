@@ -22,39 +22,51 @@ import java.io.IOException;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.io.RawComparator;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.RawKeyValueIterator;
 import org.apache.hadoop.mapred.RecordWriter;
+import org.apache.hadoop.mapred.Task.TaskReporter;
 import org.apache.hadoop.mapred.TaskAttemptID;
 import org.apache.hadoop.mapred.TaskDelegation;
-import org.apache.hadoop.mapred.TaskDelegation.DelegateReporter;
 import org.apache.hadoop.mapred.TaskUmbilicalProtocol;
-import org.apache.hadoop.mapred.nativetask.handlers.NativeReduceOnlyHandler;
 import org.apache.hadoop.mapred.nativetask.handlers.NativeReduceAndWriteHandler;
+import org.apache.hadoop.mapred.nativetask.handlers.NativeReduceOnlyHandler;
 import org.apache.hadoop.mapred.nativetask.util.OutputPathUtil;
 
 public class NativeReduceTaskDelegator<IK, IV, OK, OV> implements
     TaskDelegation.ReduceTaskDelegator {
   private static final Log LOG = LogFactory
       .getLog(NativeReduceTaskDelegator.class);
+  private JobConf job;
 
   public NativeReduceTaskDelegator() {
   }
 
   @Override
-  @SuppressWarnings("unchecked")
-  public void run(TaskAttemptID taskAttemptID, JobConf job,
-      TaskUmbilicalProtocol umbilical, DelegateReporter reporter,
-      RawKeyValueIterator rIter) throws IOException, InterruptedException {
+  public void setConf(Configuration conf) {
+    this.job = new JobConf(conf);
+  }
+
+  @Override
+  public Configuration getConf() {
+    return this.job;
+  }
+
+
+  @Override
+  public void run(TaskAttemptID taskAttemptID, TaskUmbilicalProtocol umbilical,
+      TaskReporter reporter, RawKeyValueIterator rIter,
+      RawComparator comparator, Class keyClass, Class valueClass)
+      throws IOException {
     long updateInterval = job.getLong("native.update.interval", 1000);
     StatusReportChecker updater = new StatusReportChecker(reporter,
         updateInterval);
     updater.startUpdater();
     NativeRuntime.configure(job);
-
-    Class<IK> keyClass = (Class<IK>) job.getMapOutputKeyClass();
-    Class<IV> valueClass = (Class<IV>) job.getMapOutputValueClass();
+    
     int bufferCapacity = job.getInt(Constants.NATIVE_PROCESSOR_BUFFER_KB,
         Constants.NATIVE_PROCESSOR_BUFFER_KB_DEFAULT) * 1024;
     String finalName = OutputPathUtil.getOutputName(taskAttemptID.getTaskID()
@@ -82,7 +94,11 @@ public class NativeReduceTaskDelegator<IK, IV, OK, OV> implements
       writer.close(reporter);
     }
 
-    updater.stopUpdater();
+    try {
+      updater.stopUpdater();
+    } catch (InterruptedException e) {
+      throw new IOException(e);
+    }
     // final update
     NativeRuntime.reportStatus(reporter);
   }

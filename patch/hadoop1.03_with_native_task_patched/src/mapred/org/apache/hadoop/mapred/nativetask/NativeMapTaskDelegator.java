@@ -22,6 +22,7 @@ import java.io.IOException;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.io.DataOutputBuffer;
 import org.apache.hadoop.io.serializer.SerializationFactory;
@@ -30,27 +31,55 @@ import org.apache.hadoop.mapred.InputSplit;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.RecordReader;
 import org.apache.hadoop.mapred.RecordWriter;
+import org.apache.hadoop.mapred.Task.TaskReporter;
 import org.apache.hadoop.mapred.TaskAttemptID;
 import org.apache.hadoop.mapred.TaskDelegation;
-import org.apache.hadoop.mapred.TaskDelegation.DelegateReporter;
 import org.apache.hadoop.mapred.TaskUmbilicalProtocol;
+import org.apache.hadoop.mapred.nativetask.handlers.AllNativeMapTask;
 import org.apache.hadoop.mapred.nativetask.handlers.NativeMapAndCollectHandler;
 import org.apache.hadoop.mapred.nativetask.handlers.NativeMapOnlyHandler;
-import org.apache.hadoop.mapred.nativetask.handlers.AllNativeMapTask;
 import org.apache.hadoop.mapred.nativetask.util.OutputPathUtil;
 
 public class NativeMapTaskDelegator<INKEY, INVALUE, OUTKEY, OUTVALUE>
     implements TaskDelegation.MapTaskDelegator {
   private static final Log LOG = LogFactory
       .getLog(NativeMapTaskDelegator.class);
+  
+  private JobConf job = null;
 
   public NativeMapTaskDelegator() {
   }
 
+  private static <T> byte[] serialize(Configuration conf, Object obj)
+      throws IOException {
+    SerializationFactory factory = new SerializationFactory(conf);
+    
+    @SuppressWarnings({ "unchecked"})
+    Serializer<T> serializer = (Serializer<T>) factory.getSerializer(obj
+        .getClass());
+    DataOutputBuffer out = new DataOutputBuffer(1024);
+    serializer.open(out);
+    
+    serializer.serialize((T) obj);
+    byte[] ret = new byte[out.getLength()];
+    System.arraycopy(out.getData(), 0, ret, 0, out.getLength());
+    return ret;
+  }
+
   @Override
-  public void run(TaskAttemptID taskAttemptID, JobConf job,
-      TaskUmbilicalProtocol umbilical, DelegateReporter reporter, Object split)
-      throws IOException, InterruptedException {
+  public void setConf(Configuration conf) {
+    this.job = new JobConf(conf);
+  }
+
+  @Override
+  public Configuration getConf() {
+    return this.job;
+  }
+
+  @Override
+  public void run(TaskAttemptID taskAttemptID, 
+      TaskUmbilicalProtocol umbilical, TaskReporter reporter,
+      Object split) throws IOException {
     long updateInterval = job.getLong("native.update.interval", 1000);
     StatusReportChecker updater = new StatusReportChecker(reporter,
         updateInterval);
@@ -58,6 +87,7 @@ public class NativeMapTaskDelegator<INKEY, INVALUE, OUTKEY, OUTVALUE>
     NativeRuntime.configure(job);
 
     if (job.get(Constants.NATIVE_RECORDREADER_CLASS) != null) {
+      
       // delegate entire map task
       byte[] splitData = serialize(job, split);
       NativeRuntime.configure("native.input.split", splitData);
@@ -129,24 +159,13 @@ public class NativeMapTaskDelegator<INKEY, INVALUE, OUTKEY, OUTVALUE>
       }
     }
 
-    updater.stopUpdater();
+    try {
+      updater.stopUpdater();
+    }
+    catch (InterruptedException e) {
+      throw new IOException(e);
+    }
     // final update
     NativeRuntime.reportStatus(reporter);
-  }
-
-  private static <T> byte[] serialize(JobConf conf, Object obj)
-      throws IOException {
-    SerializationFactory factory = new SerializationFactory(conf);
-    
-    @SuppressWarnings({ "unchecked"})
-    Serializer<T> serializer = (Serializer<T>) factory.getSerializer(obj
-        .getClass());
-    DataOutputBuffer out = new DataOutputBuffer(1024);
-    serializer.open(out);
-    
-    serializer.serialize((T) obj);
-    byte[] ret = new byte[out.getLength()];
-    System.arraycopy(out.getData(), 0, ret, 0, out.getLength());
-    return ret;
   }
 }

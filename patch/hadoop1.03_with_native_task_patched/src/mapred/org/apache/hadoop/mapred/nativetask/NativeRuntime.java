@@ -25,6 +25,7 @@ import java.util.Map;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
@@ -34,8 +35,7 @@ import org.apache.hadoop.io.FloatWritable;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
-import org.apache.hadoop.mapred.JobConf;
-import org.apache.hadoop.mapred.TaskDelegation.DelegateReporter;
+import org.apache.hadoop.mapred.Task.TaskReporter;
 import org.apache.hadoop.mapred.nativetask.util.BytesUtil;
 import org.apache.hadoop.util.VersionInfo;
 
@@ -50,7 +50,7 @@ public class NativeRuntime {
   private static Log LOG = LogFactory.getLog(NativeRuntime.class);
   private static boolean nativeLibraryLoaded = false;
 
-  private static JobConf conf = new JobConf();
+  private static Configuration conf = new Configuration();
 
   static {
     try {
@@ -99,7 +99,7 @@ public class NativeRuntime {
     return nativeLibraryLoaded;
   }
 
-  public static void configure(JobConf jobConf) {
+  public static void configure(Configuration jobConf) {
     assertNativeLibraryLoaded();
     conf = jobConf;
     List<byte[]> nativeConfigs = new ArrayList<byte[]>();
@@ -194,7 +194,7 @@ public class NativeRuntime {
    * @param reporter
    * @throws IOException
    */
-  public static void reportStatus(DelegateReporter reporter) throws IOException {
+  public static void reportStatus(TaskReporter reporter) throws IOException {
     assertNativeLibraryLoaded();
     synchronized (reporter) {
       byte[] statusBytes = JNIUpdateStatus();

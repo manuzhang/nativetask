@@ -19,8 +19,6 @@
 
 package org.apache.hadoop.mapred.nativetask.serde;
 
-import java.io.ByteArrayOutputStream;
-import java.io.DataOutputStream;
 import java.io.IOException;
 
 import org.apache.hadoop.io.Writable;

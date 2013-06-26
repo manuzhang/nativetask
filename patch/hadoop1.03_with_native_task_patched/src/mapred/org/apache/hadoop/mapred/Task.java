@@ -538,7 +538,7 @@ abstract public class Task implements Writable, Configurable {
     }
   }
   
-  protected class TaskReporter 
+  public class TaskReporter 
       extends org.apache.hadoop.mapreduce.StatusReporter
       implements Runnable, Reporter {
     private TaskUmbilicalProtocol umbilical;

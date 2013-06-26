@@ -22,9 +22,9 @@ import java.io.IOException;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.Writable;
-import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.TaskAttemptID;
 import org.apache.hadoop.mapred.nativetask.NativeBatchProcessor;
 import org.apache.hadoop.mapred.nativetask.util.BytesUtil;
@@ -42,7 +42,7 @@ public class AllNativeMapTask extends NativeBatchProcessor<Writable, Writable, W
   private OutputPathUtil mapOutputFile;
   private int spillNumber = 0;
 
-  public AllNativeMapTask(JobConf conf, TaskAttemptID taskAttemptID)
+  public AllNativeMapTask(Configuration conf, TaskAttemptID taskAttemptID)
       throws IOException {
     super(null, null, null, null, "NativeTask.MMapTaskHandler", 0, 0);
     this.mapOutputFile = new OutputPathUtil();

@@ -63,6 +63,7 @@ import org.apache.hadoop.mapred.IFile.Writer;
 import org.apache.hadoop.mapred.Merger.Segment;
 import org.apache.hadoop.mapred.SortedRanges.SkipRangeIterator;
 import org.apache.hadoop.mapred.FileInputFormat;
+import org.apache.hadoop.mapred.TaskDelegation.MapTaskDelegator;
 import org.apache.hadoop.mapreduce.split.JobSplit;
 import org.apache.hadoop.mapreduce.split.JobSplit.SplitMetaInfo;
 import org.apache.hadoop.mapreduce.split.JobSplit.TaskSplitIndex;
@@ -365,29 +366,21 @@ class MapTask extends Task {
       runTaskCleanupTask(umbilical, reporter);
       return;
     }
-
-
-    if (TaskDelegation.canDelegateMapTask(job)) {
-      TaskDelegation.delegateMapTask(
-          this,
-          job,
-          umbilical,
-          reporter,
-          getSplitDetails(
-              new Path(splitMetaInfo.getSplitLocation()),
-                       splitMetaInfo.getStartOffset()));
-      done(umbilical, reporter);
-      return;
-    }
     
+    MapTaskDelegator mapTaskDelegator = TaskDelegation.getMapTaskDelegator(job);
     
-    if (useNewApi) {
+    if (null != mapTaskDelegator) {
+      mapTaskDelegator.run(this.getTaskID(), umbilical, reporter, getSplitDetails(
+        new Path(splitMetaInfo.getSplitLocation()),
+        splitMetaInfo.getStartOffset()));
+    } else if (useNewApi) {
       runNewMapper(job, splitMetaInfo, umbilical, reporter);
     } else {
       runOldMapper(job, splitMetaInfo, umbilical, reporter);
     }
     done(umbilical, reporter);
   }
+  
   @SuppressWarnings("unchecked")
   private <T> T getSplitDetails(Path file, long offset)
    throws IOException {
@@ -440,9 +433,10 @@ class MapTask extends Task {
     LOG.info("numReduceTasks: " + numReduceTasks);
     MapOutputCollector collector = null;
     if (numReduceTasks > 0) {
-      collector = TaskDelegation.tryGetDelegateMapOutputCollector(job, getTaskID(), mapOutputFile);
-      if (collector == null)
+      collector = TaskDelegation.getOutputCollectorDelegator(job);
+      if (collector == null) {
         collector = new MapOutputBuffer(umbilical, job, reporter);
+      }
     } else { 
       collector = new DirectMapOutputCollector(umbilical, job, reporter);
     }
@@ -688,7 +682,7 @@ class MapTask extends Task {
                        TaskUmbilicalProtocol umbilical,
                        TaskReporter reporter
                        ) throws IOException, ClassNotFoundException {
-      MapOutputCollector<K,V> tc = TaskDelegation.tryGetDelegateMapOutputCollector(job, getTaskID(), mapOutputFile);
+      MapOutputCollector<K,V> tc = TaskDelegation.getOutputCollectorDelegator(job);
       collector = tc != null ? tc : new MapOutputBuffer<K,V>(umbilical, job, reporter);
       partitions = jobContext.getNumReduceTasks();
       if (partitions > 0) {
