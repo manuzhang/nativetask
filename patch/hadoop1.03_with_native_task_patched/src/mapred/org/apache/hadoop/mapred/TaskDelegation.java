@@ -76,7 +76,7 @@ public class TaskDelegation {
       return null;
     }
     Class<? extends MapTaskDelegator> delegatorClass = (Class<? extends MapTaskDelegator>) 
-        job.getClass(delegateMapClazz, null);
+        job.getClass(MAP_TASK_DELEGATPR, null);
     if (null == delegatorClass) {
       LOG.info("MapTaskDelegator class cannot be load " + delegateMapClazz);
       return null;
@@ -100,7 +100,7 @@ public class TaskDelegation {
       return null;
     }
     Class<? extends ReduceTaskDelegator> delegatorClass = (Class<? extends ReduceTaskDelegator>) 
-        job.getClass(delegateReducerClazz, null);
+        job.getClass(REDUCE_TASK_DELEGATPR, null);
     if (null == delegatorClass) {
       LOG.info("Reduce task Delegator class cannot be load " + delegateReducerClazz);
       return null;
@@ -127,7 +127,7 @@ public class TaskDelegation {
       return null;
     }
     Class<? extends MapOutputCollectorDelegator> delegatorClass = (Class<? extends MapOutputCollectorDelegator>) 
-        job.getClass(delegatorClazz, null);
+        job.getClass(MAP_OUTPUT_COLLECTOR_DELEGATPR, null);
     if (null == delegatorClass) {
       LOG.info("MapOutputCollectorDelegator cannot be inited " + delegatorClazz);
       return null;

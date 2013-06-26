@@ -71,7 +71,7 @@ public class TestNativeMapOutputCollector extends TestCase {
     MapOutputFile mapOutputFile = new MapOutputFile();
     mapOutputFile.setConf(conf);
     NativeCollectorOnlyHandler<Text, Text> collector = 
-        new NativeCollectorOnlyHandler<Text, Text>(conf, taskid);
+        new NativeCollectorOnlyHandler<Text, Text>(conf);
     
     collector.init(conf);
     
