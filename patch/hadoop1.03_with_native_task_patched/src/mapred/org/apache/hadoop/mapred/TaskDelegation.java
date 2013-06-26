@@ -72,11 +72,13 @@ public class TaskDelegation {
   public static MapTaskDelegator getMapTaskDelegator(JobConf job) {
     String delegateMapClazz = job.get(MAP_TASK_DELEGATPR, null);
     if (null == delegateMapClazz || delegateMapClazz.isEmpty()) {
+      LOG.info("MapTaskDelegator is not defined");
       return null;
     }
     Class<? extends MapTaskDelegator> delegatorClass = (Class<? extends MapTaskDelegator>) 
         job.getClass(delegateMapClazz, null);
     if (null == delegatorClass) {
+      LOG.info("MapTaskDelegator class cannot be load " + delegateMapClazz);
       return null;
     }
     MapTaskDelegator delegator = null;
@@ -94,11 +96,13 @@ public class TaskDelegation {
   public static ReduceTaskDelegator getReduceTaskDelegator(JobConf job) {
     String delegateReducerClazz = job.get(REDUCE_TASK_DELEGATPR, null);
     if (null == delegateReducerClazz || delegateReducerClazz.isEmpty()) {
+      LOG.info("Reduce task Delegator not defined");
       return null;
     }
     Class<? extends ReduceTaskDelegator> delegatorClass = (Class<? extends ReduceTaskDelegator>) 
         job.getClass(delegateReducerClazz, null);
     if (null == delegatorClass) {
+      LOG.info("Reduce task Delegator class cannot be load " + delegateReducerClazz);
       return null;
     }
     
@@ -119,11 +123,13 @@ public class TaskDelegation {
     
     String delegatorClazz = job.get(MAP_OUTPUT_COLLECTOR_DELEGATPR, null);
     if (null == delegatorClazz || delegatorClazz.isEmpty()) {
+      LOG.info("MapOutputCollectorDelegator not found");
       return null;
     }
     Class<? extends MapOutputCollectorDelegator> delegatorClass = (Class<? extends MapOutputCollectorDelegator>) 
         job.getClass(delegatorClazz, null);
     if (null == delegatorClass) {
+      LOG.info("MapOutputCollectorDelegator cannot be inited " + delegatorClazz);
       return null;
     }
     MapOutputCollectorDelegator delegator = null;
