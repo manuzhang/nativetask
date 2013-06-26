@@ -88,6 +88,7 @@ public class NativeMapOutputCollectorDelegator<K, V> implements TaskDelegation.M
     this.handler = null;
     try {
       handler = new NativeCollectorOnlyHandler(job);
+      handler.init(job);
     }
     catch(IOException e) {
       throw new RuntimeException("Native output collector cannot be loaded", e);
