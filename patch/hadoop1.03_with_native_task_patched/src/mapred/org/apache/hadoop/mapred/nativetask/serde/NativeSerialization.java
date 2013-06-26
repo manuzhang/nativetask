@@ -22,7 +22,11 @@ package org.apache.hadoop.mapred.nativetask.serde;
 import java.io.IOException;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.apache.hadoop.io.BooleanWritable;
+import org.apache.hadoop.io.ByteWritable;
 import org.apache.hadoop.io.BytesWritable;
+import org.apache.hadoop.io.DoubleWritable;
+import org.apache.hadoop.io.FloatWritable;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
@@ -104,5 +108,10 @@ public class NativeSerialization {
     me.register(BytesWritable.class.getName(), BytesWritableSerializer.class);
     me.register("org.apache.hadoop.hive.ql.io.HiveKey",
         BytesWritableSerializer.class);
+    me.register(BooleanWritable.class.getName(), BoolWritableSerializer.class);
+    me.register(ByteWritable.class.getName(), ByteWritableSerializer.class);
+    me.register(FloatWritable.class.getName(), FloatWritableSerializer.class);
+    me.register(DoubleWritable.class.getName(), DoubleWritableSerializer.class);
+    
   }
 }
