@@ -116,8 +116,14 @@ void MMapperHandler::handleInput(char * buff, uint32_t length) {
     if (unlikely(length<2*sizeof(uint32_t))) {
       THROW_EXCEPTION(IOException, "k/v length information incomplete");
     }
-    uint32_t klength = ((uint32_t*) buff)[0];
-    uint32_t vlength = *((uint32_t*) (buff + klength + sizeof(uint32_t) ));
+
+    //convert to little endium
+    char * pos = buff;
+    uint32_t klength = bswap(*((uint32_t*)pos));
+
+    pos += klength + sizeof(uint32_t);
+    uint32_t vlength = bswap(*((uint32_t*)pos));
+
     uint32_t kvlength = klength + vlength + 2 * sizeof(uint32_t);
 
     if (kvlength > length) {
@@ -165,9 +171,10 @@ void MMapperHandler::collect(const void * key, uint32_t keyLen,
         _ob.position = 0;
     }
 
-    putInt(keyLen);
+    //convert to big endium
+    putInt(bswap(keyLen));
     put((char *)key, keyLen);
-    putInt(valueLen);
+    putInt(bswap(valueLen));
     put((char *)value, valueLen);
     return;
   }

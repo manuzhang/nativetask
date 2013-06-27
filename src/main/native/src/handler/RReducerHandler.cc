@@ -218,29 +218,26 @@ void RReducerHandler::collect(const void * key, uint32_t keyLen,
     _ob.position = 0;
   }
 
-  putInt(keyLen);
+  putInt(bswap(keyLen));
   put((char *)key, keyLen);
-  putInt(valueLen);
+  putInt(bswap(valueLen));
   put((char *)value, valueLen);
 }
-
-static int refill_id = 0;
 
 int32_t RReducerHandler::refill() {
   char command[1 + sizeof(int32_t)] = {0};
   command[0] = 'r';
 
-  int32_t * expectLength = (int32_t *)(command + 1);
-  *expectLength = _ib.capacity;
+  //change to big endium
+  int32_t expectedLength = bswap(_ib.capacity);
 
-  LOG("id: %d: Expected length: %d", refill_id, *expectLength);
+  int32_t * expectLength = (int32_t *)(command + 1);
+  *expectLength = expectedLength;
 
   string ret = sendCommand(command, 1 + sizeof(int32_t));
-  int32_t retvalue = *((const int32_t*)ret.data());
 
-  LOG("id: %d: Get length: %d", refill_id, retvalue);
-
-  refill_id++;
+  //change to little endium
+  int32_t retvalue = bswap(*((const int32_t*)ret.data()));
 
   _current = _ib.buff;
   _remain = retvalue;
@@ -257,22 +254,14 @@ char * RReducerHandler::nextKeyValuePair() {
     THROW_EXCEPTION(IOException, "not enough meta to read kv pair");
   }
   _reduceInputRecords->increase();
-  _klength = ((uint32_t*)_current)[0];
+  _klength = bswap(((uint32_t*)_current)[0]);
+
   _keyOffset = sizeof(uint32_t);
 
-  for (int i = 0; i < 100; i++) {
-      LOG("native value, %d", *(_current + i));
-  }
-
-  _vlength = *((uint32_t*)(_current + _klength + sizeof(uint32_t)));
+  _vlength = bswap(*((uint32_t*)(_current + _klength + sizeof(uint32_t))));
   _valueOffset = sizeof(uint32_t) + _klength + sizeof(uint32_t);
   uint32_t _kvlength = _klength + _vlength + 2 * sizeof(uint32_t);
-  LOG("native kv length: %d, %d, %d", _kvlength,_klength,_vlength);
-
-  for (int i = 0; i < 100; i++) {
-      LOG("native value, %d", *(_current + i));
-  }
-
+  
   if (_kvlength  <= _remain) {
     _nextKeyValuePair = _current;
     _current += _kvlength;

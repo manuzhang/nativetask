@@ -34,9 +34,9 @@ import org.apache.hadoop.util.Progressable;
  * @param <IK>
  * @param <IV>
  */
-public class NativeReduceWriteHandler<IK, IV> extends NativeReduceOnlyHandler<IK, IV, Writable, Writable> {
+public class NativeReduceAndWriteHandler<IK, IV> extends NativeReduceOnlyHandler<IK, IV, Writable, Writable> {
 
-  public NativeReduceWriteHandler(int inputBufferCapacity,
+  public NativeReduceAndWriteHandler(int inputBufferCapacity,
       int outputBufferCapacity, Class<IK> iKClass, Class<IV> iVClass,
       JobConf conf, Progressable progress, RawKeyValueIterator rIter)
       throws IOException {

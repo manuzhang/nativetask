@@ -5,7 +5,7 @@ import java.io.IOException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.mapred.Task.Counter;
-import org.apache.hadoop.mapred.TaskDelegation.DelegateReporter;
+import org.apache.hadoop.mapred.Task.TaskReporter;
 
 /**
  * Will periodically check status from native and report to MR framework.
@@ -15,14 +15,14 @@ public class StatusReportChecker implements Runnable {
 
   private static Log LOG = LogFactory.getLog(StatusReportChecker.class);
   private Thread updaterThread;
-  private DelegateReporter reporter;
+  private TaskReporter reporter;
   private long interval;
 
-  public StatusReportChecker(DelegateReporter reporter) {
+  public StatusReportChecker(TaskReporter reporter) {
     this(reporter, 1000);
   }
 
-  public StatusReportChecker(DelegateReporter reporter, long interval) {
+  public StatusReportChecker(TaskReporter reporter, long interval) {
     this.reporter = reporter;
     this.interval = interval;
   }

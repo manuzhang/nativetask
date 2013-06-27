@@ -29,30 +29,13 @@
 namespace NativeTask {
 
 int BytesComparator(const char * src, uint32_t srcLength, const char * dest, uint32_t destLength) {
+
     uint32_t minlen = std::min(srcLength, destLength);
     int ret = fmemcmp(src, dest, minlen);
     if (ret) {
       return ret;
     }
     return srcLength - destLength;
-};
-
-int IntComparator(const char * src, uint32_t srcLength, const char * dest, uint32_t destLength) {
-  if (srcLength != 4 || destLength != 4) {
-    THROW_EXCEPTION_EX(IOException, "int comparator, while src/dest lengt is not 4");
-  }
-  uint32_t * srcValue = (uint32_t *)src;
-  uint32_t * destValue = (uint32_t *)dest;
-  return (*srcValue) - (* destValue);
-};
-
-int LongComparator(const char * src, uint32_t srcLength, const char * dest, uint32_t destLength) {
-  if (srcLength != 8 || destLength != 8) {
-      THROW_EXCEPTION_EX(IOException, "Long comparator, while src/dest lengt is not 4");
-    }
-    int64_t * srcValue = (int64_t *)src;
-    int64_t * destValue = (int64_t *)dest;
-    return (*srcValue) - (* destValue);
 };
 
 int FloatComparator(const char * src, uint32_t srcLength, const char * dest, uint32_t destLength) {
@@ -315,14 +298,10 @@ ComparatorPtr MapOutputCollector::getComparator(Config & config, MapOutputSpec &
     if (spec.keyType == BytesType ||
         spec.keyType == TextType ||
         spec.keyType == ByteType ||
-        spec.keyType == BoolType) {
+        spec.keyType == BoolType ||
+        spec.keyType == IntType ||
+        spec.keyType == LongType) {
       return &BytesComparator;
-    }
-    else if (spec.keyType == IntType) {
-      return &IntComparator;
-    }
-    else if (spec.keyType == LongType) {
-      return &LongComparator;
     }
     else if (spec.keyType == FloatType) {
       return &FloatComparator;

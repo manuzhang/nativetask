@@ -70,10 +70,23 @@ void MCollectorOutputHandler::handleInput(char * buff, uint32_t length) {
 
     // key value format
     // keyLength(4 byte) + key + valueLength(4 byte) + value + partitionId(4 byte)
-    uint32_t keyLength = ((uint32_t*)buff)[0];
-    uint32_t valueLength = *((uint32_t*)(buff + keyLength + sizeof(uint32_t)));
-    uint32_t kvlength = keyLength + valueLength + 2 * sizeof(uint32_t);
-    uint32_t partition = *((uint32_t*)(buff + kvlength));
+
+    //convert to little endium
+    char * pos = buff;
+    uint32_t keyLength = bswap(*((uint32_t*)pos));
+    *((uint32_t*)pos) = keyLength;
+
+    pos += keyLength + sizeof(uint32_t);
+    uint32_t valueLength = bswap(*((uint32_t*)pos));
+    *((uint32_t*)pos) = valueLength;
+
+    pos += valueLength + sizeof(uint32_t);
+    uint32_t partition = bswap(*((uint32_t*)pos));
+
+    uint32_t kvlength = pos - buff;
+
+    //LOG("key length %d, value length: %d, partion id: %d", keyLength, valueLength, partition);
+
 
     char * dest = _collector->get_buffer_to_put(kvlength, partition);
     if (NULL == dest) {

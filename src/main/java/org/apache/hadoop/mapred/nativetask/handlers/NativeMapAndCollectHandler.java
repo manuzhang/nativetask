@@ -22,9 +22,9 @@ import java.io.IOException;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.Writable;
-import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.TaskAttemptID;
 import org.apache.hadoop.mapred.nativetask.NativeBatchProcessor;
 import org.apache.hadoop.mapred.nativetask.util.BytesUtil;
@@ -32,23 +32,39 @@ import org.apache.hadoop.mapred.nativetask.util.OutputPathUtil;
 
 /**
  * 
- * Native Record Reader + Native Mapper + Native Collector
+ * Java Record Reader + Native Mapper + Native Collector
  * 
+ * @param <IK>
+ * @param <IV>
  */
-public class NativeReadMapCollectHandler extends NativeBatchProcessor<Writable, Writable, Writable, Writable> {
+public class NativeMapAndCollectHandler<IK, IV> extends NativeBatchProcessor<IK, IV, Writable, Writable> {
+
   private static final Log LOG = LogFactory
-      .getLog(NativeReadMapCollectHandler.class);
+      .getLog(NativeMapAndCollectHandler.class);
 
   private OutputPathUtil mapOutputFile;
   private int spillNumber = 0;
-
-  public NativeReadMapCollectHandler(JobConf conf, TaskAttemptID taskAttemptID)
+  
+  public NativeMapAndCollectHandler(int bufferCapacity, Class<IK> keyClass,
+      Class<IV> valueClass, Configuration conf, TaskAttemptID taskAttemptID)
       throws IOException {
-    super(null, null, null, null, "NativeTask.MMapTaskHandler", 0, 0);
+    super(keyClass, 
+        valueClass, 
+        null, 
+        null, 
+        "NativeTask.MMapperHandler",
+        bufferCapacity, 
+        0);
+    
     this.mapOutputFile = new OutputPathUtil();
     this.mapOutputFile.setConf(conf);
   }
-
+  
+  @Override
+  public void init(Configuration conf) throws IOException {
+    super.init(conf);
+  }
+  
   @Override
   protected byte[] sendCommandToJava(byte[] data) throws IOException {
     String cmd = BytesUtil.fromBytes(data);
@@ -69,7 +85,12 @@ public class NativeReadMapCollectHandler extends NativeBatchProcessor<Writable, 
     }
   }
 
-  public void run() throws Exception {
-    sendCommandToNative(BytesUtil.toBytes("run"));
+  public void process(IK key, IV value) throws IOException {
+    serializer.serializeKV(nativeWriter, (Writable) key, (Writable) value);
+  };
+
+  @Override
+  public void close() throws IOException {
+    super.close();
   }
 }

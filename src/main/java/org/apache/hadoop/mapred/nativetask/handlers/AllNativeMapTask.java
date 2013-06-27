@@ -25,7 +25,6 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.Writable;
-import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.TaskAttemptID;
 import org.apache.hadoop.mapred.nativetask.NativeBatchProcessor;
 import org.apache.hadoop.mapred.nativetask.util.BytesUtil;
@@ -33,39 +32,23 @@ import org.apache.hadoop.mapred.nativetask.util.OutputPathUtil;
 
 /**
  * 
- * Java Record Reader + Native Mapper + Native Collector
+ * Native Record Reader + Native Mapper + Native Collector
  * 
- * @param <IK>
- * @param <IV>
  */
-public class NativeMapCollectHandler<IK, IV> extends NativeBatchProcessor<IK, IV, Writable, Writable> {
-
+public class AllNativeMapTask extends NativeBatchProcessor<Writable, Writable, Writable, Writable> {
   private static final Log LOG = LogFactory
-      .getLog(NativeMapCollectHandler.class);
+      .getLog(AllNativeMapTask.class);
 
   private OutputPathUtil mapOutputFile;
   private int spillNumber = 0;
-  
-  public NativeMapCollectHandler(int bufferCapacity, Class<IK> keyClass,
-      Class<IV> valueClass, JobConf conf, TaskAttemptID taskAttemptID)
+
+  public AllNativeMapTask(Configuration conf, TaskAttemptID taskAttemptID)
       throws IOException {
-    super(keyClass, 
-        valueClass, 
-        null, 
-        null, 
-        "NativeTask.MMapperHandler",
-        bufferCapacity, 
-        0);
-    
+    super(null, null, null, null, "NativeTask.MMapTaskHandler", 0, 0);
     this.mapOutputFile = new OutputPathUtil();
     this.mapOutputFile.setConf(conf);
   }
-  
-  @Override
-  public void init(Configuration conf) throws IOException {
-    super.init(conf);
-  }
-  
+
   @Override
   protected byte[] sendCommandToJava(byte[] data) throws IOException {
     String cmd = BytesUtil.fromBytes(data);
@@ -86,12 +69,7 @@ public class NativeMapCollectHandler<IK, IV> extends NativeBatchProcessor<IK, IV
     }
   }
 
-  public void process(IK key, IV value) throws IOException {
-    serializer.serializeKV(nativeWriter, (Writable) key, (Writable) value);
-  };
-
-  @Override
-  public void close() throws IOException {
-    super.close();
+  public void run() throws Exception {
+    sendCommandToNative(BytesUtil.toBytes("run"));
   }
 }

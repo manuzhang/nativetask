@@ -1,4 +1,4 @@
-/*
+/**
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,29 +16,17 @@
  * limitations under the License.
  */
 
+package org.apache.hadoop.mapred.nativetask.serde;
 
-#ifndef COMMONS_H_
-#define COMMONS_H_
+import java.io.IOException;
 
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <stdint.h>
-#include <stdlib.h>
-#include <assert.h>
-#include <string.h>
-#include <stdio.h>
-#include <memory.h>
-#include <fcntl.h>
+import org.apache.hadoop.io.Writable;
+import org.apache.hadoop.mapred.nativetask.INativeComparable;
 
-#include <limits>
-#include <string>
-#include <vector>
-#include <set>
-#include <map>
-#include <algorithm>
+public class FloatWritableSerializer extends DefaultSerializer implements INativeComparable {
 
-#include "primitives.h"
-#include "Log.h"
-#include "NativeTask.h"
-
-#endif /* COMMONS_H_ */
+  @Override
+  public int getLength(Writable w) throws IOException {
+    return 4;
+  }
+}

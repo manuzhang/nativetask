@@ -23,17 +23,10 @@ import java.io.IOException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.io.RawComparator;
 import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.mapred.JobConf;
-import org.apache.hadoop.mapred.TaskAttemptID;
-import org.apache.hadoop.mapred.TaskDelegation;
 import org.apache.hadoop.mapred.nativetask.Constants;
-import org.apache.hadoop.mapred.nativetask.INativeComparable;
 import org.apache.hadoop.mapred.nativetask.NativeBatchProcessor;
-import org.apache.hadoop.mapred.nativetask.NativeRuntime;
-import org.apache.hadoop.mapred.nativetask.serde.INativeSerializer;
-import org.apache.hadoop.mapred.nativetask.serde.NativeSerialization;
 import org.apache.hadoop.mapred.nativetask.util.BytesUtil;
 import org.apache.hadoop.mapred.nativetask.util.OutputPathUtil;
 
@@ -44,58 +37,16 @@ import org.apache.hadoop.mapred.nativetask.util.OutputPathUtil;
  * @param <K>
  * @param <V>
  */
-public class NativeMapOutputCollector<K extends Writable, V extends Writable>
-    extends NativeBatchProcessor<K, V, Writable, Writable> implements
-    TaskDelegation.MapOutputCollectorDelegator<K, V> {
-  private static Log LOG = LogFactory.getLog(NativeMapOutputCollector.class);
+public class NativeCollectorOnlyHandler<K extends Writable, V extends Writable>
+    extends NativeBatchProcessor<K, V, Writable, Writable>  {
+  private static Log LOG = LogFactory.getLog(NativeCollectorOnlyHandler.class);
 
   private OutputPathUtil outputFileUtil = null;
   private int spillNumber = 0;
 
-  public static boolean canEnable(JobConf job) {
-    if (!job.getBoolean(Constants.NATIVE_MAPOUTPUT_COLLECTOR_ENABLED, false)) {
-      return false;
-    }
-    if (job.getNumReduceTasks() == 0) {
-      return false;
-    }
-    if (job.getCombinerClass() != null) {
-      return false;
-    }
-    if (job.getClass("mapred.output.key.comparator.class", null,
-        RawComparator.class) != null) {
-      return false;
-    }
-    if (job.getBoolean("mapred.compress.map.output", false) == true) {
-      if (!"org.apache.hadoop.io.compress.SnappyCodec".equals(job
-          .get("mapred.map.output.compression.codec"))) {
-        return false;
-      }
-    }
-    
-    Class<?> keyCls = job.getMapOutputKeyClass();
-    try {
-      INativeSerializer serializer = NativeSerialization.getInstance().getSerializer(keyCls);
-      if (! (serializer instanceof INativeComparable)) {
-        return false;
-      }
-    } catch (IOException e) {
-      LOG.error("Not supported key type " + ((null == keyCls) ? null : keyCls.getName()) , e);
-      return false;
-    }
-    
-    boolean ret = NativeRuntime.isNativeLibraryLoaded();
-    if (ret) {
-      NativeRuntime.configure(job);
-    }
-    LOG.info("NativeRuntime.isNativeLibraryLoaded():" + ret);
-    LOG.info("Native task can enable:" + ret);
-
-    return ret;
-  }
 
   @SuppressWarnings("unchecked")
-  public NativeMapOutputCollector(JobConf jobConf, TaskAttemptID taskAttemptID)
+  public NativeCollectorOnlyHandler(JobConf jobConf)
       throws IOException {
     super((Class<K>)jobConf.getMapOutputKeyClass(), 
         (Class<V>)(jobConf.getMapOutputValueClass()),
@@ -109,15 +60,12 @@ public class NativeMapOutputCollector<K extends Writable, V extends Writable>
     outputFileUtil.setConf(jobConf);
   }
   
-  @Override
   public void collect(K key, V value, int partition) throws IOException,
       InterruptedException {
-
     serializer.serializeKV(nativeWriter, key, value);
     nativeWriter.writeInt(partition);
   };
-
-  @Override
+  
   public void flush() throws IOException, InterruptedException {
     nativeWriter.flush();
   }

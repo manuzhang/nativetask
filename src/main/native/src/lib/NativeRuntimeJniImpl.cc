@@ -274,4 +274,3 @@ JNIEXPORT jbyteArray JNICALL Java_org_apache_hadoop_mapred_nativetask_NativeRunt
   }
   return NULL;
 }
-

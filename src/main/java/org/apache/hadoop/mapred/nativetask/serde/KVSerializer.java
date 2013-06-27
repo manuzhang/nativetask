@@ -19,8 +19,6 @@
 
 package org.apache.hadoop.mapred.nativetask.serde;
 
-import java.io.ByteArrayOutputStream;
-import java.io.DataOutputStream;
 import java.io.IOException;
 
 import org.apache.hadoop.io.Writable;
@@ -80,9 +78,11 @@ public class KVSerializer<K, V> implements IKVSerializer {
     }
 
     out.writeInt(keylength);
+    
     keySerializer.serialize(key, out);
 
     out.writeInt(valueLength);
+    
     valueSerializer.serialize(value, out);
 
     return keylength + valueLength + 8;

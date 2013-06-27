@@ -51,6 +51,7 @@ public class NativeReduceOnlyHandler<IK, IV, OK, OV> extends
   private Writable tmpOutputKey;
   private Writable tmpOutputValue;
   final private RecordWriter<OK, OV> writer;
+  byte[] outputLength = new byte[4];
 
   enum KVState {
     KEY, VALUE
@@ -154,34 +155,13 @@ public class NativeReduceOnlyHandler<IK, IV, OK, OV> extends
     if (data[0] != (byte) 'r') {
       throw new IOException("command not support");
     }
-    int length = toInt(data, 1, 4); // load length to read
-    return toBytes(refill(getWriter(), length));
+    int length = BytesUtil.toInt(data, 1, 4); // load length to read
+    return BytesUtil.toBytes(refill(getWriter(), length), outputLength);
   }
 
   public void run() throws IOException {
     sendCommandToNative(BytesUtil.toBytes("run"));
   }
 
-  private static int toInt(byte[] bytes, int offset, final int length) {
-    final int SIZEOF_INT = 4;
-    if (length != SIZEOF_INT || offset + length > bytes.length) {
-      throw new RuntimeException(
-          "toInt exception. length not equals to SIZE of Int or buffer overflow");
-    }
-    int n = 0;
-    for (int i = (offset + length) - 1; i >= offset; i--) {
-      n <<= 8;
-      n ^= bytes[i] & 0xFF;
-    }
-    return n;
-  }
 
-  private static byte[] toBytes(int val) {
-    byte[] b = new byte[4];
-    for (int i = 0; i <= 3; i++) {
-      b[i] = (byte) val;
-      val >>>= 8;
-    }
-    return b;
-  }
 }
