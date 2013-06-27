@@ -1,6 +1,6 @@
 Steps to test native output collector.
 ===========
-0. Go to patch/hadoop-1.03-nativetask-patched/
+0. Go to patch/hadoop1.03_with_native_task_patched/
 1. ant; to build hadoop.jar.
 2. ant examples; to build hadoop-examples.jar
 3. ant compile-native to build libhadoop.so libnativetask.so, and libstreaming.so
