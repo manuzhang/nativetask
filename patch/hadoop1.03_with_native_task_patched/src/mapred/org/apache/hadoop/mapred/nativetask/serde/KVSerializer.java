@@ -78,9 +78,11 @@ public class KVSerializer<K, V> implements IKVSerializer {
     }
 
     out.writeInt(keylength);
+    
     keySerializer.serialize(key, out);
 
     out.writeInt(valueLength);
+    
     valueSerializer.serialize(value, out);
 
     return keylength + valueLength + 8;

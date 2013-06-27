@@ -57,11 +57,11 @@ public abstract class NativeBatchProcessor<IK, IV, OK, OV> implements
       int inputBufferCapacity, int outputBufferCapacity) throws IOException {
     if (inputBufferCapacity > 0) {
       this.inputBuffer = ByteBuffer.allocateDirect(inputBufferCapacity);
-      this.inputBuffer.order(ByteOrder.LITTLE_ENDIAN);
+      this.inputBuffer.order(ByteOrder.BIG_ENDIAN);
     }
     if (outputBufferCapacity > 0) {
       this.outputBuffer = ByteBuffer.allocateDirect(outputBufferCapacity);
-      this.outputBuffer.order(ByteOrder.LITTLE_ENDIAN);
+      this.outputBuffer.order(ByteOrder.BIG_ENDIAN);
     }
     this.nativeHandlerName = nativeHandlerName;
 

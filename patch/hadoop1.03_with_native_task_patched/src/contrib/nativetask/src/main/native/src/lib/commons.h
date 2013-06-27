@@ -20,14 +20,14 @@
 #ifndef COMMONS_H_
 #define COMMONS_H_
 
+#include <sys/types.h>
+#include <sys/stat.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <assert.h>
 #include <string.h>
 #include <stdio.h>
 #include <memory.h>
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <fcntl.h>
 
 #include <limits>
