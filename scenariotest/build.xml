@@ -1,1 +1,60 @@
- 
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="nativetask-autotest" default="testCompatibility">
+	<property name="src.dir" value="testcases"/>
+	<property name="build.dir" value="testbuild"/>
+	<property name="report.dir" value="testreport"/>
+	<property name="nativepackage" value="org.apache.hadoop.mapred.nativetask"/>
+	<!--configure path-->
+	<path id="hadooplib">
+		<fileset dir="../lib" includes="*.jar"/>
+		<fileset dir="../build" includes="*.jar"/>
+	</path>
+	<path id="junitlib">
+		<fileset dir="lib" includes="*.jar"/>
+	</path>
+	<path id="alllib">
+		<pathelement refid="hadooplib"/>
+		<pathelement refid="junitlib"/>
+	</path>
+	<!--init dir-->
+	<target name="init">
+		<delete dir="${build.dir}"/>
+		<mkdir dir="${build.dir}"/>
+		<delete dir="${report.dir}"/>
+		<mkdir dir="${report.dir}"/>
+	</target>
+	<target name="compile" depends="init">
+		<javac src="${src.dir}" destdir="${build.dir}">
+			<classpath refid="alllib"/>
+		</javac>
+	</target>
+	<target name="testCompatibility-kv">
+		<delete dir="${report.dir}/testCompatibility-kv"/>
+		<mkdir dir="${report.dir}/testCompatibility-kv"/>
+		<junit printsummary="yes">
+			<classpath refid="junitlib"/>
+			<formatter type="xml"/>
+			<batchtest todir="${report.dir}">
+				<fileset dir="${build.dir}/${nativepackage}/kvtest">
+					<include name="*Test.class"/>
+				</fileset>
+			</batchtest>
+		</junit>
+		<junitreport todir="${report.dir}/testCompatibility-kv">
+			<fileset dir="${report.dir}" includes="*.xml"/>
+			<report format="frames" todir="${report.dir}/testCompatibility/html"/> 
+		</junitreport>
+	</target>
+	<target name="testCombiner">
+		
+	</target>
+    <target name="testCompatibility" depends="testCompatibility-kv,testCombiner">
+            
+    </target>
+	<target name="testStability">
+			
+	</target>
+	<target name="testAll" depends="testCompatibility,testStability">
+	
+	</target>
+</project>
