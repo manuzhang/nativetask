@@ -49,6 +49,7 @@ import org.apache.hadoop.io.serializer.Serializer;
 class IFile {
 
   private static final int EOF_MARKER = -1;
+  private static final int INT_LENGTH_BYTES = 4;
   
   /**
    * <code>IFile.Writer</code> to write out intermediate map-outputs. 
@@ -224,6 +225,31 @@ class IFile {
       ++numRecordsWritten;
     }
     
+    public void append(byte[] kvBuffer, int offset, int keyLength,
+        int valueLength)
+        throws IOException {
+      int realKeyLen = keyLength + INT_LENGTH_BYTES;
+      int realValLen = valueLength + INT_LENGTH_BYTES;
+
+      WritableUtils.writeVInt(buffer, realKeyLen);
+      WritableUtils.writeVInt(buffer, realValLen);
+      //this is real key: keyLength + key
+      buffer.writeInt(keyLength);
+      buffer.write(kvBuffer, offset, keyLength);
+      //this is real value: 
+      buffer.writeInt(valueLength);
+      buffer.write(kvBuffer, offset + keyLength, valueLength);
+
+      out.write(buffer.getData(), 0, buffer.getLength());
+      buffer.reset();
+
+      // Update bytes written
+      decompressedBytesWritten += realKeyLen + realValLen
+          + WritableUtils.getVIntSize(realKeyLen)
+          + WritableUtils.getVIntSize(realValLen);
+      ++numRecordsWritten;
+    }
+
     public long getRawLength() {
       return decompressedBytesWritten;
     }

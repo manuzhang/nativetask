@@ -36,6 +36,7 @@ import org.apache.hadoop.fs.Path;
 class MapOutputFile {
 
   private JobConf conf;
+  private JobID jobId;
 
   static final String REDUCE_INPUT_FILE_FORMAT_STRING = "%s/map_%d.out";
 
@@ -108,6 +109,16 @@ class MapOutputFile {
         + spillNumber + ".out", conf);
   }
 
+  /** Create a local map spill file name.
+   * @param mapTaskId a map task id
+   * @param spillNumber the number
+   * @param size the size of the file
+   */
+  public Path getSpillFileForWrite(TaskAttemptID mapTaskId, int spillNumber, 
+         long size) throws IOException {
+    return lDirAlloc.getLocalPathForWrite(TaskTracker.OUTPUT + "/spill" + 
+                       spillNumber + ".out", conf);
+  }
   /**
    * Create a local map spill file name.
    * 
@@ -135,6 +146,16 @@ class MapOutputFile {
         + spillNumber + ".out.index", conf);
   }
 
+  /** Create a local map spill index file name.
+   * @param mapTaskId a map task id
+   * @param spillNumber the number
+   * @param size the size of the file
+   */
+  public Path getSpillIndexFileForWrite(TaskAttemptID mapTaskId, int spillNumber,
+         long size) throws IOException {
+    return lDirAlloc.getLocalPathForWrite(TaskTracker.OUTPUT + "/spill"
+                       + spillNumber +  ".out.index", size, conf);
+  }
   /**
    * Create a local map spill index file name.
    * 
@@ -190,5 +211,9 @@ class MapOutputFile {
     } else {
       this.conf = new JobConf(conf);
     }
+  }
+  
+  public void setJobId(JobID jobId) {
+    this.jobId = jobId;
   }
 }
