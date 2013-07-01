@@ -16,7 +16,6 @@
  * limitations under the License.
  */
 
-
 package org.apache.hadoop.mapred.nativetask.serde;
 
 import java.io.ByteArrayOutputStream;
@@ -43,9 +42,9 @@ public class DefaultSerializer implements INativeSerializer<Writable> {
 
   @Override
   public int getLength(Writable w) throws IOException {
-//    if (w == buffered) {
-//      return bufferedLength;
-//    }
+    // if (w == buffered) {
+    // return bufferedLength;
+    // }
     buffered = null;
     bufferedLength = -1;
 
@@ -58,10 +57,10 @@ public class DefaultSerializer implements INativeSerializer<Writable> {
 
   @Override
   public void serialize(Writable w, DataOutput out) throws IOException {
-//    if (w == buffered) {
-//      out.write(outBuffer.getBuffer(), 0, outBuffer.size());
-//      return;
-//    }
+    // if (w == buffered) {
+    // out.write(outBuffer.getBuffer(), 0, outBuffer.size());
+    // return;
+    // }
     w.write(out);
   }
 

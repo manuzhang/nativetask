@@ -414,10 +414,10 @@ class ReduceTask extends Task {
     Class valueClass = job.getMapOutputValueClass();
     RawComparator comparator = job.getOutputValueGroupingComparator();
 
-    ReduceTaskDelegator reduceDelegator = TaskDelegation.getReduceTaskDelegator(job);
+    ReduceTaskDelegator reduceDelegator = TaskDelegation.getReduceTaskDelegator(umbilical, reporter, job);
     
     if (null != reduceDelegator) {
-      reduceDelegator.run(this.getTaskID(), umbilical, reporter, 
+      reduceDelegator.run(this.getTaskID(), 
           rIter, comparator, 
           keyClass, valueClass);
       

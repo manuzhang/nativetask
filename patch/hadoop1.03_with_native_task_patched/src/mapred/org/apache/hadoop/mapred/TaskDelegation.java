@@ -22,7 +22,7 @@ import java.io.IOException;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.conf.Configurable;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.RawComparator;
 import org.apache.hadoop.mapred.Task.TaskReporter;
 import org.apache.hadoop.util.ReflectionUtils;
@@ -33,17 +33,18 @@ public class TaskDelegation {
   
   public final static String MAP_TASK_DELEGATPR = "mapreduce.map.task.delegator.class";
   public final static String REDUCE_TASK_DELEGATPR = "mapreduce.reduce.task.delegator.class";
-  public final static String MAP_OUTPUT_COLLECTOR_DELEGATPR = "mapreduce.map.output.collector.delegator.class";
-  
+  public final static String MAP_OUTPUT_COLLECTOR_DELEGATPR = "mapreduce.map.output.collector.delegator.class";  
 
   /**
    * inteface for map task delegator
    *
    */
-  public static interface MapTaskDelegator extends Configurable {
+  public static interface MapTaskDelegator {
+    
+    public void init(TaskUmbilicalProtocol umbilical, TaskReporter reporter, Configuration conf) 
+        throws Exception;
     
     public void run(TaskAttemptID taskID,  
-        TaskUmbilicalProtocol umbilical, TaskReporter reporter,
         Object split)
             throws IOException;
   }
@@ -52,10 +53,12 @@ public class TaskDelegation {
    * inteface for map reduce task delegator
    *
    */
-  public static interface ReduceTaskDelegator extends Configurable {
+  public static interface ReduceTaskDelegator {
 
-    public void run(TaskAttemptID taskID,  
-        TaskUmbilicalProtocol umbilical, TaskReporter reporter, 
+    public void init(TaskUmbilicalProtocol umbilical, TaskReporter reporter, Configuration conf) 
+        throws Exception;
+    
+    public void run(TaskAttemptID taskID, 
         RawKeyValueIterator rIter, RawComparator comparator, 
         Class keyClass, Class valueClass)
         throws IOException;
@@ -66,10 +69,14 @@ public class TaskDelegation {
    *
    */
   public static interface MapOutputCollectorDelegator<K, V> extends
-    MapTask.MapOutputCollector<K, V>, Configurable {
+    MapTask.MapOutputCollector<K, V> {
+
+    void init(TaskUmbilicalProtocol umbilical, TaskReporter reporter,
+        Configuration conf, Task task) throws Exception;
   }
   
-  public static MapTaskDelegator getMapTaskDelegator(JobConf job) {
+  public static MapTaskDelegator getMapTaskDelegator(TaskUmbilicalProtocol protocol
+      , TaskReporter reporter, JobConf job) {
     String delegateMapClazz = job.get(MAP_TASK_DELEGATPR, null);
     if (null == delegateMapClazz || delegateMapClazz.isEmpty()) {
       LOG.info("MapTaskDelegator is not defined");
@@ -84,16 +91,18 @@ public class TaskDelegation {
     MapTaskDelegator delegator = null;
     try {
       delegator = ReflectionUtils.newInstance(delegatorClass, job);
+      delegator.init(protocol, reporter, job);
       LOG.info("MapTaskDelegator " + delegateMapClazz + " is enabled");
     }
-    catch(RuntimeException e) {
+    catch(Exception e) {
       LOG.error("MapTaskDelegator " + delegateMapClazz + " is not enabled", e);
     }
     return delegator;
   }
 
 
-  public static ReduceTaskDelegator getReduceTaskDelegator(JobConf job) {
+  public static ReduceTaskDelegator getReduceTaskDelegator(TaskUmbilicalProtocol protocol
+      , TaskReporter reporter, JobConf job) {
     String delegateReducerClazz = job.get(REDUCE_TASK_DELEGATPR, null);
     if (null == delegateReducerClazz || delegateReducerClazz.isEmpty()) {
       LOG.info("Reduce task Delegator not defined");
@@ -109,9 +118,10 @@ public class TaskDelegation {
     ReduceTaskDelegator delegator = null;
     try {
       delegator = ReflectionUtils.newInstance(delegatorClass, job);
+      delegator.init(protocol, reporter, job);
       LOG.info("ReduceTaskDelegator " + delegateReducerClazz + " is enabled");
     }
-    catch(RuntimeException e) {
+    catch(Exception e) {
       LOG.warn("ReduceTaskDelegator " + delegateReducerClazz + " is not enabled", e);
     }
     return delegator;
@@ -119,7 +129,8 @@ public class TaskDelegation {
 
   @SuppressWarnings("unchecked")
   public static <K, V> MapOutputCollectorDelegator<K, V> 
-      getOutputCollectorDelegator(JobConf job) {
+      getOutputCollectorDelegator(TaskUmbilicalProtocol protocol
+          , TaskReporter reporter, JobConf job, Task task) {
     
     String delegatorClazz = job.get(MAP_OUTPUT_COLLECTOR_DELEGATPR, null);
     if (null == delegatorClazz || delegatorClazz.isEmpty()) {
@@ -135,9 +146,10 @@ public class TaskDelegation {
     MapOutputCollectorDelegator delegator = null;
     try {
       delegator = ReflectionUtils.newInstance(delegatorClass, job);
+      delegator.init(protocol, reporter, job, task);
       LOG.info("MapOutputCollectorDelegator " + delegatorClazz + " is enabled");
     }
-    catch(RuntimeException e) {
+    catch(Exception e) {
       LOG.error("MapOutputCollectorDelegator " + delegatorClazz + " is not enabled", e);
     }
     return delegator;

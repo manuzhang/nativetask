@@ -23,7 +23,8 @@ import java.io.IOException;
 import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.mapred.nativetask.INativeComparable;
 
-public class IntWritableSerializer extends DefaultSerializer implements INativeComparable {
+public class IntWritableSerializer extends DefaultSerializer implements
+    INativeComparable {
 
   @Override
   public int getLength(Writable w) throws IOException {

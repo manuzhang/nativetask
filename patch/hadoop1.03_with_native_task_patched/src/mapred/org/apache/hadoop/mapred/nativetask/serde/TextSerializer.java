@@ -16,7 +16,6 @@
  * limitations under the License.
  */
 
-
 package org.apache.hadoop.mapred.nativetask.serde;
 
 import java.io.DataInput;
@@ -27,7 +26,8 @@ import java.lang.reflect.Method;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapred.nativetask.INativeComparable;
 
-public class TextSerializer implements INativeSerializer<Text>, INativeComparable  {
+public class TextSerializer implements INativeSerializer<Text>,
+    INativeComparable {
   private Method setCapacity = null;
 
   public TextSerializer() throws SecurityException, NoSuchMethodException {

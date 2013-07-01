@@ -38,34 +38,29 @@ import org.apache.hadoop.mapred.nativetask.util.OutputPathUtil;
  * @param <V>
  */
 public class NativeCollectorOnlyHandler<K extends Writable, V extends Writable>
-    extends NativeBatchProcessor<K, V, Writable, Writable>  {
+    extends NativeBatchProcessor<K, V, Writable, Writable> {
   private static Log LOG = LogFactory.getLog(NativeCollectorOnlyHandler.class);
 
   private OutputPathUtil outputFileUtil = null;
   private int spillNumber = 0;
 
-
   @SuppressWarnings("unchecked")
-  public NativeCollectorOnlyHandler(JobConf jobConf)
-      throws IOException {
-    super((Class<K>)jobConf.getMapOutputKeyClass(), 
-        (Class<V>)(jobConf.getMapOutputValueClass()),
-        null, 
-        null, 
-        "NativeTask.MCollectorOutputHandler", 
-        jobConf.getInt(Constants.NATIVE_PROCESSOR_BUFFER_KB, 1024) * 1024, 
-        0);
-    
+  public NativeCollectorOnlyHandler(JobConf jobConf) throws IOException {
+    super((Class<K>) jobConf.getMapOutputKeyClass(), (Class<V>) (jobConf
+        .getMapOutputValueClass()), null, null,
+        "NativeTask.MCollectorOutputHandler", jobConf.getInt(
+            Constants.NATIVE_PROCESSOR_BUFFER_KB, 1024) * 1024, 0);
+
     this.outputFileUtil = new OutputPathUtil();
     outputFileUtil.setConf(jobConf);
   }
-  
+
   public void collect(K key, V value, int partition) throws IOException,
       InterruptedException {
     serializer.serializeKV(nativeWriter, key, value);
     nativeWriter.writeInt(partition);
   };
-  
+
   public void flush() throws IOException, InterruptedException {
     nativeWriter.flush();
   }

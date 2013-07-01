@@ -34,7 +34,8 @@ import org.apache.hadoop.util.Progressable;
  * @param <IK>
  * @param <IV>
  */
-public class NativeReduceAndWriteHandler<IK, IV> extends NativeReduceOnlyHandler<IK, IV, Writable, Writable> {
+public class NativeReduceAndWriteHandler<IK, IV> extends
+    NativeReduceOnlyHandler<IK, IV, Writable, Writable> {
 
   public NativeReduceAndWriteHandler(int inputBufferCapacity,
       int outputBufferCapacity, Class<IK> iKClass, Class<IV> iVClass,
@@ -43,15 +44,15 @@ public class NativeReduceAndWriteHandler<IK, IV> extends NativeReduceOnlyHandler
     super(inputBufferCapacity, outputBufferCapacity, iKClass, iVClass, null,
         null, conf, null, progress, rIter);
   }
-  
+
   public void run() throws IOException {
     sendCommandToNative(BytesUtil.toBytes("run"));
   }
-  
+
   @Override
   protected boolean flushOutputAndProcess(NativeDataReader reader, int length)
       throws IOException {
-    //we don't expect to do anything here.
+    // we don't expect to do anything here.
     return true;
   }
 

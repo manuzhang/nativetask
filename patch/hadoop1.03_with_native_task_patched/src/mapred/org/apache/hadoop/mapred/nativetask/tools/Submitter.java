@@ -97,8 +97,8 @@ public class Submitter extends Configured implements Tool {
           NativeReduceTaskDelegator.class.getCanonicalName());
     }
     if (conf.getJobName() == null || conf.getJobName().length() == 0) {
-      conf.setJobName("Native-" + conf.get("native.mapper.class") +
-          "-" + conf.get("native.reducer.class"));
+      conf.setJobName("Native-" + conf.get("native.mapper.class") + "-"
+          + conf.get("native.reducer.class"));
     }
   }
 

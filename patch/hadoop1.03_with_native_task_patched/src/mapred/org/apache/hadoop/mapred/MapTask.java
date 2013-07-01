@@ -78,14 +78,14 @@ import org.apache.hadoop.util.ReflectionUtils;
 import org.apache.hadoop.util.StringUtils;
 
 /** A Map task. */
-class MapTask extends Task {
+public class MapTask extends Task {
   /**
    * The size of each record in the index file for the map-outputs.
    */
   public static final int MAP_OUTPUT_INDEX_RECORD_LENGTH = 24;
 
   private TaskSplitIndex splitMetaInfo = new TaskSplitIndex();
-  private final static int APPROX_HEADER_LENGTH = 150;
+  public final static int APPROX_HEADER_LENGTH = 150;
 
   private static final Log LOG = LogFactory.getLog(MapTask.class.getName());
 
@@ -367,10 +367,10 @@ class MapTask extends Task {
       return;
     }
     
-    MapTaskDelegator mapTaskDelegator = TaskDelegation.getMapTaskDelegator(job);
+    MapTaskDelegator mapTaskDelegator = TaskDelegation.getMapTaskDelegator(umbilical, reporter, job);
     
     if (null != mapTaskDelegator) {
-      mapTaskDelegator.run(this.getTaskID(), umbilical, reporter, getSplitDetails(
+      mapTaskDelegator.run(this.getTaskID(),  getSplitDetails(
         new Path(splitMetaInfo.getSplitLocation()),
         splitMetaInfo.getStartOffset()));
     } else if (useNewApi) {
@@ -433,7 +433,7 @@ class MapTask extends Task {
     LOG.info("numReduceTasks: " + numReduceTasks);
     MapOutputCollector collector = null;
     if (numReduceTasks > 0) {
-      collector = TaskDelegation.getOutputCollectorDelegator(job);
+      collector = TaskDelegation.getOutputCollectorDelegator(umbilical, reporter, job, this);
       if (collector == null) {
         collector = new MapOutputBuffer(umbilical, job, reporter);
       }
@@ -682,7 +682,7 @@ class MapTask extends Task {
                        TaskUmbilicalProtocol umbilical,
                        TaskReporter reporter
                        ) throws IOException, ClassNotFoundException {
-      MapOutputCollector<K,V> tc = TaskDelegation.getOutputCollectorDelegator(job);
+      MapOutputCollector<K,V> tc = TaskDelegation.getOutputCollectorDelegator(umbilical, reporter, job, MapTask.this);
       collector = tc != null ? tc : new MapOutputBuffer<K,V>(umbilical, job, reporter);
       partitions = jobContext.getNumReduceTasks();
       if (partitions > 0) {

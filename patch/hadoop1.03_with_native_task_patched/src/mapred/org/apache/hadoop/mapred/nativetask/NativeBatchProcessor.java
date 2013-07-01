@@ -29,7 +29,7 @@ import org.apache.hadoop.mapred.nativetask.serde.KVSerializer;
 
 public abstract class NativeBatchProcessor<IK, IV, OK, OV> implements
     INativeHandler {
-  
+
   private static Log LOG = LogFactory.getLog(NativeBatchProcessor.class);
 
   private ByteBuffer inputBuffer;
@@ -51,7 +51,7 @@ public abstract class NativeBatchProcessor<IK, IV, OK, OV> implements
       InitIDs();
     }
   }
-  
+
   public NativeBatchProcessor(Class<IK> iKClass, Class<IV> iVClass,
       Class<OK> oKClass, Class<OV> oVClass, String nativeHandlerName,
       int inputBufferCapacity, int outputBufferCapacity) throws IOException {
@@ -112,7 +112,7 @@ public abstract class NativeBatchProcessor<IK, IV, OK, OV> implements
     if (null == inputBuffer) {
       return;
     }
-    
+
     if (isInputFinished) {
       return;
     }

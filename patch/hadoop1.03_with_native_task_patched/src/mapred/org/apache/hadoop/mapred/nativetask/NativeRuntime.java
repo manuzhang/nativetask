@@ -66,28 +66,16 @@ public class NativeRuntime {
   }
 
   // All configs that native side needed
-  private static String[] usefulExternalConfigsKeys = {
-      "mapred.map.tasks",
-      "mapred.reduce.tasks", 
-      "mapred.task.partition",
-      "mapred.mapoutput.key.class", 
-      "mapred.mapoutput.value.class",
-      "mapred.output.key.class", 
-      "mapred.output.value.class",
-      "mapred.input.format.class",
-      "mapred.output.format.class",
-      "mapred.work.output.dir", 
-      "mapred.textoutputformat.separator",
-      "mapred.compress.map.output", 
-      "mapred.map.output.compression.codec",
-      "mapred.output.compress", 
-      "mapred.output.compression.codec",
-      "mapred.map.output.sort", 
-      "io.sort.mb", 
-      "io.file.buffer.size",
-      "fs.default.name", 
-      "fs.defaultFS" 
-   };
+  private static String[] usefulExternalConfigsKeys = { "mapred.map.tasks",
+      "mapred.reduce.tasks", "mapred.task.partition",
+      "mapred.mapoutput.key.class", "mapred.mapoutput.value.class",
+      "mapred.output.key.class", "mapred.output.value.class",
+      "mapred.input.format.class", "mapred.output.format.class",
+      "mapred.work.output.dir", "mapred.textoutputformat.separator",
+      "mapred.compress.map.output", "mapred.map.output.compression.codec",
+      "mapred.output.compress", "mapred.output.compression.codec",
+      "mapred.map.output.sort", "io.sort.mb", "io.file.buffer.size",
+      "fs.default.name", "fs.defaultFS" };
 
   private static void assertNativeLibraryLoaded() {
     if (!nativeLibraryLoaded) {
@@ -136,7 +124,7 @@ public class NativeRuntime {
   public static void configure(String key, boolean value) {
     configure(key, Boolean.toString(value));
   }
-  
+
   public static void configure(String key, int value) {
     configure(key, Integer.toString(value));
   }
@@ -167,19 +155,22 @@ public class NativeRuntime {
 
   /**
    * Register a customized library
+   * 
    * @param clazz
    * @return
    */
-  public synchronized static long registerLibrary(String libraryName, String clazz) {
+  public synchronized static long registerLibrary(String libraryName,
+      String clazz) {
     assertNativeLibraryLoaded();
-    long ret = JNIRegisterModule(BytesUtil.toBytes(libraryName), BytesUtil.toBytes(clazz));
+    long ret = JNIRegisterModule(BytesUtil.toBytes(libraryName),
+        BytesUtil.toBytes(clazz));
     if (ret == 0) {
       LOG.warn("Can't create NativeObject for class " + clazz
           + ", prabobly not exist.");
     }
     return ret;
   }
-  
+
   /**
    * destroy native object We use to destory native handlers
    */

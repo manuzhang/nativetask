@@ -16,7 +16,6 @@
  * limitations under the License.
  */
 
-
 package org.apache.hadoop.mapred.nativetask.serde;
 
 import java.io.IOException;
@@ -24,7 +23,8 @@ import java.io.IOException;
 import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.mapred.nativetask.INativeComparable;
 
-public class LongWritableSerializer extends DefaultSerializer  implements INativeComparable  {
+public class LongWritableSerializer extends DefaultSerializer implements
+    INativeComparable {
   @Override
   public int getLength(Writable w) throws IOException {
     return 8;

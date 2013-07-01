@@ -16,7 +16,6 @@
  * limitations under the License.
  */
 
-
 package org.apache.hadoop.mapred.nativetask.serde;
 
 import java.io.IOException;
@@ -64,7 +63,7 @@ public class KVSerializer<K, V> implements IKVSerializer {
 
     int keylength = keySerializer.getLength(key);
     int valueLength = valueSerializer.getLength(value);
-    
+
     int kvLength = keylength + valueLength + LENGTH_INT_BYTES
         + LENGTH_INT_BYTES;
 
@@ -78,11 +77,11 @@ public class KVSerializer<K, V> implements IKVSerializer {
     }
 
     out.writeInt(keylength);
-    
+
     keySerializer.serialize(key, out);
 
     out.writeInt(valueLength);
-    
+
     valueSerializer.serialize(value, out);
 
     return keylength + valueLength + 8;

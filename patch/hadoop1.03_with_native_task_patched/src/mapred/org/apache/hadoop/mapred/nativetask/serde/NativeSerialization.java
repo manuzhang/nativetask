@@ -16,7 +16,6 @@
  * limitations under the License.
  */
 
-
 package org.apache.hadoop.mapred.nativetask.serde;
 
 import java.io.IOException;
@@ -42,7 +41,8 @@ public class NativeSerialization {
   }
 
   @SuppressWarnings("unchecked")
-  public INativeSerializer<Writable> getSerializer(Class<?> c) throws IOException {
+  public INativeSerializer<Writable> getSerializer(Class<?> c)
+      throws IOException {
 
     if (null == c) {
       return null;
@@ -53,7 +53,7 @@ public class NativeSerialization {
     }
     String name = c.getName();
     Class<?> serializer = map.get(name);
-    
+
     if (null != serializer) {
       try {
         return (INativeSerializer<Writable>) serializer.newInstance();
@@ -112,6 +112,6 @@ public class NativeSerialization {
     me.register(ByteWritable.class.getName(), ByteWritableSerializer.class);
     me.register(FloatWritable.class.getName(), FloatWritableSerializer.class);
     me.register(DoubleWritable.class.getName(), DoubleWritableSerializer.class);
-    
+
   }
 }
