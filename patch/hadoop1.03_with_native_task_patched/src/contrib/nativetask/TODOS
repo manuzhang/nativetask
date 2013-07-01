@@ -26,6 +26,7 @@ include file api
 key/value serialiazation using protocol buffer.
 more check on stream decoration.
 support shuffle/merge in native.
+reimplement the sorting algorithm. using block size of L2/L3 cache
  
 
 
