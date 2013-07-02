@@ -3,12 +3,12 @@ TODOs:
 extract LineReader from LineRecordReader
 add example 
 
-input progress
-Counters
-job submitter
-Terasort TotalOrderPartitioner
-add google sparse hash
-add test for partition bucket combiner
+- [] input progress
+- [] Counters
+- [] job submitter
+- [] Terasort TotalOrderPartitioner
+- [] add google sparse hash
+- [] add test for partition bucket combiner
 support parallel sort & compression
 SequenceFile reader
 
