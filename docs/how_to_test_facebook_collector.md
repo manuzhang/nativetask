@@ -27,7 +27,7 @@ bin/hadoop jar hadoop-examples-1.0.3-Intel.jar randomtextwriter
 -outFormat org.apache.hadoop.mapred.TextOutputFormat /text_wordcount_input
 
 run word count:
-bin/hadoop org.apache.hadoop.mapred.BlockMapOutputBuffer.WordCountForBlockOutputBuffer  
+bin/hadoop org.apache.hadoop.mapred.WordCountForBlockOutputBuffer  
 -Dmapreduce.map.output.collector.delegator.class=org.apache.hadoop.mapred.BlockMapOutputBuffer 
 /text_wordcount_input /text_wordcount_output 
 </code>
