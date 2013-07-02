@@ -9,16 +9,41 @@ Steps to test facebook collector for map output
 6. Restart namenode, datanode, jobtracker, and tasktracker.
 7. Test whether native output collector is enabled by defining flag mapreduce.map.output.collector.delegator.class=
 org.apache.hadoop.mapred.BlockMapOutputBuffer
-8. But current it only support BytesWriteable key and BytesWritable value.
-
-Here is an example:
-
-<pre><code>
-
-You cannot use this directly. As we only support key value type as BytesWritable. 
-
-hadoop jar hadoop-examples.jar pi -D mapreduce.map.output.collector.delegator.class=
-org.apache.hadoop.mapred.BlockMapOutputBuffer 3 100000</code></pre>
-9. check the task Log, if there is 
+8. But current it only support BytesWriteable, Text KV type.
+9. Check the task Log, if there is 
 ``MapOutputCollectorDelegator BlockMapOutputBuffer is enabled!``
 Then it means the facebook collector task is successfully enabled.
+
+Examples:
+=========================
+WordCount:
+------------------------
+As it don't support IntWritable, we have do a little modification of the original wordcount to use BytesWritable instead.
+<pre>
+<code>
+prepare the data:
+bin/hadoop jar hadoop-examples-1.0.3-Intel.jar randomtextwriter 
+-Dtest.randomtextwrite.total_bytes=100000 -Dtest.randomtextwrite.bytes_per_map=100000  
+-outFormat org.apache.hadoop.mapred.TextOutputFormat /text_wordcount_input
+
+run word count:
+bin/hadoop org.apache.hadoop.mapred.BlockMapOutputBuffer.WordCountForBlockOutputBuffer  
+-Dmapreduce.map.output.collector.delegator.class=org.apache.hadoop.mapred.BlockMapOutputBuffer 
+/text_wordcount_input /text_wordcount_output 
+</code>
+</pre>
+
+Terasort
+-------------------------
+<pre>
+<code>
+prepare the data:
+bin/hadoop jar hadoop-examples-1.0.1-SNAPSHOT.jar teragen 1000 /tera100k-snappy 
+
+run tera sort:
+bin/hadoop jar hadoop-examples-1.0.1-SNAPSHOT.jar terasort 
+-Dmapreduce.map.output.collector.delegator.class=org.apache.hadoop.mapred.BlockMapOutputBuffer  
+/tera100k-snappy /terasort100k-facebook-output
+
+</code>
+</pre>
