@@ -20,6 +20,7 @@ package org.apache.hadoop.mapred;
 import static org.apache.hadoop.mapred.Task.Counter.MAP_OUTPUT_BYTES;
 import static org.apache.hadoop.mapred.Task.Counter.MAP_OUTPUT_RECORDS;
 
+import java.io.DataInput;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -37,6 +38,7 @@ import org.apache.hadoop.io.BytesWritable;
 import org.apache.hadoop.io.RawComparator;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.WritableComparator;
+import org.apache.hadoop.io.WritableUtils;
 import org.apache.hadoop.io.compress.CompressionCodec;
 import org.apache.hadoop.io.compress.DefaultCodec;
 import org.apache.hadoop.mapred.IFile.Writer;
@@ -62,6 +64,7 @@ public class BlockMapOutputBuffer<K extends BinaryComparable, V extends BinaryCo
   private JobConf job;
   private TaskReporter reporter;
   private Class<K> keyClass;
+  private RawComparator rawComparator;
   private Class<V> valClass;
   private int softBufferLimit;
   // Compression for map-outputs
@@ -394,26 +397,7 @@ public class BlockMapOutputBuffer<K extends BinaryComparable, V extends BinaryCo
         RawKeyValueIterator kvIter =
             Merger.merge(job, rfs, keyClass, valClass, codec,
                 segmentList, job.getInt("io.sort.factor", 100),
-                new Path(mapId.toString()), new RawComparator<K>() {
-                  @Override
-                  public int compare(byte[] b1, int s1, int l1,
-                      byte[] b2, int s2, int l2) {
-                    return WritableComparator.compareBytes(
-                            b1, 
-                            s1 + 4, 
-                            l1 - 4, 
-                            b2, 
-                            s2 + 4, 
-                            l2 - 4
-                            );
-                  }
-
-                  @Override
-                  public int compare(K o1, K o2) {
-                    return WritableComparator.compareBytes( o1.getBytes(), 0, o1.getLength(), 
-                            o2.getBytes(), 0, o2.getLength());
-                  }
-                },  reporter, null,
+                new Path(mapId.toString()), rawComparator,  reporter, null,
                 task.spilledRecordsCounter);
 
         // write merged output to disk
@@ -506,6 +490,76 @@ public class BlockMapOutputBuffer<K extends BinaryComparable, V extends BinaryCo
           + keyClass.getName() + ", MapOutputValueClass is "
           + valClass.getName());
     }
+    
+    if (keyClass.getName().equals(BytesWritable.class.getName())) {
+    this.rawComparator =  new RawComparator<K>() {
+     
+          @Override
+          public int compare(byte[] b1, int s1, int l1,
+              byte[] b2, int s2, int l2) {
+            return WritableComparator.compareBytes(
+                    b1, 
+                    s1 + 4, 
+                    l1 - 4, 
+                    b2, 
+                    s2 + 4, 
+                    l2 - 4
+                    );
+          }
+          
+    
+          @Override
+          public int compare(K o1, K o2) {
+            return WritableComparator.compareBytes( o1.getBytes(), 0, o1.getLength(), 
+                    o2.getBytes(), 0, o2.getLength());
+          }
+      };
+    } else if (keyClass.getName().equals(Text.class.getName())) {
+      this.rawComparator =  new RawComparator<K>() {
+        @Override
+        public int compare(byte[] b1, int s1, int l1,
+            byte[] b2, int s2, int l2) {
+          
+          int skipKeyLength = 0;
+          
+          byte value = b1[s1];
+          if (value >= -112) {
+            skipKeyLength = 1;
+          } else if (value < -120) {
+            skipKeyLength = -119 - value;
+          } else {
+            skipKeyLength = -111 - value;
+          }
+          
+          int skipValueLength = 0;
+          
+          value = b2[s2];
+          if (value >= -112) {
+            skipValueLength = 1;
+          } else if (value < -120) {
+            skipValueLength = -119 - value;
+          } else {
+            skipValueLength = -111 - value;
+          }
+          
+          return WritableComparator.compareBytes(
+                  b1, 
+                  s1 + skipKeyLength, 
+                  l1 - skipKeyLength, 
+                  b2, 
+                  s2 + skipValueLength, 
+                  l2 - skipValueLength
+                  );
+        }
+  
+        @Override
+        public int compare(K o1, K o2) {
+          return WritableComparator.compareBytes( o1.getBytes(), 0, o1.getLength(), 
+                  o2.getBytes(), 0, o2.getLength());
+        }
+      };
+    };
+    
 
     int numMappers = job.getNumMapTasks();
     memoryBlockAllocator =
