@@ -14,9 +14,7 @@ Steps to test native output collector.
 8. Here is an example:  
 <pre><code>hadoop jar hadoop-examples.jar pi -D mapreduce.map.output.collector.delegator.class=
 org.apache.hadoop.mapred.nativetask.NativeMapOutputCollectorDelegator 10 10  </code></pre>
-
 Will use native output collector to calculate Pi.
-
 9. check the task Log, if there is 
 ``INFO org.apache.hadoop.mapred.nativetask.NativeMapOutputCollectorDelegator: Native output collector can be successfully enabled!``
 Then it means the native task is successfully enabled.
