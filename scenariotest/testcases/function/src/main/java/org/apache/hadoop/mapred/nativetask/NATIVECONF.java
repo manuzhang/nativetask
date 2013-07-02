@@ -25,7 +25,7 @@ public class NATIVECONF {
 		VLongWritable.class};
 	public static Configuration getNativeConf(){
 		Configuration conf = new Configuration();
-		conf.set("native.mapoutput.collector.enabled","true");
+		conf.set("mapreduce.map.output.collector.delegator.class","org.apache.hadoop.mapred.nativetask.NativeMapOutputCollectorDelegator");
 		conf.set("native.task.enabled","true");
 		conf.set(Constants.MAPRED_REDUCETASK_DELEGATOR_CLASS,
 					NativeReduceTaskDelegator.class.getCanonicalName());
