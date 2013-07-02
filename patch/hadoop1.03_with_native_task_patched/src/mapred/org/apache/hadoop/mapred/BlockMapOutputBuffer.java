@@ -31,6 +31,7 @@ import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.LocalFileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.BinaryComparable;
 import org.apache.hadoop.io.BytesWritable;
 import org.apache.hadoop.io.RawComparator;
 import org.apache.hadoop.io.WritableComparator;
@@ -44,7 +45,7 @@ import org.apache.hadoop.mapred.TaskDelegation.MapOutputCollectorDelegator;
 import org.apache.hadoop.util.ReflectionUtils;
 import org.apache.hadoop.util.ResourceCalculatorPlugin.ProcResourceValues;
 
-public class BlockMapOutputBuffer<K extends BytesWritable, V extends BytesWritable>
+public class BlockMapOutputBuffer<K extends BinaryComparable, V extends BinaryComparable>
     implements BlockMapOutputCollector<K, V>, MapOutputCollectorDelegator<K, V> {
 
   private static final Log LOG = LogFactory.getLog(BlockMapOutputBuffer.class.getName());
@@ -88,7 +89,7 @@ public class BlockMapOutputBuffer<K extends BytesWritable, V extends BytesWritab
   @SuppressWarnings( { "unchecked", "deprecation" })
   public BlockMapOutputBuffer()  { 
   }
-
+ 
   private TaskAttemptID getTaskID() {
     return task.getTaskID();
   }
@@ -490,10 +491,10 @@ public class BlockMapOutputBuffer<K extends BytesWritable, V extends BytesWritab
     // k/v serialization
     keyClass = (Class<K>) job.getMapOutputKeyClass();
     valClass = (Class<V>) job.getMapOutputValueClass();
-    if (!BytesWritable.class.isAssignableFrom(keyClass)
-        || !BytesWritable.class.isAssignableFrom(valClass)) {
+    if (!BinaryComparable.class.isAssignableFrom(keyClass)
+        || !BinaryComparable.class.isAssignableFrom(valClass)) {
       throw new IOException(this.getClass().getName()
-          + "  only support " + BytesWritable.class.getName()
+          + "  only support " + BinaryComparable.class.getName()
           + " as key and value classes, MapOutputKeyClass is "
           + keyClass.getName() + ", MapOutputValueClass is "
           + valClass.getName());
@@ -522,4 +523,5 @@ public class BlockMapOutputBuffer<K extends BytesWritable, V extends BytesWritab
       codec = ReflectionUtils.newInstance(codecClass, job);
     }
   }
+
 }

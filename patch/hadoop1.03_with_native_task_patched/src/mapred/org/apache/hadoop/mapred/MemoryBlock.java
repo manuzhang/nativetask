@@ -16,8 +16,8 @@
  */
 package org.apache.hadoop.mapred;
 
+import org.apache.hadoop.io.BinaryComparable;
 import org.apache.hadoop.io.BufferTooSmallException;
-import org.apache.hadoop.io.BytesWritable;
 
 /**
  * This should be kept in the CPU cache. So assume the random access inside
@@ -127,8 +127,8 @@ class MemoryBlock {
     memAllocator.incAllocatedRecordMem(newSize * 4 * 3);
   }
   
-  public void collectKV(byte[] kvbuffer, BytesWritable key,
-      BytesWritable value) throws BufferTooSmallException {
+  public void collectKV(byte[] kvbuffer, BinaryComparable key,
+      BinaryComparable value) throws BufferTooSmallException {
     int oldUsed = used;
     int keyLen = copyTo(key.getBytes(), kvbuffer, startPos + used);
     used += keyLen;

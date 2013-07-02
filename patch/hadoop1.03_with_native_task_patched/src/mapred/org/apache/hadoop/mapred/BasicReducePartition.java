@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.hadoop.fs.FSDataOutputStream;
+import org.apache.hadoop.io.BinaryComparable;
 import org.apache.hadoop.io.BytesWritable;
 import org.apache.hadoop.io.WritableComparator;
 import org.apache.hadoop.io.compress.CompressionCodec;
@@ -29,7 +30,7 @@ import org.apache.hadoop.mapred.Task.TaskReporter;
 import org.apache.hadoop.util.IndexedSortable;
 import org.apache.hadoop.util.QuickSort;
 
-public abstract class BasicReducePartition<K extends BytesWritable, V extends BytesWritable>
+public abstract class BasicReducePartition<K extends BinaryComparable, V extends BinaryComparable>
     implements MemoryBlockHolder {
 
   class OffsetSortable implements IndexedSortable {

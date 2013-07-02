@@ -21,7 +21,7 @@ import java.io.IOException;
 import java.util.List;
 
 import org.apache.hadoop.fs.FSDataOutputStream;
-import org.apache.hadoop.io.BytesWritable;
+import org.apache.hadoop.io.BinaryComparable;
 import org.apache.hadoop.io.DataInputBuffer;
 import org.apache.hadoop.io.DataOutputBuffer;
 import org.apache.hadoop.io.WritableComparator;
@@ -33,8 +33,10 @@ import org.apache.hadoop.mapred.MemoryBlock.KeyValuePairIterator;
 import org.apache.hadoop.mapred.Task.TaskReporter;
 import org.apache.hadoop.util.PriorityQueue;
 
-class ReducePartition<K extends BytesWritable, V extends BytesWritable> extends
+class ReducePartition<K extends BinaryComparable, V extends BinaryComparable> extends
     BasicReducePartition<K, V> {
+  
+  private static final int INT_LENGTH_BYTES = 4;
 
   class KeyValueSortedArray extends
       PriorityQueue<KeyValuePairIterator> implements
@@ -169,6 +171,7 @@ class ReducePartition<K extends BytesWritable, V extends BytesWritable> extends
         MemoryBlock memBlk = memBlkIdx.getMemoryBlock();
         writer.append(kvbuffer, memBlk.offsets[pos], memBlk.keyLenArray[pos],
             memBlk.valueLenArray[pos]);
+        
         memBlkIdx = kvSortedArray.next();
       }
     } finally {
@@ -182,7 +185,7 @@ class ReducePartition<K extends BytesWritable, V extends BytesWritable> extends
     writer = null;
     return rec;
   }
-
+  
   public void groupOrSort() {
     reporter.progress();
     List<MemoryBlock> memBlks = snapShot();
