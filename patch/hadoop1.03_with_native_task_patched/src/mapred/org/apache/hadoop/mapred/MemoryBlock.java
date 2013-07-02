@@ -130,9 +130,9 @@ class MemoryBlock {
   public void collectKV(byte[] kvbuffer, BinaryComparable key,
       BinaryComparable value) throws BufferTooSmallException {
     int oldUsed = used;
-    int keyLen = copyTo(key.getBytes(), kvbuffer, startPos + used);
+    int keyLen = copyTo(key.getBytes(), key.getLength(), kvbuffer, startPos + used);
     used += keyLen;
-    int valLen = copyTo(key.getBytes(), kvbuffer, startPos + used);
+    int valLen = copyTo(value.getBytes(), value.getLength(),  kvbuffer, startPos + used);
     used += valLen;
     addOffset(oldUsed, keyLen, valLen);
   }
@@ -146,7 +146,7 @@ class MemoryBlock {
    * @param start 
    * @return
    */
-  private int copyTo(byte[] bytes, byte[] dest, int start)
+  private int copyTo(byte[] bytes, int size, byte[] dest, int start)
       throws BufferTooSmallException {
     if (size > (dest.length - start)) {
       throw new BufferTooSmallException("size is " + size

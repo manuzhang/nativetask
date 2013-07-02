@@ -178,7 +178,7 @@ public class BlockMapOutputBuffer<K extends BinaryComparable, V extends BinaryCo
         totalIndexCacheMemory +=
             spillRec.size() * MapTask.MAP_OUTPUT_INDEX_RECORD_LENGTH;
       }
-      LOG.info("Finished spill " + numSpills);
+      LOG.info("Finished spill " + numSpills + ", path: " + filename.getName());
       ++numSpills;
     } finally {
       if (out != null)
@@ -529,89 +529,5 @@ public class BlockMapOutputBuffer<K extends BinaryComparable, V extends BinaryCo
           .getMapOutputCompressorClass(DefaultCodec.class);
       codec = ReflectionUtils.newInstance(codecClass, job);
     }
-  }
-
-  public static class WordCount {
-
-    public static class TokenizerMapper 
-         extends Mapper<Object, Text, Text, BytesWritable>{
-      
-      static byte[] ONE = new byte[4];
-      static {
-        toBytes(1, ONE);
-      }
-      private final static BytesWritable one = new BytesWritable(ONE);
-      private Text word = new Text();
-        
-      public void map(Object key, Text value, Context context
-                      ) throws IOException, InterruptedException {
-        StringTokenizer itr = new StringTokenizer(value.toString());
-        while (itr.hasMoreTokens()) {
-          word.set(itr.nextToken());
-          context.write(word, one);
-        }
-      }
-    }
-    
-    public static class IntSumReducer 
-         extends Reducer<Text,BytesWritable,Text,BytesWritable> {
-      
-      private BytesWritable result = new BytesWritable(new byte[4]);
-
-      public void reduce(Text key, Iterable<BytesWritable> values, 
-                         Context context
-                         ) throws IOException, InterruptedException {
-        int sum = 0;
-        for (BytesWritable val : values) {
-          int current = toInt(val.get(), 0, 4);
-          sum += current;
-        }
-        toBytes(sum, result.get());
-        context.write(key, result);
-      }
-    }
-    
-    public static int toInt(byte[] bytes, int offset, final int length) {
-      final int SIZEOF_INT = 4;
-      if (length != SIZEOF_INT || offset + length > bytes.length) {
-        throw new RuntimeException(
-            "toInt exception. length not equals to SIZE of Int or buffer overflow");
-      }
-      int ch1 = bytes[0] & 0xff;
-      int ch2 = bytes[1] & 0xff;
-      int ch3 = bytes[2] & 0xff;
-      int ch4 = bytes[3] & 0xff;
-      return ((ch1 << 24) + (ch2 << 16) + (ch3 << 8) + (ch4 << 0));
-
-    }
-
-    // same rule as DataOutputStream
-    public static byte[] toBytes(int v, byte[] b) {
-      b[0] = (byte) ((v >>> 24) & 0xFF);
-      b[1] = (byte) ((v >>> 16) & 0xFF);
-      b[2] = (byte) ((v >>> 8) & 0xFF);
-      b[3] = (byte) ((v >>> 0) & 0xFF);
-      return b;
-    }
-
-    public static void main(String[] args) throws Exception {
-      Configuration conf = new Configuration();
-      String[] otherArgs = new GenericOptionsParser(conf, args).getRemainingArgs();
-      if (otherArgs.length != 2) {
-        System.err.println("Usage: wordcount <in> <out>");
-        System.exit(2);
-      }
-      Job job = new Job(conf, "word count");
-      job.setJarByClass(WordCount.class);
-      job.setMapperClass(TokenizerMapper.class);
-      job.setCombinerClass(IntSumReducer.class);
-      job.setReducerClass(IntSumReducer.class);
-      job.setOutputKeyClass(Text.class);
-      job.setOutputValueClass(BytesWritable.class);
-      FileInputFormat.addInputPath(job, new Path(otherArgs[0]));
-      FileOutputFormat.setOutputPath(job, new Path(otherArgs[1]));
-      System.exit(job.waitForCompletion(true) ? 0 : 1);
-    }
-  }
-  
+  }  
 }
