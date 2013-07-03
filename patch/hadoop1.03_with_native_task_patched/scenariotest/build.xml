@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="nativetask auto-test" default="compile">
+        <property name="hadoop.home" value="/usr/lib/hadoop" />
+        <property name="hbase.home" value="/usr/lib/hbase" />
+
+	<property name="testsrc.dir" value="testcases"/>
+	<property name="testbuild.dir" value="build"/>
+	<property name="testclasses.dir" value="${testbuild.dir}/classes"/>
+	<property name="hadoopbuild.dir" value="../build"/>
+	<property name="report.dir" value="report"/>
+        <path id="hadoop.lib.classpath">
+	      <fileset dir="${hbase.home}/lib">
+                  <include name="**/*.jar" />
+              </fileset>
+	      <fileset dir="${hbase.home}/">
+                  <include name="*.jar" />
+              </fileset>
+        </path>
+
+        <path id="hadoop.conf.classpath">
+   	    <pathelement path="${hadoop.home}/conf"/>
+        </path>
+
+	<path id="dependlib">
+
+		<fileset dir="${hadoopbuild.dir}" includes="*.jar"/>
+<!--		<fileset dir="lib" includes="*.jar"/> -->
+		<fileset dir="../lib" includes="*.jar"/>
+	</path>
+	<target name="init">
+		<delete dir="${testbuild.dir}"/>
+		<delete dir="${report.dir}"/>
+		<mkdir dir="${testbuild.dir}"/>
+		<mkdir dir="${testclasses.dir}"/>
+		<mkdir dir="${report.dir}"/>
+	</target>
+	<target name="compile" depends="init">
+		<javac srcdir="${testsrc.dir}" destdir="${testclasses.dir}" classpathref="dependlib">
+			
+		</javac>
+		<jar destfile="${testbuild.dir}/nativetest.jar">
+		    <fileset dir="${testclasses.dir}"
+                     />
+                </jar>
+
+	</target>
+	<target name="testKV" depends="compile">
+		<junit printsummary="yes">
+			<classpath>
+				<pathelement location="${testbuild.dir}/nativetest.jar"/>
+				<path refid="dependlib"/>
+				<path refid="hadoop.lib.classpath"/>
+				<path refid="hadoop.conf.classpath"/>
+				<pathelement location="lib/junit.jar"/>
+				<pathelement location="lib/org.hamcrest.core_1.1.0.v20090501071000.jar"/>
+			</classpath>
+			<formatter type="xml"/>
+			<batchtest fork="yes" todir="${report.dir}">
+				<fileset dir="${testclasses.dir}" includes="**/kvtest/*Test.class"/>
+			</batchtest>
+		</junit>
+		<echo message="For detail report, check folder ${report.dir}"/>
+	</target>
+	<target name="test" depends="testKV"></target>
+	<target name="report" depends="test">
+		<delete dir="${report.dir}/html"/>
+		<mkdir dir="${report.dir}/html"/>
+		<junitreport todir="${report.dir}/html">
+			<fileset dir="${report.dir}">
+				<include name="*.xml"/>
+			</fileset>
+			<report format="frames" todir="${report.dir}/html"/>
+		</junitreport>
+	</target>
+</project>
