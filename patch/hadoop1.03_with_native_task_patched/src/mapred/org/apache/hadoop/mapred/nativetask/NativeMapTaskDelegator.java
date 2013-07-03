@@ -44,8 +44,12 @@ public class NativeMapTaskDelegator<INKEY, INVALUE, OUTKEY, OUTVALUE>
     implements TaskDelegation.MapTaskDelegator {
   private static final Log LOG = LogFactory
       .getLog(NativeMapTaskDelegator.class);
-  
+
   private JobConf job = null;
+
+  private TaskReporter reporter;
+
+  private TaskUmbilicalProtocol protocol;
 
   public NativeMapTaskDelegator() {
   }
@@ -53,13 +57,13 @@ public class NativeMapTaskDelegator<INKEY, INVALUE, OUTKEY, OUTVALUE>
   private static <T> byte[] serialize(Configuration conf, Object obj)
       throws IOException {
     SerializationFactory factory = new SerializationFactory(conf);
-    
-    @SuppressWarnings({ "unchecked"})
+
+    @SuppressWarnings({ "unchecked" })
     Serializer<T> serializer = (Serializer<T>) factory.getSerializer(obj
         .getClass());
     DataOutputBuffer out = new DataOutputBuffer(1024);
     serializer.open(out);
-    
+
     serializer.serialize((T) obj);
     byte[] ret = new byte[out.getLength()];
     System.arraycopy(out.getData(), 0, ret, 0, out.getLength());
@@ -67,19 +71,16 @@ public class NativeMapTaskDelegator<INKEY, INVALUE, OUTKEY, OUTVALUE>
   }
 
   @Override
-  public void setConf(Configuration conf) {
+  public void init(TaskUmbilicalProtocol protocol, TaskReporter reporter,
+      Configuration conf) throws Exception {
+
     this.job = new JobConf(conf);
+    this.reporter = reporter;
+    this.protocol = protocol;
   }
 
   @Override
-  public Configuration getConf() {
-    return this.job;
-  }
-
-  @Override
-  public void run(TaskAttemptID taskAttemptID, 
-      TaskUmbilicalProtocol umbilical, TaskReporter reporter,
-      Object split) throws IOException {
+  public void run(TaskAttemptID taskAttemptID, Object split) throws IOException {
     long updateInterval = job.getLong("native.update.interval", 1000);
     StatusReportChecker updater = new StatusReportChecker(reporter,
         updateInterval);
@@ -87,12 +88,11 @@ public class NativeMapTaskDelegator<INKEY, INVALUE, OUTKEY, OUTVALUE>
     NativeRuntime.configure(job);
 
     if (job.get(Constants.NATIVE_RECORDREADER_CLASS) != null) {
-      
+
       // delegate entire map task
       byte[] splitData = serialize(job, split);
       NativeRuntime.configure("native.input.split", splitData);
-      AllNativeMapTask processor = new AllNativeMapTask(
-          job, taskAttemptID);
+      AllNativeMapTask processor = new AllNativeMapTask(job, taskAttemptID);
       processor.init(job);
 
       try {
@@ -132,14 +132,14 @@ public class NativeMapTaskDelegator<INKEY, INVALUE, OUTKEY, OUTVALUE>
         String finalName = OutputPathUtil.getOutputName(taskAttemptID
             .getTaskID().getId());
         FileSystem fs = FileSystem.get(job);
-        
+
         @SuppressWarnings("unchecked")
         RecordWriter<OUTKEY, OUTVALUE> writer = job.getOutputFormat()
             .getRecordWriter(fs, job, finalName, reporter);
-        
+
         @SuppressWarnings("unchecked")
         Class<OUTKEY> okeyClass = (Class<OUTKEY>) job.getOutputKeyClass();
-        
+
         @SuppressWarnings("unchecked")
         Class<OUTVALUE> ovalueClass = (Class<OUTVALUE>) job
             .getOutputValueClass();
@@ -161,8 +161,7 @@ public class NativeMapTaskDelegator<INKEY, INVALUE, OUTKEY, OUTVALUE>
 
     try {
       updater.stopUpdater();
-    }
-    catch (InterruptedException e) {
+    } catch (InterruptedException e) {
       throw new IOException(e);
     }
     // final update

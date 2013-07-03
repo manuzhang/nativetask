@@ -29,18 +29,16 @@ import org.apache.hadoop.mapred.nativetask.util.BytesUtil;
  * Echo input back to output
  * 
  */
-class EchoBackHandler extends NativeBatchProcessor<BytesWritable, BytesWritable, BytesWritable, BytesWritable> {
+class EchoBackHandler
+    extends
+    NativeBatchProcessor<BytesWritable, BytesWritable, BytesWritable, BytesWritable> {
   public ArrayList<byte[]> tempOutput = new ArrayList<byte[]>();
   public boolean finished = false;
   static int BUFFER_SIZE = 128 * 1024;
 
   public EchoBackHandler() throws IOException {
-    super(BytesWritable.class, 
-        BytesWritable.class, 
-        BytesWritable.class,
-        BytesWritable.class, 
-        "NativeTask.EchoBatchHandler", 
-        BUFFER_SIZE,
+    super(BytesWritable.class, BytesWritable.class, BytesWritable.class,
+        BytesWritable.class, "NativeTask.EchoBatchHandler", BUFFER_SIZE,
         BUFFER_SIZE);
   }
 

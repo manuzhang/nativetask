@@ -77,6 +77,15 @@ abstract public class Task implements Writable, Configurable {
     MAP_INPUT_BYTES, 
     MAP_OUTPUT_BYTES,
     MAP_OUTPUT_MATERIALIZED_BYTES,
+    MAP_SPILL_CPU,
+    MAP_SPILL_WALLCLOCK,
+    MAP_SPILL_NUMBER,
+    MAP_SPILL_BYTES,
+    MAP_SPILL_SINGLERECORD_NUM,
+    MAP_MEM_SORT_CPU,
+    MAP_MEM_SORT_WALLCLOCK,
+    MAP_MERGE_CPU,
+    MAP_MERGE_WALLCLOCK,
     COMBINE_INPUT_RECORDS,
     COMBINE_OUTPUT_RECORDS,
     REDUCE_INPUT_GROUPS,
@@ -191,6 +200,7 @@ abstract public class Task implements Writable, Configurable {
                                                     TaskStatus.Phase.MAP : 
                                                     TaskStatus.Phase.SHUFFLE, 
                                                   counters);
+    this.mapOutputFile.setJobId(taskId.getJobID());
     spilledRecordsCounter = counters.findCounter(Counter.SPILLED_RECORDS);
   }
 
@@ -816,6 +826,12 @@ abstract public class Task implements Writable, Configurable {
      counters.findCounter(Counter.VIRTUAL_MEMORY_BYTES).setValue(vMem);
    }
   
+   protected ProcResourceValues getCurrentProcResourceValues() {
+     if (resourceCalculator != null) {
+       return resourceCalculator.getProcResourceValues();
+     }
+     return null;
+   }
   private synchronized void updateCounters() {
     for(Statistics stat: FileSystem.getAllStatistics()) {
       String uriScheme = stat.getScheme();
@@ -1255,7 +1271,11 @@ abstract public class Task implements Writable, Configurable {
         DataInputBuffer nextKeyBytes = in.getKey();
         keyIn.reset(nextKeyBytes.getData(), nextKeyBytes.getPosition(), nextKeyBytes.getLength());
         nextKey = keyDeserializer.deserialize(nextKey);
+        if(comparator==null){
+          hasNext = false;
+        }else{
         hasNext = key != null && (comparator.compare(key, nextKey) == 0);
+        }
       } else {
         hasNext = false;
       }

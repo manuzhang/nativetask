@@ -35,9 +35,9 @@ import org.apache.hadoop.mapred.nativetask.util.OutputPathUtil;
  * Native Record Reader + Native Mapper + Native Collector
  * 
  */
-public class AllNativeMapTask extends NativeBatchProcessor<Writable, Writable, Writable, Writable> {
-  private static final Log LOG = LogFactory
-      .getLog(AllNativeMapTask.class);
+public class AllNativeMapTask extends
+    NativeBatchProcessor<Writable, Writable, Writable, Writable> {
+  private static final Log LOG = LogFactory.getLog(AllNativeMapTask.class);
 
   private OutputPathUtil mapOutputFile;
   private int spillNumber = 0;

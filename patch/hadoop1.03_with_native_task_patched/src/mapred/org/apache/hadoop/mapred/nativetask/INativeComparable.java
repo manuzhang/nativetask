@@ -20,9 +20,9 @@ package org.apache.hadoop.mapred.nativetask;
 
 /**
  * 
- * Interface to indicate whether this class is comparable in native space
- * In native side, support for comparison must be provided.
- *
+ * Interface to indicate whether this class is comparable in native space In
+ * native side, support for comparison must be provided.
+ * 
  */
 public interface INativeComparable {
 

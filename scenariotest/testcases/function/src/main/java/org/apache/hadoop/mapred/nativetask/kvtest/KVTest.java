@@ -23,10 +23,9 @@ public class KVTest extends TestCase {
 	private static String inputFilePath = "/f1.txt";
 	private static String outputFilePath = "/out23";
 	@Test
-	public void testIntKey(){
-		try{
-			Configuration conf = NATIVECONF.getNativeConf();
-			Job job = new Job(conf, "IntKeytest");
+	public void testIntKey() throws Exception{
+		    Configuration conf = NATIVECONF.getNativeConf();
+		    Job job = new Job(conf, "IntKeytest");
 		    job.setJarByClass(KVMappers.class);
 		    job.setMapperClass(KVMappers.IntKeyMapper.class);
 		    job.setOutputKeyClass(IntWritable.class);
@@ -34,9 +33,6 @@ public class KVTest extends TestCase {
 		    FileInputFormat.addInputPath(job, new Path(inputFilePath));
 		    FileOutputFormat.setOutputPath(job, new Path(outputFilePath));
 		    job.waitForCompletion(true);
-		}catch (Exception e){
-			;
-		}
 	}
 	@Before
 	public void setup(){

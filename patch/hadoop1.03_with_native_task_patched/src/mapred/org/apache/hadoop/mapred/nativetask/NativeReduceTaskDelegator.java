@@ -41,24 +41,22 @@ public class NativeReduceTaskDelegator<IK, IV, OK, OV> implements
   private static final Log LOG = LogFactory
       .getLog(NativeReduceTaskDelegator.class);
   private JobConf job;
+  private TaskUmbilicalProtocol protocol;
+  private TaskReporter reporter;
 
   public NativeReduceTaskDelegator() {
   }
 
   @Override
-  public void setConf(Configuration conf) {
+  public void init(TaskUmbilicalProtocol protocol, TaskReporter reporter,
+      Configuration conf) throws Exception {
     this.job = new JobConf(conf);
+    this.protocol = protocol;
+    this.reporter = reporter;
   }
 
   @Override
-  public Configuration getConf() {
-    return this.job;
-  }
-
-
-  @Override
-  public void run(TaskAttemptID taskAttemptID, TaskUmbilicalProtocol umbilical,
-      TaskReporter reporter, RawKeyValueIterator rIter,
+  public void run(TaskAttemptID taskAttemptID, RawKeyValueIterator rIter,
       RawComparator comparator, Class keyClass, Class valueClass)
       throws IOException {
     long updateInterval = job.getLong("native.update.interval", 1000);
@@ -66,7 +64,7 @@ public class NativeReduceTaskDelegator<IK, IV, OK, OV> implements
         updateInterval);
     updater.startUpdater();
     NativeRuntime.configure(job);
-    
+
     int bufferCapacity = job.getInt(Constants.NATIVE_PROCESSOR_BUFFER_KB,
         Constants.NATIVE_PROCESSOR_BUFFER_KB_DEFAULT) * 1024;
     String finalName = OutputPathUtil.getOutputName(taskAttemptID.getTaskID()

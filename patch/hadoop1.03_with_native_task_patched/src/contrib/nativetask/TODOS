@@ -6,7 +6,7 @@ add example
 input progress
 Counters
 job submitter
-Terasort TotalOrderPartitioner
+Terasort TotalOrderPartitioner (bugs in this)
 add google sparse hash
 add test for partition bucket combiner
 support parallel sort & compression
@@ -23,6 +23,11 @@ compress support zlib
 record reader/writer interface
 include file api
 
+key/value serialiazation using protocol buffer.
+more check on stream decoration.
+support shuffle/merge in native.
+reimplement the sorting algorithm. using block size of L2/L3 cache
+ 
 
 
   

@@ -28,8 +28,10 @@ import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.BytesWritable;
 import org.apache.hadoop.io.DataInputBuffer;
 import org.apache.hadoop.io.DataOutputBuffer;
+import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.WritableUtils;
 import org.apache.hadoop.io.compress.CodecPool;
 import org.apache.hadoop.io.compress.CompressionCodec;
@@ -38,6 +40,7 @@ import org.apache.hadoop.io.compress.Compressor;
 import org.apache.hadoop.io.compress.Decompressor;
 import org.apache.hadoop.io.serializer.SerializationFactory;
 import org.apache.hadoop.io.serializer.Serializer;
+import org.mortbay.log.Log;
 
 /**
  * <code>IFile</code> is the simple <key-len, value-len, key, value> format
@@ -78,6 +81,10 @@ class IFile {
     Serializer<V> valueSerializer;
     
     DataOutputBuffer buffer = new DataOutputBuffer();
+    private boolean isKeyBytesWritable;
+    private boolean isKeyText;
+    private boolean isValueBytesWritable;
+    private boolean isValueText;
 
     public Writer(Configuration conf, FileSystem fs, Path file, 
                   Class<K> keyClass, Class<V> valueClass,
@@ -114,6 +121,12 @@ class IFile {
       this.keySerializer.open(buffer);
       this.valueSerializer = serializationFactory.getSerializer(valueClass);
       this.valueSerializer.open(buffer);
+      
+      this.isKeyBytesWritable = (keyClass.getName().equals(BytesWritable.class.getName()));
+      this.isKeyText = (keyClass.getName().equals(Text.class.getName()));
+      
+      this.isValueBytesWritable = (valueClass.getName().equals(BytesWritable.class.getName()));
+      this.isValueText = (valueClass.getName().equals(Text.class.getName()));
     }
 
     public void close() throws IOException {
@@ -159,6 +172,52 @@ class IFile {
       }
     }
 
+    DataOutputBuffer getBuffer() {
+      return buffer;
+    }
+   
+    public void append(byte[] kvBuffer, int offset, int keyLength,
+        int valueLength)
+        throws IOException {
+
+      int pos = buffer.getLength();
+      
+      if (isKeyBytesWritable) {
+        buffer.writeInt(keyLength);
+        buffer.write(kvBuffer, offset, keyLength);
+      } else if (isKeyText) {
+        //this is real key: keyLength + key
+        WritableUtils.writeVInt(buffer, keyLength);
+        buffer.write(kvBuffer, offset, keyLength);
+      }
+      
+      int realKeyLen =  buffer.getLength() - pos;
+      pos = buffer.getLength();
+      
+      if (isValueBytesWritable) {
+        buffer.writeInt(valueLength);
+        buffer.write(kvBuffer, offset + keyLength, valueLength);
+      } else if (isValueText){
+        //this is real value: 
+        WritableUtils.writeVInt(buffer, valueLength);
+        buffer.write(kvBuffer, offset + keyLength, valueLength);
+      }
+
+      int realValLen = buffer.getLength() - pos;
+
+      WritableUtils.writeVInt(out, realKeyLen);
+      WritableUtils.writeVInt(out, realValLen);
+      
+      out.write(buffer.getData(), 0, buffer.getLength());
+      buffer.reset();
+
+      // Update bytes written
+      decompressedBytesWritten += realKeyLen + realValLen
+          + WritableUtils.getVIntSize(realKeyLen)
+          + WritableUtils.getVIntSize(realValLen);
+      ++numRecordsWritten;
+    }
+   
     public void append(K key, V value) throws IOException {
       if (key.getClass() != keyClass)
         throw new IOException("wrong key class: "+ key.getClass()
@@ -223,7 +282,7 @@ class IFile {
                       WritableUtils.getVIntSize(valueLength);
       ++numRecordsWritten;
     }
-    
+
     public long getRawLength() {
       return decompressedBytesWritten;
     }
