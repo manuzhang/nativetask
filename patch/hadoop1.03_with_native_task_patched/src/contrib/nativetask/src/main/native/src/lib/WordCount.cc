@@ -65,7 +65,7 @@ void WordCountMapper::map(const char * key, uint32_t keyLen,
   }
 }
 
-void IntSumReducer::reduce(KeyGroup & input) {
+void IntSumReducer::reduce(KeyGroupIterator & input) {
   const char * key;
   const char * value;
   uint32_t keyLen;

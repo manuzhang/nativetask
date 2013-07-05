@@ -81,12 +81,12 @@ void MMapperHandler::configure(Config & config) {
     }
     _partitioner->configure(config);
 
-    LOG("Native Mapper with MapOutputCollector");
+    LOG("[MMapperHandler] Native MapOutputCollector enabled");
     _moc = new MapOutputCollector(_numPartition);
     _moc->configure(config);
   }
   else {
-    LOG("Native Mapper with java direct output collector");
+    LOG("[MMapperHandler] Java output collector enabled");
   }
 
   // mapper

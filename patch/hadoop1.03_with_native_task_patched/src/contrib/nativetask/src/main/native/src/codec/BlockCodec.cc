@@ -149,7 +149,7 @@ int32_t BlockDecompressStream::read(void * buff, uint32_t length) {
 
 void BlockDecompressStream::close() {
   if (_tempDecompressBufferSize > 0) {
-    LOG("Some data left in the _tempDecompressBuffer when close()");
+    LOG("[BlockDecompressStream] Some data left in the _tempDecompressBuffer when close()");
   }
   if (NULL != _tempDecompressBuffer) {
     free(_tempDecompressBuffer);

@@ -22,6 +22,7 @@
 #include "Buffers.h"
 #include "MapOutputSpec.h"
 #include "NativeTask.h"
+#include "util/StringUtil.h"
 
 namespace NativeTask {
 
@@ -139,7 +140,7 @@ public:
     uint32_t newsize = GetCeil(size+8, _min_block_size);
     assert(newsize%_min_block_size==0);
     if (size > _capacity) {
-      THROW_EXCEPTION(OutOfMemoryException, "size larger than io.sort.mb");
+      THROW_EXCEPTION_EX(OutOfMemoryException, "size %d larger than io.sort.mb %d", size, _capacity);
     }
     if (_used + size > _capacity) {
       return NULL;

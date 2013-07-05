@@ -28,6 +28,64 @@
 
 namespace NativeTask {
 
+class KeyGroupIteratorImpl: public KeyGroupIterator {
+protected:
+  std::vector<uint32_t> & _kv_offsets;
+  InplaceBuffer * currentKey;
+  size_t index;
+  size_t size;
+  bool hasNext;
+
+public:
+  KeyGroupIteratorImpl(std::vector<uint32_t> & kv_offsets) :
+    _kv_offsets(kv_offsets),currentKey(NULL), index(0), size(kv_offsets.size()), hasNext(false) {
+    if (size>0) {
+      KVBuffer * kvBuffer = (KVBuffer*)MemoryBlockPool::get_position(kv_offsets[0]);
+      currentKey = &(kvBuffer->get_key());
+    }
+  }
+
+  bool nextKey() {
+    uint32_t temp;
+    while (hasNext) {
+      nextValue(temp);
+    }
+    return index < size;
+  }
+
+  const char * getKey(uint32_t & len) {
+    len = currentKey->length;
+    return currentKey->content;
+  }
+
+  const char * nextValue(uint32_t & len) {
+    if (hasNext) {
+      if (++index >= size) {
+        hasNext = false;
+        return NULL;
+      }
+      KVBuffer * pkvbuffer = (KVBuffer*)MemoryBlockPool::get_position(_kv_offsets[index]);
+      InplaceBuffer & bkey = pkvbuffer->get_key();
+      if ((bkey.length != currentKey->length) ||
+          (!fmemeq(bkey.content, currentKey->content, currentKey->length))) {
+        KVBuffer * groupkeybuffer = (KVBuffer*)MemoryBlockPool::get_position(_kv_offsets[index]);
+        currentKey = &(groupkeybuffer->get_key());
+        hasNext = false;
+        return NULL;
+      }
+      InplaceBuffer & bvalue = pkvbuffer->get_value();
+      len = bvalue.length;
+      return bvalue.content;
+    } else {
+      hasNext = true;
+      KVBuffer * pkvbuffer = (KVBuffer*)MemoryBlockPool::get_position(_kv_offsets[index]);
+      InplaceBuffer & bvalue = pkvbuffer->get_value();
+      len = bvalue.length;
+      return bvalue.content;
+    }
+  }
+};
+
 int BytesComparator(const char * src, uint32_t srcLength, const char * dest, uint32_t destLength) {
 
     uint32_t minlen = std::min(srcLength, destLength);
@@ -44,7 +102,7 @@ int FloatComparator(const char * src, uint32_t srcLength, const char * dest, uin
     }
     float * srcValue = (float *)src;
     float * destValue = (float *)dest;
-    return (*srcValue) - (* destValue);
+    return ( (*srcValue) - (* destValue) >= 0) ? 1 : -1;
 };
 
 int DoubleComparator(const char * src, uint32_t srcLength, const char * dest, uint32_t destLength) {
@@ -53,7 +111,7 @@ int DoubleComparator(const char * src, uint32_t srcLength, const char * dest, ui
     }
     double * srcValue = (double *)src;
     double * destValue = (double *)dest;
-    return (*srcValue) - (* destValue);
+    return ((*srcValue) - (* destValue) >= 0) ? 1 : -1;;
 };
 
 
@@ -99,56 +157,11 @@ bool PartitionBucket::Iterator::next(Buffer & key, Buffer & value) {
   return false;
 }
 
-PartitionBucket::KeyGroupIterator::KeyGroupIterator(PartitionBucket & pb) :
-    pb(pb), currentKey(NULL), index(0), size(pb._kv_offsets.size()), hasNext(false) {
-  if (size>0) {
-    KVBuffer * kvBuffer = (KVBuffer*)MemoryBlockPool::get_position(pb._kv_offsets[0]);
-    currentKey = &(kvBuffer->get_key());
-  }
-}
 
-bool PartitionBucket::KeyGroupIterator::nextKey() {
-  uint32_t temp;
-  while (hasNext) {
-    nextValue(temp);
-  }
-  return index < size;
-}
-
-const char * PartitionBucket::KeyGroupIterator::getKey(uint32_t & len) {
-  len = currentKey->length;
-  return currentKey->content;
-}
-
-const char * PartitionBucket::KeyGroupIterator::nextValue(uint32_t & len) {
-  if (hasNext) {
-    if (++index >= size) {
-      hasNext = false;
-      return NULL;
-    }
-    KVBuffer * pkvbuffer = (KVBuffer*)MemoryBlockPool::get_position(pb._kv_offsets[index]);
-    InplaceBuffer & bkey = pkvbuffer->get_key();
-    if ((bkey.length != currentKey->length) ||
-        (!fmemeq(bkey.content, currentKey->content, currentKey->length))) {
-      KVBuffer * groupkeybuffer = (KVBuffer*)MemoryBlockPool::get_position(pb._kv_offsets[index]);
-      currentKey = &(groupkeybuffer->get_key());
-      hasNext = false;
-      return NULL;
-    }
-    InplaceBuffer & bvalue = pkvbuffer->get_value();
-    len = bvalue.length;
-    return bvalue.content;
-  } else {
-    hasNext = true;
-    KVBuffer * pkvbuffer = (KVBuffer*)MemoryBlockPool::get_position(pb._kv_offsets[index]);
-    InplaceBuffer & bvalue = pkvbuffer->get_value();
-    len = bvalue.length;
-    return bvalue.content;
-  }
-}
 
 void PartitionBucket::spill(IFileWriter & writer, uint64_t & keyGroupCount, ObjectCreatorFunc combinerCreator, Config & config)
     throw (IOException, UnsupportException) {
+
   if (_kv_offsets.size() == 0) {
     return;
   }
@@ -185,7 +198,7 @@ void PartitionBucket::spill(IFileWriter & writer, uint64_t & keyGroupCount, Obje
         Reducer * reducer = (Reducer*)combiner;
         reducer->setCollector(&writer);
         reducer->configure(config);
-        KeyGroupIterator kg = KeyGroupIterator(*this);
+        KeyGroupIteratorImpl kg = KeyGroupIteratorImpl(this->_kv_offsets);
         while (kg.nextKey()) {
           keyGroupCount++;
           reducer->reduce(kg);
@@ -390,14 +403,20 @@ void MapOutputCollector::mid_spill(std::vector<std::string> & filepaths,
                                              spec.keyType, spec.valueType,
                                              spec.codec);
     Timer timer;
+
+
+
     spill_range(0, _num_partition, spec.orderType, spec.sortType, *writer,
                 blockCount, recordCount, sortTime, keyGroupCount, combinerCreator);
     IndexRange * info = writer->getIndex(0);
     info->filepath = filepaths[0];
     double interval = (timer.now() - timer.last()) / 1000000000.0;
+
+    LOG("[MapOutputCollector::mid_spill] spilling file path: %s", info->filepath.c_str());
+
     if (keyGroupCount == 0) {
-      LOG("Spill %lu [%u,%u) collect: %.3lfs sort: %.3lfs spill: %.3lfs record: %llu, avg: %.3lf, block: %llu, size %llu, real: %llu",
-          _spills.size(),
+      LOG("[MapOutputCollector::mid_spill] Sort and spill: {spilled file id: %lu, partitions: [%u,%u), collect: %.3lfs, sort: %.3lfs, spill: %.3lfs, records: %llu, avg record size: %.3lf, blocks: %llu, uncompressed total bytes: %llu, compressed total bytes: %llu}",
+          _spills.size() + 1,
           0,
           _num_partition,
           collecttime/1000000000.0,
@@ -409,8 +428,8 @@ void MapOutputCollector::mid_spill(std::vector<std::string> & filepaths,
           info->getEndPosition(),
           info->getRealEndPosition());
     } else {
-      LOG("Spill %lu [%u,%u) collect: %.3lfs sort: %.3lfs spill: %.3lfs, record: %llu, key: %llu, block: %llu, size %llu, real: %llu",
-          _spills.size(),
+      LOG("[MapOutputCollector::mid_spill] Sort and spill: {Spilled file id: %lu,  partition: [%u,%u), collect: %.3lfs, sort: %.3lfs, spill: %.3lfs, records: %llu, key count: %llu, blocks: %llu, uncompressed total bytes: %llu, compressed total bytes: %llu}",
+          _spills.size() + 1,
           0,
           _num_partition,
           collecttime/1000000000.0,
@@ -435,9 +454,9 @@ void MapOutputCollector::mid_spill(std::vector<std::string> & filepaths,
     reset();
     _collectTimer.reset();
   } else if (filepaths.size() == 0) {
-    THROW_EXCEPTION(IOException, "Spill file path empty");
+    THROW_EXCEPTION(IOException, "MapOutputCollector: Spill file path empty");
   } else {
-    THROW_EXCEPTION(UnsupportException, "Parallel spill not support");
+    THROW_EXCEPTION(UnsupportException, "MapOutputCollector: Parallel spill not support");
   }
 }
 
@@ -469,14 +488,21 @@ void MapOutputCollector::final_merge_and_spill(std::vector<std::string> & filepa
     MergeEntryPtr pme = new IFileMergeEntry(readers[i], _keyComparator);
     merger->addMergeEntry(pme);
   }
+
+  LOG("[MapOutputCollector::final_merge_and_spill] Spilling file path: %s", filepaths[0].c_str());
   if (spec.orderType==GROUPBY) {
     THROW_EXCEPTION(UnsupportException, "GROUPBY not support");
   } else if (spec.orderType==FULLSORT) {
     Timer timer;
     sort_all(spec.sortType);
-    LOG("Sort %lu [%u,%u) time: %.3lf", _spills.size(), 0, _num_partition, (timer.now()-timer.last())/1000000000.0);
+    LOG("[MapOutputCollector::final_merge_and_spill]  Sort and spill:{spilling file id: %lu, partitions: [%u,%u), time: %.3lf s}",
+        _spills.size() + 1,
+        0,
+        _num_partition,
+        (timer.now()-timer.last())/1000000000.0);
   }
   merger->addMergeEntry(new MemoryMergeEntry(this, _keyComparator));
+
   merger->merge();
   delete merger;
   for (size_t i=0;i<_spills.size();i++) {

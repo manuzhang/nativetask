@@ -90,6 +90,7 @@ void MMapTaskHandler::configure(Config & config) {
   _reader->configure(config);
 
   if (_numPartition > 0) {
+
     // collector
     _moc = new MapOutputCollector(_numPartition);
     _moc->configure(config);
@@ -118,10 +119,9 @@ void MMapTaskHandler::configure(Config & config) {
     }
     _partitioner->configure(config);
 
-    LOG("Native Mapper with MapOutputCollector, RecordReader: %s Combiner: %s Partitioner: %s",
-        readerClass?readerClass:"Java RecordReader",
-        combinerClass?combinerClass:"null",
-        partitionerClass?partitionerClass:"default");
+    LOG("[MMapTaskHandler] Native Mapper with native MapOutputCollector, RecordReader: %s Partitioner: %s",
+        readerClass ? readerClass : "Java RecordReader",
+        partitionerClass ? partitionerClass : "default");
   }
   else {
     const char * writerClass = config.get(NATIVE_RECORDWRITER);
@@ -130,7 +130,9 @@ void MMapTaskHandler::configure(Config & config) {
     }
     _writer = (RecordWriter*) NativeObjectFactory::CreateObject(writerClass);
     _writer->configure(config);
-    LOG("Native Mapper with RecordReader: %s RecordWriter: %s", readerClass?readerClass:"Java RecordReader", writerClass);
+    LOG("[MMapTaskHandler] Native Mapper with RecordReader: %s RecordWriter: %s",
+        readerClass ? readerClass : "Java RecordReader",
+        writerClass);
   }
 
   // mapper

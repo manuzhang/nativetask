@@ -295,12 +295,8 @@ public:
   }
 };
 
-class Merger : public KeyGroup {
-  enum KeyGroupIterState {
-    SAME_KEY,
-    NEW_KEY,
-    NO_MORE,
-  };
+class Merger : public KeyGroupIterator {
+
 private:
   vector<MergeEntryPtr> _entries;
   vector<MergeEntryPtr> _heap;

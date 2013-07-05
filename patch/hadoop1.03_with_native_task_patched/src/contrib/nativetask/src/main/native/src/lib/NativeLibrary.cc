@@ -36,7 +36,7 @@ NativeLibrary::NativeLibrary(const string & path, const string & name)
 bool NativeLibrary::init() {
   void *library = dlopen(_path.c_str(), RTLD_LAZY | RTLD_GLOBAL);
   if (NULL==library) {
-    LOG("Load object library %s failed.", _path.c_str());
+    LOG("[NativeLibrary] Load object library %s failed.", _path.c_str());
     return false;
   }
   // clean error status
@@ -45,19 +45,19 @@ bool NativeLibrary::init() {
   string create_object_func_name = _name + "GetObjectCreator";
   _getObjectCreatorFunc = (GetObjectCreatorFunc)dlsym(library, create_object_func_name.c_str());
   if (NULL==_getObjectCreatorFunc) {
-    LOG("ObjectCreator function [%s] not found", create_object_func_name.c_str());
+    LOG("[NativeLibrary] ObjectCreator function [%s] not found", create_object_func_name.c_str());
   }
 
   string functionGetter = _name + "GetFunctionGetter";
   _functionGetter = (FunctionGetter)dlsym(library, functionGetter.c_str());
   if (NULL==_functionGetter) {
-    LOG("function getter [%s] not found", functionGetter.c_str());
+    LOG("[NativeLibrary] function getter [%s] not found", functionGetter.c_str());
   }
 
   string init_library_func_name = _name + "Init";
   InitLibraryFunc init_library_func = (InitLibraryFunc)dlsym(library, init_library_func_name.c_str());
   if (NULL==init_library_func) {
-    LOG("Library init function [%s] not found", init_library_func_name.c_str());
+    LOG("[NativeLibrary] Library init function [%s] not found", init_library_func_name.c_str());
   }
   else {
     init_library_func();

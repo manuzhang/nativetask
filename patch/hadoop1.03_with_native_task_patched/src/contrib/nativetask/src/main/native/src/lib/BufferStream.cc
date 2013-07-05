@@ -31,7 +31,7 @@ BufferedInputStream::BufferedInputStream(InputStream * stream,
     _capacity(0) {
   _buff = (char*) malloc(bufferSize);
   if (NULL != _buff) {
-    LOG("malloc failed when create BufferedInputStream with buffersize %u", bufferSize);
+    LOG("[BuferStream] malloc failed when create BufferedInputStream with buffersize %u", bufferSize);
     _capacity = bufferSize;
   }
 }
@@ -96,7 +96,7 @@ BufferedOutputStream::BufferedOutputStream(InputStream * stream, uint32_t buffer
     _capacity(0) {
   _buff = (char*) malloc(bufferSize+sizeof(uint64_t));
   if (NULL != _buff) {
-    LOG("malloc failed when create BufferedOutputStream with buffersize %u", bufferSize);
+    LOG("[BuferStream] malloc failed when create BufferedOutputStream with buffersize %u", bufferSize);
     _capacity = bufferSize;
   }
 }

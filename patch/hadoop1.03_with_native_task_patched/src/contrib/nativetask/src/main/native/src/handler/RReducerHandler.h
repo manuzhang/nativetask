@@ -27,12 +27,7 @@ namespace NativeTask {
 class RReducerHandler :
     public BatchHandler,
     public Collector,
-    public KeyGroup {
-  enum KeyGroupIterState {
-    SAME_KEY,
-    NEW_KEY,
-    NO_MORE,
-  };
+    public KeyGroupIterator {
 protected:
   NativeObjectType _reducerType;
   // passive mapper (hash aggregation) style reducer

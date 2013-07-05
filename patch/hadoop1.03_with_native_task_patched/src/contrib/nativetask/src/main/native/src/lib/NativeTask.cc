@@ -143,11 +143,11 @@ void Config::parse(int32_t argc, const char ** argv) {
   for (int32_t i = 0; i < argc; i++) {
     const char * equ = strchr(argv[i], '=');
     if (NULL == equ) {
-      LOG("config argument not recognized: %s", argv[i]);
+      LOG("[NativeTask] config argument not recognized: %s", argv[i]);
       continue;
     }
     if (argv[i][0] == '-') {
-      LOG("config argument with '-' prefix ignored: %s", argv[i]);
+      LOG("[NativeTask] config argument with '-' prefix ignored: %s", argv[i]);
       continue;
     }
     string key(argv[i], equ - argv[i]);
@@ -254,19 +254,5 @@ uint32_t Partitioner::getPartition(const char * key, uint32_t & keyLen, uint32_t
 
 ///////////////////////////////////////////////////////////
 
-bool KeyGroupIterator::nextKey() {
-  // TODO: impl
-  return false;
-}
-
-const char * KeyGroupIterator::getKey(uint32_t & len) {
-  // TODO: impl
-  return NULL;
-}
-
-const char * KeyGroupIterator::nextValue(uint32_t & len) {
-  // TODO: impl
-  return NULL;
-}
 
 }

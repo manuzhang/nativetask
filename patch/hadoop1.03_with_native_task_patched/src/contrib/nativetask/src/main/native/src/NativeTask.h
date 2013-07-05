@@ -430,9 +430,21 @@ public:
       uint32_t numPartition);
 };
 
-class KeyGroup {
+enum KeyGroupIterState {
+  SAME_KEY,
+  NEW_KEY,
+  NEW_KEY_VALUE,
+  NO_MORE,
+};
+
+class KeyGroupIterator {
 public:
-  virtual ~KeyGroup() {}
+  virtual ~KeyGroupIterator() {}
+  /**
+   * Move to nextKey, or begin this iterator
+   */
+  virtual bool nextKey() = 0;
+
   /**
    * Get key of this input group
    */
@@ -445,29 +457,6 @@ public:
   virtual const char * nextValue(uint32_t & len) = 0;
 };
 
-class KeyGroupIterator : public KeyGroup {
-protected:
-  KVIterator & _kvIterator;
-  string _currentKey;
-public:
-  KeyGroupIterator(KVIterator & kvIterator);
-  /**
-   * Move to nextKey, or begin this iterator
-   */
-  virtual bool nextKey();
-
-  /**
-   * Get key of this input group
-   */
-  virtual const char * getKey(uint32_t & len);
-
-  /**
-   * Get next value of this input group
-   * @return NULL if no more
-   */
-  virtual const char * nextValue(uint32_t & len);
-};
-
 class Reducer: public ProcessorBase {
 public:
   virtual NativeObjectType type() {
@@ -477,7 +466,7 @@ public:
   /**
    * Reduce interface, default IdenticalReducer
    */
-  virtual void reduce(KeyGroup & input) {
+  virtual void reduce(KeyGroupIterator & input) {
     const char * key;
     const char * value;
     uint32_t keyLen;

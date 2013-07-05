@@ -103,8 +103,13 @@ bool Merger::next() {
 }
 
 bool Merger::nextKey() {
+  if (_keyGroupIterState == NO_MORE) {
+    return false;
+  }
+
   uint32_t temp;
-  while (_keyGroupIterState==SAME_KEY) {
+  while (_keyGroupIterState == SAME_KEY ||
+      _keyGroupIterState == NEW_KEY_VALUE) {
     nextValue(temp);
   }
   if (_keyGroupIterState ==  NEW_KEY) {
@@ -115,6 +120,7 @@ bool Merger::nextKey() {
       }
     }
     _currentGroupKey.assign(_heap[0]->_key, _heap[0]->_key_len);
+    _keyGroupIterState = NEW_KEY_VALUE;
     return true;
   }
   return false;
@@ -128,6 +134,9 @@ const char * Merger::getKey(uint32_t & len) {
 const char * Merger::nextValue(uint32_t & len) {
   char * pos;
   switch (_keyGroupIterState) {
+  case NEW_KEY: {
+    return NULL;
+  }
   case SAME_KEY: {
     if (next()) {
       if (_heap[0]->_key_len == _currentGroupKey.length()) {
@@ -142,7 +151,7 @@ const char * Merger::nextValue(uint32_t & len) {
     _keyGroupIterState = NO_MORE;
     return NULL;
   }
-  case NEW_KEY: {
+  case NEW_KEY_VALUE: {
     _keyGroupIterState = SAME_KEY;
     len = _heap[0]->_value_len;
     return _heap[0]->getValue();
@@ -215,7 +224,7 @@ void Merger::merge() {
   uint64_t real_output_size;
   _writer->getStatistics(output_size, real_output_size);
   if (keyGroupCount == 0) {
-    LOG("Merge %lu segments: record: %llu, avg: %.3lf, size: %llu, real: %llu, time: %.3lf",
+    LOG("[Merge] Merged segment#: %lu, record#: %llu, avg record size: %.3lf, uncompressed total bytes: %llu, compressed total bytes: %llu, time: %.3lfs",
         _entries.size(),
         total_record,
         (double)output_size/total_record,
@@ -223,7 +232,7 @@ void Merger::merge() {
         real_output_size,
         interval);
   } else {
-    LOG("Merge %lu segments: record %llu, key: %llu, size %llu, real %llu, time: %.3lf",
+    LOG("[Merge] Merged segments#, %lu, record#: %llu, key count: %llu, uncompressed total bytes: %llu, compressed total bytes: %llu, time: %.3lfs",
         _entries.size(),
         total_record,
         keyGroupCount,

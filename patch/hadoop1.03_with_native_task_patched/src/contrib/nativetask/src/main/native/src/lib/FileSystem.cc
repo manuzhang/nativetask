@@ -177,7 +177,7 @@ public:
 
   void remove(const string & path) {
     if (!exists(path)) {
-      LOG("remove file %s not exists, ignore", path.c_str());
+      LOG("[FileSystem] remove file %s not exists, ignore", path.c_str());
       return;
     }
     if (::remove(getRealPath(path).c_str()) != 0) {
@@ -188,7 +188,7 @@ public:
       char buff[256];
       strerror_r(err, buff, 256);
       THROW_EXCEPTION(IOException, StringUtil::Format(
-          "remove path %s failed, %s", path.c_str(), buff));
+          "FileSystem: remove path %s failed, %s", path.c_str(), buff));
     }
   }
 
@@ -278,7 +278,7 @@ public:
     JNIEnv * env = JNU_GetJNIEnv();
     jclass cls = env->FindClass("org/apache/hadoop/mapred/nativetask/NativeRuntime");
     if (cls == NULL) {
-      LOG("Can not found class org/apache/hadoop/mapred/nativetask/NativeRuntime");
+      LOG("[FileSystem] Can not found class org/apache/hadoop/mapred/nativetask/NativeRuntime");
       return false;
     }
     NativeRuntimeClass = (jclass)env->NewGlobalRef(cls);
@@ -292,7 +292,7 @@ public:
 
     jclass fsincls = env->FindClass("org/apache/hadoop/fs/FSDataInputStream");
     if (fsincls == NULL) {
-      LOG("Can not found class org/apache/hadoop/fs/FSDataInputStream");
+      LOG("[FileSystem] Can not found class org/apache/hadoop/fs/FSDataInputStream");
       return false;
     }
     FSDataInputStreamClass = (jclass)env->NewGlobalRef(fsincls);
@@ -304,7 +304,7 @@ public:
 
     jclass fsoutcls = env->FindClass("org/apache/hadoop/fs/FSDataOutputStream");
     if (fsoutcls == NULL) {
-      LOG("Can not found class org/apache/hadoop/fs/FSDataOutputStream");
+      LOG("[FileSystem] Can not found class org/apache/hadoop/fs/FSDataOutputStream");
       return false;
     }
     FSDataOutputStreamClass = (jclass)env->NewGlobalRef(fsincls);

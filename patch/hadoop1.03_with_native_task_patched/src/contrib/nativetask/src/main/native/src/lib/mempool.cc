@@ -39,7 +39,7 @@ std::vector<MemoryBlock> MemoryBlockPool::_blocks = std::vector<MemoryBlock>();
 bool MemoryBlockPool::init(uint32_t capacity, uint32_t min_block_size, ComparatorPtr keyComparator)
     throw (OutOfMemoryException) {
   _min_block_size = min_block_size;
-  LOG("Native MemoryBlockPool: min_block_size %uK, capacity %uM",
+  LOG("Native Total MemoryBlockPool: min_block_size %uK, capacity %uM",
       _min_block_size/1024,
       capacity/1024/1024);
   release();

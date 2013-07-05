@@ -85,9 +85,6 @@ void MCollectorOutputHandler::handleInput(char * buff, uint32_t length) {
 
     uint32_t kvlength = pos - buff;
 
-    //LOG("key length %d, value length: %d, partion id: %d", keyLength, valueLength, partition);
-
-
     char * dest = _collector->get_buffer_to_put(kvlength, partition);
     if (NULL == dest) {
       string spillpath = this->sendCommand("GetSpillPath");

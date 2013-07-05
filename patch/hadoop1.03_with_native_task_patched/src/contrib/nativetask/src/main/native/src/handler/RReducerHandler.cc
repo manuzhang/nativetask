@@ -145,22 +145,22 @@ void RReducerHandler::configure(Config & config) {
 
   switch (_reducerType) {
   case ReducerType:
-    LOG("Native Reducer with Reducer API, RecordWriter: %s", writerClass?writerClass:"Java RecordWriter");
+    LOG("[RReducerHandler] Native Reducer with Reducer API, RecordWriter: %s", writerClass?writerClass:"Java RecordWriter");
     _reducer->configure(config);
     break;
   case MapperType:
-    LOG("Native Reducer with Mapper API, RecordWriter: %s", writerClass?writerClass:"Java RecordWriter");
+    LOG("[RReducerHandler] Native Reducer with Mapper API, RecordWriter: %s", writerClass?writerClass:"Java RecordWriter");
     _mapper->configure(config);
     break;
   case FolderType:
-    LOG("Native Reducer with Folder API, RecordWriter: %s", writerClass?writerClass:"Java RecordWriter");
+    LOG("[RReducerHandler] Native Reducer with Folder API, RecordWriter: %s", writerClass?writerClass:"Java RecordWriter");
     _folder->configure(config);
     // TODO: implement
-    THROW_EXCEPTION(UnsupportException, "Folder API not supported");
+    THROW_EXCEPTION(UnsupportException, "RReducerHandler: Folder API not supported");
     break;
   default:
     // should not be here
-    THROW_EXCEPTION(UnsupportException, "Reducer type not supported");
+    THROW_EXCEPTION(UnsupportException, "RReducerHandler: Reducer type not supported");
   }
 }
 
@@ -274,8 +274,14 @@ char * RReducerHandler::nextKeyValuePair() {
 }
 
 bool RReducerHandler::nextKey() {
+
+  if (_keyGroupIterState == NO_MORE) {
+    return false;
+  }
+
   uint32_t temp;
-  while (_keyGroupIterState==SAME_KEY) {
+  while (_keyGroupIterState == SAME_KEY ||
+      _keyGroupIterState == NEW_KEY_VALUE) {
     nextValue(temp);
   }
   if (_keyGroupIterState ==  NEW_KEY) {
@@ -286,6 +292,7 @@ bool RReducerHandler::nextKey() {
       }
     }
     _currentGroupKey.assign(_nextKeyValuePair + _keyOffset, _klength);
+    _keyGroupIterState = NEW_KEY_VALUE;
     return true;
   }
   return false;
@@ -299,6 +306,9 @@ const char * RReducerHandler::getKey(uint32_t & len) {
 const char * RReducerHandler::nextValue(uint32_t & len) {
   char * pos;
   switch (_keyGroupIterState) {
+  case NEW_KEY: {
+    return NULL;
+  }
   case SAME_KEY: {
     pos = nextKeyValuePair();
     if (pos != NULL) {
@@ -314,7 +324,7 @@ const char * RReducerHandler::nextValue(uint32_t & len) {
     _keyGroupIterState = NO_MORE;
     return NULL;
   }
-  case NEW_KEY: {
+  case NEW_KEY_VALUE: {
     len = _vlength;
     _keyGroupIterState = SAME_KEY;
     return _nextKeyValuePair + _valueOffset;

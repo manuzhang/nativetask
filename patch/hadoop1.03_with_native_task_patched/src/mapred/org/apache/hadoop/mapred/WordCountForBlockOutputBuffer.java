@@ -46,7 +46,6 @@ public class WordCountForBlockOutputBuffer {
     public void reduce(Text key, Iterable<BytesWritable> values, 
                        Context context
                        ) throws IOException, InterruptedException {
-      System.out.println("The key is : " + key.toString());
       int sum = 0;
       for (BytesWritable val : values) {
         int current = toInt(val.get(), 0, 4);

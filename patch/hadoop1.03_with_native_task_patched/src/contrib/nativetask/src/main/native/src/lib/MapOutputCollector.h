@@ -142,21 +142,6 @@ protected:
     virtual ~Iterator(){}
     virtual bool next(Buffer & key, Buffer & value);
   };
-
-  class KeyGroupIterator : public KeyGroup {
-  protected:
-    PartitionBucket & pb;
-    InplaceBuffer * currentKey;
-    size_t index;
-    size_t size;
-    bool hasNext;
-  public:
-    KeyGroupIterator(PartitionBucket & pb);
-    virtual ~KeyGroupIterator(){}
-    bool nextKey();
-    virtual const char * getKey(uint32_t & len);
-    virtual const char * nextValue(uint32_t & len);
-  };
 };
 
 /**

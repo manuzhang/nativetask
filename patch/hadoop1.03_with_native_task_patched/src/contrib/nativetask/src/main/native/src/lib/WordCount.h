@@ -38,7 +38,7 @@ public:
 
 class IntSumReducer : public Reducer {
 public:
-  virtual void reduce(KeyGroup & input);
+  virtual void reduce(KeyGroupIterator & input);
 };
 
 class IntSumMapper : public Mapper {

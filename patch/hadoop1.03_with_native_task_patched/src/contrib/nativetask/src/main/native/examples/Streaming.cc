@@ -108,7 +108,7 @@ public:
   virtual void configure(Config & config) {
     mapOutputSeparator = config.get("native.stream.map.output.separator", "\t");
     string cmd = config.get("native.map.processor", "cat");
-    LOG("Streaming map processor: [%s]", cmd.c_str());
+    LOG("[Streaming] Streaming map processor: [%s]", cmd.c_str());
     pid = Process::Popen(cmd, fstdin, fstdout, fstderr);
     if (pid <= 0) {
       THROW_EXCEPTION_EX(IOException, "Create subprocess failed, cmd: %s", cmd.c_str());
@@ -165,7 +165,7 @@ public:
     reduceInputSeparator = config.get("native.stream.reduce.input.separator",
                                       "\t");
     string cmd = config.get("native.reduce.processor", "cat");
-    LOG("Streaming reduce processor: [%s]", cmd.c_str());
+    LOG("[Streaming] Streaming reduce processor: [%s]", cmd.c_str());
     pid = Process::Popen(cmd, fstdin, fstdout, fstderr);
     if (pid <= 0) {
       THROW_EXCEPTION_EX(IOException,

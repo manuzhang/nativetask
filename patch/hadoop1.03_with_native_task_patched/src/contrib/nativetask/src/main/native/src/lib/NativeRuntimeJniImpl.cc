@@ -50,14 +50,14 @@ JNIEXPORT void JNICALL Java_org_apache_hadoop_mapred_nativetask_NativeRuntime_JN
     JNU_ThrowByName(jenv, "java/io/IOException", e.what());
   }
   catch (NativeTask::JavaException e) {
-    LOG("JavaException: %s", e.what());
+    LOG("[NativeRuntimeJniImpl] JavaException: %s", e.what());
     // Do nothing, let java side handle
   }
   catch (std::exception e) {
     JNU_ThrowByName(jenv, "java/io/IOException", e.what());
   }
   catch (...) {
-    JNU_ThrowByName(jenv, "java/io/IOException", "Unkown std::exception");
+    JNU_ThrowByName(jenv, "java/io/IOException", "[NativeRuntimeJniImpl] Unkown std::exception");
   }
 }
 
@@ -154,14 +154,14 @@ JNIEXPORT jlong JNICALL Java_org_apache_hadoop_mapred_nativetask_NativeRuntime_J
     JNU_ThrowByName(jenv, "java/io/IOException", e.what());
   }
   catch (NativeTask::JavaException e) {
-    LOG("JavaException: %s", e.what());
+    LOG("[NativeRuntimeJniImpl] JavaException: %s", e.what());
     // Do nothing, let java side handle
   }
   catch (std::exception e) {
     JNU_ThrowByName(jenv, "java/io/IOException", e.what());
   }
   catch (...) {
-    JNU_ThrowByName(jenv, "java/io/IOException", "Unknown exception");
+    JNU_ThrowByName(jenv, "java/io/IOException", "[NativeRuntimeJniImpl] Unknown exception");
   }
   return 0;
 }

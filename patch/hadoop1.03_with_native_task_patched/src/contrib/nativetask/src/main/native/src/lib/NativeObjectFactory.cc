@@ -136,20 +136,20 @@ bool NativeObjectFactory::Init() {
         if (pair.size() == 2) {
           string & name = pair[0];
           string & path = pair[1];
-          LOG("Try to load library [%s] with file [%s]", name.c_str(), path.c_str());
+          LOG("[NativeObjectLibrary] Try to load library [%s] with file [%s]", name.c_str(), path.c_str());
           if (false == RegisterLibrary(path, name)) {
-            LOG("RegisterLibrary failed: name=%s path=%s", name.c_str(), path.c_str());
+            LOG("[NativeObjectLibrary] RegisterLibrary failed: name=%s path=%s", name.c_str(), path.c_str());
             return false;
           } else {
-            LOG("RegisterLibrary success: name=%s path=%s", name.c_str(), path.c_str());
+            LOG("[NativeObjectLibrary] RegisterLibrary success: name=%s path=%s", name.c_str(), path.c_str());
           }
         } else {
-          LOG("Illegal native.class.libray: [%s] in [%s]", libraries[i].c_str(), libraryConf.c_str());
+          LOG("[NativeObjectLibrary] Illegal native.class.libray: [%s] in [%s]", libraries[i].c_str(), libraryConf.c_str());
         }
       }
     }
     const char * version = GetConfig().get(NATIVE_HADOOP_VERSION);
-    LOG("NativeTask library initialized with hadoop %s", version==NULL?"unkown":version);
+    LOG("[NativeObjectLibrary] NativeTask library initialized with hadoop %s", version==NULL?"unkown":version);
   }
   return true;
 }
@@ -196,7 +196,7 @@ void NativeObjectFactory::SetTaskProgressSource(Progress * progress) {
 float NativeObjectFactory::GetTaskProgress() {
   if (TaskProgress != NULL) {
     LastProgress = TaskProgress->getProgress();
-    LOG("Native side get progress %.3f", LastProgress);
+    LOG("[NativeObjectLibrary] Native side get progress %.3f", LastProgress);
   }
   return LastProgress;
 }
@@ -319,7 +319,7 @@ NativeObject * NativeObjectFactory::CreateDefaultObject(NativeObjectType type) {
       string clz = DefaultClasses[type];
       return CreateObject(clz);
     }
-    LOG("Default class for NativeObjectType %s not found",
+    LOG("[NativeObjectLibrary] Default class for NativeObjectType %s not found",
         NativeObjectTypeToString(type).c_str());
     return NULL;
   }
