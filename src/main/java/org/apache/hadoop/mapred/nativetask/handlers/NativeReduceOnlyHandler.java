@@ -117,35 +117,34 @@ public class NativeReduceOnlyHandler<IK, IV, OK, OV> extends
     int remain = length;
 
     int totalWritten = 0;
-    
-    try {
-    if (inputKVBufferd) {
-      int written = serializer.serializeKV(out, tmpInputKey, tmpInputValue);
-      if (written == 0) {
-        return 0;
-      }
-      remain -= written;
-    }
 
-    while (rIter.next() && remain > 0) {
-      inputKVBufferd = true;
-      tmpInputKey.readFields(rIter.getKey());
-      tmpInputValue.readFields(rIter.getValue());
-      int written = serializer.serializeKV(out, remain, tmpInputKey,
-          tmpInputValue);
-      if (written == 0) {
-        totalWritten = length - remain;
-        return totalWritten;
-      } else {
-        inputKVBufferd = false;
+    try {
+      if (inputKVBufferd) {
+        int written = serializer.serializeKV(out, tmpInputKey, tmpInputValue);
+        if (written == 0) {
+          return 0;
+        }
+        remain -= written;
       }
-      remain -= written;
-    }
-    totalWritten = length - remain;
-    return totalWritten;
-    }
-    finally {
-  
+
+      while (rIter.next() && remain > 0) {
+        inputKVBufferd = true;
+        tmpInputKey.readFields(rIter.getKey());
+        tmpInputValue.readFields(rIter.getValue());
+        int written = serializer.serializeKV(out, remain, tmpInputKey,
+            tmpInputValue);
+        if (written == 0) {
+          totalWritten = length - remain;
+          return totalWritten;
+        } else {
+          inputKVBufferd = false;
+        }
+        remain -= written;
+      }
+      totalWritten = length - remain;
+      return totalWritten;
+    } finally {
+
     }
   }
 
@@ -162,6 +161,5 @@ public class NativeReduceOnlyHandler<IK, IV, OK, OV> extends
   public void run() throws IOException {
     sendCommandToNative(BytesUtil.toBytes("run"));
   }
-
 
 }

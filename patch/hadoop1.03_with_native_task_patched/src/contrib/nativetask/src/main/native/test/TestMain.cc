@@ -18,7 +18,11 @@
 
 
 #include <signal.h>
+
+#ifndef __CYGWIN__
 #include <execinfo.h>
+#endif
+
 #include <stdexcept>
 #include "commons.h"
 #include "Buffers.h"
@@ -38,7 +42,7 @@ void handler(int sig) {
   // print out all the frames to stderr
   fprintf(stderr, "Error: signal %d:\n", sig);
 
-#ifdef _EXECINFO_H
+#ifndef __CYGWIN__
   // get void*'s for all entries on the stack
   size = backtrace(array, 10);
 

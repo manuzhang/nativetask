@@ -17,7 +17,9 @@
  */
 
 #include <signal.h>
+#ifndef __CYGWIN__
 #include <execinfo.h>
+#endif
 #include "commons.h"
 #include "NativeTask.h"
 #include "NativeObjectFactory.h"
@@ -48,7 +50,7 @@ extern "C" void handler(int sig) {
   // print out all the frames to stderr
   fprintf(stderr, "Error: signal %d:\n", sig);
 
-#ifdef _EXECINFO_H
+#ifndef __CYGWIN__
   // get void*'s for all entries on the stack
   size = backtrace(array, 10);
 

@@ -1,4 +1,5 @@
 export PLATFORM = $(shell uname | tr [A-Z] [a-z])
+export BITS = $(shell ./getosbits.sh)
 
 ACLOCAL_AMFLAGS = -I m4
 
@@ -8,26 +9,28 @@ if PLATFORM_IS_MACOS
 # macos 
 JNI_INCLUDE ?= -I/System/Library/Frameworks/JavaVM.framework/Versions/Current/Headers/
 PLATFORM_LDFLAGS = -framework JavaVM
+MACRO = -D__X$(BITS)
 endif
 
 if PLATFORM_IS_LINUX
 # linux
 JNI_INCLUDE ?= -I$(JAVA_HOME)/include -I$(JAVA_HOME)/include/$(PLATFORM)
 PLATFORM_LDFLAGS = -lrt -L$(JAVA_HOME)/jre/lib/amd64/server -ljvm
+MACRO = -D__X$(BITS)
 endif
 
 if PLATFORM_IS_WIN
 # windows
-PLATFORM="win32"
-JNI_INCLUDE ?= -I"$(JAVA_HOME)/include" -I$(JAVA_HOME)/include/$(PLATFORM)
-PLATFORM_LDFLAGS = -lrt -L$(JAVA_HOME)/jre/lib/amd64/server -ljvm
+JNI_INCLUDE ?= -I$(JAVA_HOME)/include -I$(JAVA_HOME)/include/win32
+PLATFORM_LDFLAGS = -lrt  -L$(JAVA_HOME)/lib -ljvm
+MACRO = -D__X$(BITS) -D__int64="long long" -D__CYGWIN__  -DSOFTWARE_CRC
 endif
 
 # primatives configs 
 PRFLAGS=-DSIMPLE_MEMCPY 
 #-DSPILLRECORD_CHECKSUM_UINT
 
-AM_LDFLAGS = -L$(SNAPPY_PREFIX)/lib -lsnappy -lpthread -ldl -lz $(PLATFORM_LDFLAGS)
+AM_LDFLAGS = -no-undefined  -L$(SNAPPY_PREFIX)/lib -lsnappy -lpthread -ldl -lz $(PLATFORM_LDFLAGS)
 AM_CFLAGS = $(PRFLAGS) $(JNI_INCLUDE) -I$(SNAPPY_PREFIX)/include -Ijavah -I$(top_srcdir)/src -I$(top_srcdir)/src/util -I$(top_srcdir)/src/lib 
 
 COMMONSOURCES = \
@@ -128,14 +131,14 @@ noinst_PROGRAMS = nttest
 noinst_SCRIPTS = test.sh
 
 libnativetask_la_SOURCES = $(COMMONSOURCES)
-libnativetask_la_CPPFLAGS = -g -O2 -DNDEBUG -fPIC $(AM_CFLAGS)
-libnativetask_la_LDFLAGS = -version-info 0:1:0 $(AM_LDFLAGS)
+libnativetask_la_CPPFLAGS = -g -O2 -DNDEBUG $(MACRO) -fPIC $(AM_CFLAGS)
+libnativetask_la_LDFLAGS =  -version-info 0:1:0 $(AM_LDFLAGS)
 
 libstreaming_la_SOURCES = examples/Streaming.cc
-libstreaming_la_CPPFLAGS = -g -O2 -DNDEBUG -fPIC $(AM_CFLAGS)
+libstreaming_la_CPPFLAGS = -g -O2 -DNDEBUG $(MACRO) -fPIC $(AM_CFLAGS)
 libstreaming_la_LDFLAGS = -version-info 0:1:0 $(AM_LDFLAGS)
 
 nttest_SOURCES = $(TESTSOURCES) gtest/gtest-all.cc
 nttest_LDADD = libnativetask.la
 nttest_LDFLAGS = $(AM_LDFLAGS)
-nttest_CPPFLAGS = -g -O2 $(AM_CFLAGS) -I$(top_srcdir) -I$(top_srcdir)/test
+nttest_CPPFLAGS = -g -O2  $(MACRO) $(AM_CFLAGS) -I$(top_srcdir) -I$(top_srcdir)/test

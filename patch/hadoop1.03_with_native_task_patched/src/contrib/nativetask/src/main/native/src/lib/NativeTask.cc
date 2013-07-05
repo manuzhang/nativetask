@@ -15,8 +15,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
+#ifndef __CYGWIN__
 #include <execinfo.h>
+#endif
 #include "commons.h"
 #include "util/Hash.h"
 #include "util/StringUtil.h"
@@ -93,7 +94,7 @@ HadoopException::HadoopException(const string & what) {
   void *array[64];
   size_t size;
 
-#ifdef _EXECINFO_H
+#ifndef __CYGWIN__
   size = backtrace(array, 64);
   char ** traces = backtrace_symbols(array, size);
   for (size_t i = 0; i< size;i++) {

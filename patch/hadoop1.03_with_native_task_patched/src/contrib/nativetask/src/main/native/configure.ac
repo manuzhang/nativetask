@@ -25,6 +25,7 @@ AC_CONFIG_SRCDIR([src/NativeTask.h])
 AC_CONFIG_HEADERS(config.h)
 
 LT_PREREQ([2.2])
+LT_INIT
 AC_PROG_LIBTOOL
 
 AM_INIT_AUTOMAKE(nativetask,0.1.0)
@@ -46,10 +47,11 @@ AC_C_INLINE
 AC_FUNC_MALLOC
 AC_CHECK_FUNCS([clock_gettime localtime_r memset strchr strtoul])
 
-export PLATFORM=`uname | tr [A-Z] [a-z]`
+export PLATFORM=`sh ./getplatform.sh`
 AM_CONDITIONAL(PLATFORM_IS_MACOS, [test x"$PLATFORM" = xdarwin])
 AM_CONDITIONAL(PLATFORM_IS_LINUX, [test x"$PLATFORM" = xlinux])
-AM_CONDITIONAL(PLATFORM_IS_WIN, [ test "$PLATFORM" != "${PLATFORM/cywin/}" ])
+AM_CONDITIONAL(PLATFORM_IS_WIN, [test x"$PLATFORM" = xcygwin])
 
+AM_CONDITIONAL(PLATFORM_IS_WIN, [test x"$PLATFORM" = xcygwin])
 
 AC_OUTPUT(Makefile)

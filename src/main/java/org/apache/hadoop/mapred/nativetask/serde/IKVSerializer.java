@@ -16,7 +16,6 @@
  * limitations under the License.
  */
 
-
 package org.apache.hadoop.mapred.nativetask.serde;
 
 import java.io.IOException;

@@ -22,7 +22,7 @@
 
 namespace NativeTask {
 
-static long RandomInitializeID = 8682522807148012L;
+static long RandomInitializeID = 8682522807148012ULL;
 
 // A random list of 1000 words from /usr/share/dict/words
 static const

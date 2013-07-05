@@ -16,7 +16,6 @@
  * limitations under the License.
  */
 
-
 package org.apache.hadoop.mapred.nativetask.serde;
 
 import java.io.DataInput;
@@ -27,7 +26,7 @@ import org.apache.hadoop.io.BytesWritable;
 import org.apache.hadoop.mapred.nativetask.INativeComparable;
 
 public class BytesWritableSerializer implements INativeComparable,
-    INativeSerializer<BytesWritable>  {
+    INativeSerializer<BytesWritable> {
 
   @Override
   public int getLength(BytesWritable w) throws IOException {

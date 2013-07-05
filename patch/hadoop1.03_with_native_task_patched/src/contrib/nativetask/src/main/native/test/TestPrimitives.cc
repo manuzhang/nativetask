@@ -173,7 +173,10 @@ inline char * memchrbrf2(char * p, char ch, size_t len) {
 // not safe in MACOSX, segment fault, should be safe on Linux with out mmap
 inline int memchr_sse(const char *s, int c, int len) {
   //len : edx; c: esi; s:rdi
-  int index;
+  int index = 0;
+
+#ifdef __X64
+
   __asm__ __volatile__(
       //"and $0xff, %%esi;" //clear upper bytes
       "movd %%esi, %%xmm1;"
@@ -205,6 +208,9 @@ inline int memchr_sse(const char *s, int c, int len) {
       :"D"(s),"S"(c),"d"(len)
       :"rcx","r8","memory"
   );
+
+#endif
+
   return index;
 }
 

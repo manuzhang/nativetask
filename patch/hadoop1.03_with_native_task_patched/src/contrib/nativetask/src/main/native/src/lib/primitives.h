@@ -105,7 +105,19 @@ inline uint32_t bswap(uint32_t val)
 
 inline uint64_t bswap64(uint64_t val)
 {
+#ifdef __X64
   __asm__("bswapq %0" : "=r" (val) : "0" (val));
+#else
+
+  uint64_t lower = val & 0xffffffffU;
+  uint32_t higher = (val >> 32) & 0xffffffffU;
+
+  lower = bswap(lower);
+  higher = bswap(higher);
+
+  return ( lower << 32 ) + higher;
+
+#endif
   return val;
 }
 
@@ -219,7 +231,7 @@ inline bool fmemeq(const char * src, const char * dest, uint32_t len) {
   return true;
 }
 
-inline bool fmemeq(const char * src, const char * dest, uint32_t srcLen, uint32_t destLen) {
+inline bool fmemeq(const char * src, uint32_t srcLen, const char * dest, uint32_t destLen) {
   if (srcLen!=destLen) {
     return false;
   }

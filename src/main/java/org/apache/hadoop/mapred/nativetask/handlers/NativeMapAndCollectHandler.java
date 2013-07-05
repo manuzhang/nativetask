@@ -37,34 +37,30 @@ import org.apache.hadoop.mapred.nativetask.util.OutputPathUtil;
  * @param <IK>
  * @param <IV>
  */
-public class NativeMapAndCollectHandler<IK, IV> extends NativeBatchProcessor<IK, IV, Writable, Writable> {
+public class NativeMapAndCollectHandler<IK, IV> extends
+    NativeBatchProcessor<IK, IV, Writable, Writable> {
 
   private static final Log LOG = LogFactory
       .getLog(NativeMapAndCollectHandler.class);
 
   private OutputPathUtil mapOutputFile;
   private int spillNumber = 0;
-  
+
   public NativeMapAndCollectHandler(int bufferCapacity, Class<IK> keyClass,
       Class<IV> valueClass, Configuration conf, TaskAttemptID taskAttemptID)
       throws IOException {
-    super(keyClass, 
-        valueClass, 
-        null, 
-        null, 
-        "NativeTask.MMapperHandler",
-        bufferCapacity, 
-        0);
-    
+    super(keyClass, valueClass, null, null, "NativeTask.MMapperHandler",
+        bufferCapacity, 0);
+
     this.mapOutputFile = new OutputPathUtil();
     this.mapOutputFile.setConf(conf);
   }
-  
+
   @Override
   public void init(Configuration conf) throws IOException {
     super.init(conf);
   }
-  
+
   @Override
   protected byte[] sendCommandToJava(byte[] data) throws IOException {
     String cmd = BytesUtil.fromBytes(data);

@@ -124,7 +124,7 @@ public class OutputPathUtil {
     return lDirAlloc.getLocalPathForWrite(TASKTRACKER_OUTPUT + "/spill"
         + spillNumber + ".out", size, conf);
   }
-  
+
   /**
    * Return a local map spill index file created earlier
    * 

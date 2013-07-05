@@ -136,7 +136,7 @@ public class NativeRuntime {
   public static void configure(String key, boolean value) {
     configure(key, Boolean.toString(value));
   }
-  
+
   public static void configure(String key, int value) {
     configure(key, Integer.toString(value));
   }
