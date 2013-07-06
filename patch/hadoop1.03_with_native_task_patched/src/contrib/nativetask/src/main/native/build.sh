@@ -52,11 +52,13 @@ make
 
 case "x$1" in
 xclean)
-	clean
+	make clean
 	;;
+xinit)
+	
+;;	
 xall)
-	clean
-        init
+	make clean
 	build
 	;;
 xinstall)

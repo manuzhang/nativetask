@@ -31,8 +31,8 @@ AC_PROG_LIBTOOL
 AM_INIT_AUTOMAKE(nativetask,0.1.0)
 
 # Checks for programs.
-AC_PROG_CXX
-AC_PROG_CC
+AC_PROG_CXX(["icpc -static-intel"  g++])
+AC_PROG_CC(["icc -static-intel" gcc])
 
 # Checks for libraries.
 
