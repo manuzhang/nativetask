@@ -44,11 +44,16 @@ install() {
   cp -r .libs $target
 }
 
+
+
 build() {
 .$basedir/configure
 make
 }
 
+
+clean
+init
 
 case "x$1" in
 xclean)

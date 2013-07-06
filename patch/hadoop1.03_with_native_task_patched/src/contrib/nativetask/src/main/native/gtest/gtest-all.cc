@@ -1769,6 +1769,7 @@ bool UnitTestOptions::MatchesFilter(const String& name, const char* filter) {
     // Skips the pattern separater (the ':' character).
     cur_pattern++;
   }
+  return false;
 }
 
 // TODO(keithray): move String function implementations to gtest-string.cc.
@@ -3874,13 +3875,14 @@ WORD GetColorAttribute(GTestColor color) {
 
 // Returns the ANSI color code for the given color.  COLOR_DEFAULT is
 // an invalid input.
-const char* GetAnsiColorCode(GTestColor color) {
+char* GetAnsiColorCode(GTestColor color) {
   switch (color) {
     case COLOR_RED:     return "1";
     case COLOR_GREEN:   return "2";
     case COLOR_YELLOW:  return "3";
     default:            return NULL;
   };
+  return NULL;
 }
 
 #endif  // GTEST_OS_WINDOWS && !GTEST_OS_WINDOWS_MOBILE

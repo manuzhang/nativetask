@@ -10328,6 +10328,10 @@ class TestMetaFactory
 
   TestMetaFactory() {}
 
+  virtual ~TestMetaFactory () {
+
+  }
+
   virtual TestFactoryBase* CreateTestFactory(ParamType parameter) {
     return new ParameterizedTestFactory<TestCase>(parameter);
   }
