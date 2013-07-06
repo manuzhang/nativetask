@@ -89,7 +89,8 @@ public:
       _moc(moc),
       _pb(NULL),
       _cur_partition(-1ULL),
-      _cur_index(-1ULL) {
+      _cur_index(-1ULL),
+      _value(NULL){
   }
 
   virtual ~MemoryMergeEntry() {

@@ -111,7 +111,7 @@ int DoubleComparator(const char * src, uint32_t srcLength, const char * dest, ui
     }
     double * srcValue = (double *)src;
     double * destValue = (double *)dest;
-    return ((*srcValue) - (* destValue) >= 0) ? 1 : -1;;
+    return (((*srcValue) - (* destValue) >= 0) ? 1 : -1);
 };
 
 

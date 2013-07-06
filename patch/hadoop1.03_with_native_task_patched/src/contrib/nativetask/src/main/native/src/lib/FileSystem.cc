@@ -219,7 +219,7 @@ public:
     while (*p == '/')
       p++;
 
-    while (p = strchr(p, '/')) {
+    while (NULL != (p = strchr(p, '/'))) {
       *p = '\0';
       if (stat(npath, &sb) != 0) {
         if (mkdir(npath, nmode)) {

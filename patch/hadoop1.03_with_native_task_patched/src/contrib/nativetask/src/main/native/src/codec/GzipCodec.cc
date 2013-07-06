@@ -183,6 +183,7 @@ int32_t GzipDecompressStream::read(void * buff, uint32_t length) {
       return -1;
     }
   }
+  return -1;
 }
 
 void GzipDecompressStream::close() {

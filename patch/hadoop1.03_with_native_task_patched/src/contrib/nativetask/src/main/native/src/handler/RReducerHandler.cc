@@ -39,7 +39,12 @@ RReducerHandler::RReducerHandler() :
   _keyGroupIterState(NEW_KEY),
   _nextKeyValuePair(NULL),
   _KVBuffer(NULL),
-  _KVBufferCapacity(0) {
+  _collector(NULL),
+  _KVBufferCapacity(0),
+  _reduceInputGroups(NULL),
+  _reduceOutputRecords(NULL),
+  _reduceInputRecords(NULL),
+  _reducerType(UnknownObjectType){
 }
 
 RReducerHandler::~RReducerHandler() {
@@ -330,8 +335,9 @@ const char * RReducerHandler::nextValue(uint32_t & len) {
     return _nextKeyValuePair + _valueOffset;
   }
   case NO_MORE:
-    return false;
+    return NULL;
   }
+  return NULL;
 }
 
 

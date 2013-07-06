@@ -86,7 +86,10 @@ protected:
   }
 
   virtual uint32_t decompressOneBlock(uint32_t compressedSize, void * buff,
-                                      uint32_t length) {}
+                                      uint32_t length) {
+    //TODO: add implementation
+    return 0;
+  }
 };
 
 } // namespace NativeTask

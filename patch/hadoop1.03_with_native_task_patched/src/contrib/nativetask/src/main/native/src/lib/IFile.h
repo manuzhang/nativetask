@@ -104,7 +104,7 @@ public:
   /**
    * length of current value part of IFile entry
    */
-  const uint32_t valueLen() {
+  uint32_t valueLen() {
     return _valueLen;
   }
 

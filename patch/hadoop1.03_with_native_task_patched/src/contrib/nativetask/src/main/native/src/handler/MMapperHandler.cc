@@ -32,7 +32,10 @@ MMapperHandler::MMapperHandler() :
     _combinerCreator(NULL),
     _numPartition(1),
     _dest(NULL),
-    _remain(0) {
+    _remain(0),
+    _klength(0),
+    _kvlength(0),
+    _vlength(0){
 }
 
 MMapperHandler::~MMapperHandler() {

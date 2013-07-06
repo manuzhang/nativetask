@@ -261,6 +261,10 @@ public:
   virtual void readFields(const string & data) = 0;
   virtual void writeFields(string & dest) = 0;
   virtual string toString() = 0;
+
+  virtual ~InputSplit() {
+
+  }
 };
 
 class Configurable : public NativeObject {
@@ -519,7 +523,9 @@ public:
   /**
    * Create and/or init new state
    */
-  virtual void * init(const char * key, uint32_t keyLen) {}
+  virtual void * init(const char * key, uint32_t keyLen) {
+    return NULL;
+  }
 
   /**
    * Aggregation function

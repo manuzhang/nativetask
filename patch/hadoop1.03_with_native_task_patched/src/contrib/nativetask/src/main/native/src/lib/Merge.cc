@@ -157,8 +157,9 @@ const char * Merger::nextValue(uint32_t & len) {
     return _heap[0]->getValue();
   }
   case NO_MORE:
-    return false;
+    return NULL;
   }
+  return NULL;
 }
 
 void Merger::merge() {

@@ -86,19 +86,19 @@ public:
   }
 
 
-  const uint32_t recored_count() const {
+  uint32_t recored_count() const {
     return (uint32_t)_kv_offsets.size();
   }
 
-  const uint32_t recored_offset(uint32_t record_idx) {
+  uint32_t recored_offset(uint32_t record_idx) {
     return _kv_offsets[record_idx];
   }
 
-  const uint32_t blk_count() const {
+  uint32_t blk_count() const {
     return (uint32_t)_blk_ids.size();
   }
 
-  const uint32_t current_block_idx() const {
+  uint32_t current_block_idx() const {
     return _current_block_idx;
   }
 

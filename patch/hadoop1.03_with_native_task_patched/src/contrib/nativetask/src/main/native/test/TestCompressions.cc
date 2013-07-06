@@ -172,6 +172,7 @@ public:
     compressedSize += rhs.compressedSize;
     compressTime += rhs.compressTime;
     uncompressTime += rhs.uncompressTime;
+    return *this;
   }
   string toString() {
     return StringUtil::Format("Compress: %4.0fM/s Decompress: %5.0fM/s(%5.0fM/s) ratio: %.1f%%",

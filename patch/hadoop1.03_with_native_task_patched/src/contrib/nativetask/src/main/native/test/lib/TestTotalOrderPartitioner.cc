@@ -34,7 +34,10 @@ static string GetKey(uint64_t key, uint64_t range) {
     return StringUtil::Format("%02d", key);
   } else if (range>=1) {
     return StringUtil::Format("%d", key);
+  } else {
+    return string("");
   }
+
 }
 
 static void MakeSplits(vector<string> & splits, int64_t partition, int64_t record) {

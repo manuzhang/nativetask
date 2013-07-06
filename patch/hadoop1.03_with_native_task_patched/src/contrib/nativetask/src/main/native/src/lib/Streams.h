@@ -82,7 +82,7 @@ public:
   }
 
   virtual uint64_t tell() {
-    _stream->tell();
+    return _stream->tell();
   }
 
   virtual int32_t read(void * buff, uint32_t length) {
@@ -107,7 +107,7 @@ public:
   }
 
   virtual uint64_t tell() {
-    _stream->tell();
+    return _stream->tell();
   }
 
   virtual void write(const void * buff, uint32_t length) {

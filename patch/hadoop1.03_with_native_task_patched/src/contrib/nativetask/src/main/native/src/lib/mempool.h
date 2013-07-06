@@ -45,7 +45,7 @@ public:
       _pos(pos) {
   }
 
-  const uint32_t size() const {
+  uint32_t size() const {
     return _size;
   }
 
@@ -53,7 +53,7 @@ public:
     return _pos;
   }
 
-  const uint32_t used() const {
+  uint32_t used() const {
     return _used;
   }
 
@@ -61,7 +61,7 @@ public:
     return _pos + _used;
   }
 
-  inline const uint32_t rest() const {
+  inline uint32_t rest() const {
     return _size - _used;
   }
 

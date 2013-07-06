@@ -40,20 +40,20 @@ JNIEXPORT void JNICALL Java_org_apache_hadoop_mapred_nativetask_NativeRuntime_JN
   try {
     NativeTask::NativeObjectFactory::Release();
   }
-  catch (NativeTask::UnsupportException e) {
+  catch (NativeTask::UnsupportException & e) {
     JNU_ThrowByName(jenv, "java/lang/UnsupportedOperationException", e.what());
   }
-  catch (NativeTask::OutOfMemoryException e) {
+  catch (NativeTask::OutOfMemoryException & e) {
     JNU_ThrowByName(jenv, "java/lang/OutOfMemoryException", e.what());
   }
-  catch (NativeTask::IOException e) {
+  catch (NativeTask::IOException & e) {
     JNU_ThrowByName(jenv, "java/io/IOException", e.what());
   }
-  catch (NativeTask::JavaException e) {
+  catch (NativeTask::JavaException & e) {
     LOG("[NativeRuntimeJniImpl] JavaException: %s", e.what());
     // Do nothing, let java side handle
   }
-  catch (std::exception e) {
+  catch (std::exception & e) {
     JNU_ThrowByName(jenv, "java/io/IOException", e.what());
   }
   catch (...) {
@@ -78,20 +78,20 @@ JNIEXPORT void JNICALL Java_org_apache_hadoop_mapred_nativetask_NativeRuntime_JN
           JNU_ByteArrayToString(jenv, val_obj));
     }
   }
-  catch (NativeTask::UnsupportException e) {
+  catch (NativeTask::UnsupportException & e) {
     JNU_ThrowByName(jenv, "java/lang/UnsupportedOperationException", e.what());
   }
-  catch (NativeTask::OutOfMemoryException e) {
+  catch (NativeTask::OutOfMemoryException & e) {
     JNU_ThrowByName(jenv, "java/lang/OutOfMemoryException", e.what());
   }
-  catch (NativeTask::IOException e) {
+  catch (NativeTask::IOException & e) {
     JNU_ThrowByName(jenv, "java/io/IOException", e.what());
   }
-  catch (NativeTask::JavaException e) {
+  catch (NativeTask::JavaException & e) {
     LOG("JavaException: %s", e.what());
     // Do nothing, let java side handle
   }
-  catch (std::exception e) {
+  catch (std::exception & e) {
     JNU_ThrowByName(jenv, "java/io/IOException", e.what());
   }
   catch (...) {
@@ -110,20 +110,20 @@ jlong JNICALL Java_org_apache_hadoop_mapred_nativetask_NativeRuntime_JNICreateNa
     std::string typeString = JNU_ByteArrayToString(jenv, clazz);
     return (jlong)(NativeTask::NativeObjectFactory::CreateObject(typeString));
   }
-  catch (NativeTask::UnsupportException e) {
+  catch (NativeTask::UnsupportException & e) {
     JNU_ThrowByName(jenv, "java/lang/UnsupportedOperationException", e.what());
   }
-  catch (NativeTask::OutOfMemoryException e) {
+  catch (NativeTask::OutOfMemoryException & e) {
     JNU_ThrowByName(jenv, "java/lang/OutOfMemoryException", e.what());
   }
-  catch (NativeTask::IOException e) {
+  catch (NativeTask::IOException & e) {
     JNU_ThrowByName(jenv, "java/io/IOException", e.what());
   }
-  catch (NativeTask::JavaException e) {
+  catch (NativeTask::JavaException & e) {
     LOG("JavaException: %s", e.what());
     // Do nothing, let java side handle
   }
-  catch (std::exception e) {
+  catch (std::exception & e) {
     JNU_ThrowByName(jenv, "java/io/IOException", e.what());
   }
   catch (...) {
@@ -144,20 +144,20 @@ JNIEXPORT jlong JNICALL Java_org_apache_hadoop_mapred_nativetask_NativeRuntime_J
     NativeTask::NativeObjectType type = NativeTask::NativeObjectTypeFromString(typeString.c_str());
     return (jlong)(NativeTask::NativeObjectFactory::CreateDefaultObject(type));
   }
-  catch (NativeTask::UnsupportException e) {
+  catch (NativeTask::UnsupportException & e) {
     JNU_ThrowByName(jenv, "java/lang/UnsupportedOperationException", e.what());
   }
-  catch (NativeTask::OutOfMemoryException e) {
+  catch (NativeTask::OutOfMemoryException & e) {
     JNU_ThrowByName(jenv, "java/lang/OutOfMemoryException", e.what());
   }
-  catch (NativeTask::IOException e) {
+  catch (NativeTask::IOException & e) {
     JNU_ThrowByName(jenv, "java/io/IOException", e.what());
   }
-  catch (NativeTask::JavaException e) {
+  catch (NativeTask::JavaException & e) {
     LOG("[NativeRuntimeJniImpl] JavaException: %s", e.what());
     // Do nothing, let java side handle
   }
-  catch (std::exception e) {
+  catch (std::exception & e) {
     JNU_ThrowByName(jenv, "java/io/IOException", e.what());
   }
   catch (...) {
@@ -182,20 +182,20 @@ JNIEXPORT void JNICALL Java_org_apache_hadoop_mapred_nativetask_NativeRuntime_JN
     }
     NativeTask::NativeObjectFactory::ReleaseObject(nobj);
   }
-  catch (NativeTask::UnsupportException e) {
+  catch (NativeTask::UnsupportException & e) {
     JNU_ThrowByName(jenv, "java/lang/UnsupportedOperationException", e.what());
   }
-  catch (NativeTask::OutOfMemoryException e) {
+  catch (NativeTask::OutOfMemoryException & e) {
     JNU_ThrowByName(jenv, "java/lang/OutOfMemoryException", e.what());
   }
-  catch (NativeTask::IOException e) {
+  catch (NativeTask::IOException & e) {
     JNU_ThrowByName(jenv, "java/io/IOException", e.what());
   }
-  catch (NativeTask::JavaException e) {
+  catch (NativeTask::JavaException & e) {
     LOG("JavaException: %s", e.what());
     // Do nothing, let java side handle
   }
-  catch (std::exception e) {
+  catch (std::exception & e) {
     JNU_ThrowByName(jenv, "java/io/IOException", e.what());
   }
   catch (...) {
@@ -217,20 +217,20 @@ JNIEXPORT jint JNICALL Java_org_apache_hadoop_mapred_nativetask_NativeRuntime_JN
       return 0;
     }
   }
-  catch (NativeTask::UnsupportException e) {
+  catch (NativeTask::UnsupportException & e) {
     JNU_ThrowByName(jenv, "java/lang/UnsupportedOperationException", e.what());
   }
-  catch (NativeTask::OutOfMemoryException e) {
+  catch (NativeTask::OutOfMemoryException & e) {
     JNU_ThrowByName(jenv, "java/lang/OutOfMemoryException", e.what());
   }
-  catch (NativeTask::IOException e) {
+  catch (NativeTask::IOException & e) {
     JNU_ThrowByName(jenv, "java/io/IOException", e.what());
   }
-  catch (NativeTask::JavaException e) {
+  catch (NativeTask::JavaException & e) {
     LOG("JavaException: %s", e.what());
     // Do nothing, let java side handle
   }
-  catch (std::exception e) {
+  catch (std::exception & e) {
     JNU_ThrowByName(jenv, "java/io/IOException", e.what());
   }
   catch (...) {
@@ -253,20 +253,20 @@ JNIEXPORT jbyteArray JNICALL Java_org_apache_hadoop_mapred_nativetask_NativeRunt
     jenv->SetByteArrayRegion(ret, 0, statusData.length(), (jbyte*)statusData.c_str());
     return ret;
   }
-  catch (NativeTask::UnsupportException e) {
+  catch (NativeTask::UnsupportException & e) {
     JNU_ThrowByName(jenv, "java/lang/UnsupportedOperationException", e.what());
   }
-  catch (NativeTask::OutOfMemoryException e) {
+  catch (NativeTask::OutOfMemoryException & e) {
     JNU_ThrowByName(jenv, "java/lang/OutOfMemoryException", e.what());
   }
-  catch (NativeTask::IOException e) {
+  catch (NativeTask::IOException & e) {
     JNU_ThrowByName(jenv, "java/io/IOException", e.what());
   }
-  catch (NativeTask::JavaException e) {
+  catch (NativeTask::JavaException & e) {
     LOG("JavaException: %s", e.what());
     // Do nothing, let java side handle
   }
-  catch (std::exception e) {
+  catch (std::exception & e) {
     JNU_ThrowByName(jenv, "java/io/IOException", e.what());
   }
   catch (...) {
