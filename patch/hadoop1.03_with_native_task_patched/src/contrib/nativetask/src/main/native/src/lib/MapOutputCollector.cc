@@ -416,7 +416,7 @@ void MapOutputCollector::mid_spill(std::vector<std::string> & filepaths,
 
     if (keyGroupCount == 0) {
       LOG("[MapOutputCollector::mid_spill] Sort and spill: {spilled file id: %lu, partitions: [%u,%u), collect: %.3lfs, sort: %.3lfs, spill: %.3lfs, records: %llu, avg record size: %.3lf, blocks: %llu, uncompressed total bytes: %llu, compressed total bytes: %llu}",
-          _spills.size() + 1,
+          _spills.size(),
           0,
           _num_partition,
           collecttime/1000000000.0,
@@ -429,7 +429,7 @@ void MapOutputCollector::mid_spill(std::vector<std::string> & filepaths,
           info->getRealEndPosition());
     } else {
       LOG("[MapOutputCollector::mid_spill] Sort and spill: {Spilled file id: %lu,  partition: [%u,%u), collect: %.3lfs, sort: %.3lfs, spill: %.3lfs, records: %llu, key count: %llu, blocks: %llu, uncompressed total bytes: %llu, compressed total bytes: %llu}",
-          _spills.size() + 1,
+          _spills.size(),
           0,
           _num_partition,
           collecttime/1000000000.0,
@@ -472,6 +472,7 @@ void MapOutputCollector::final_merge_and_spill(std::vector<std::string> & filepa
     mid_spill(filepaths, idx_file_path, spec, combinerCreator);
     return;
   }
+  Timer timer;
   OutputStream * fout = FileSystem::getLocal().create(filepaths[0], true);
   IFileWriter * writer = new IFileWriter(fout, spec.checksumType,
                                            spec.keyType, spec.valueType,
@@ -493,9 +494,9 @@ void MapOutputCollector::final_merge_and_spill(std::vector<std::string> & filepa
   if (spec.orderType==GROUPBY) {
     THROW_EXCEPTION(UnsupportException, "GROUPBY not support");
   } else if (spec.orderType==FULLSORT) {
-    Timer timer;
+    timer.reset();
     sort_all(spec.sortType);
-    LOG("[MapOutputCollector::final_merge_and_spill]  Sort and spill:{spilling file id: %lu, partitions: [%u,%u), time: %.3lf s}",
+    LOG("[MapOutputCollector::final_merge_and_spill]  Sort:{spilling file id: %lu, partitions: [%u,%u), sort time: %.3lf s}",
         _spills.size() + 1,
         0,
         _num_partition,
@@ -503,7 +504,9 @@ void MapOutputCollector::final_merge_and_spill(std::vector<std::string> & filepa
   }
   merger->addMergeEntry(new MemoryMergeEntry(this, _keyComparator));
 
+  timer.reset();
   merger->merge();
+
   delete merger;
   for (size_t i=0;i<_spills.size();i++) {
     delete readers[i];
@@ -520,6 +523,11 @@ void MapOutputCollector::final_merge_and_spill(std::vector<std::string> & filepa
   delete spill_info;
   delete_temp_spill_files();
   reset();
+
+  LOG("[MapOutputCollector::final_merge_and_spill]  Merge and Spill:{spilled file id: %lu, merge and spill time: %.3lf s}",
+          _spills.size(),
+          (timer.now()-timer.last())/1000000000.0);
+
 }
 
 uint64_t MapOutputCollector::estimate_spill_size(OutputFileType output_type,
