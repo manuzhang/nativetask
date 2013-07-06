@@ -35,8 +35,8 @@ public class LoadSnappy {
       System.loadLibrary("snappy");
       LOG.warn("Snappy native library is available");
       AVAILABLE = true;
-    } catch (UnsatisfiedLinkError ex) {
-      //NOP
+    } catch (Throwable ex) {
+      LOG.error("Failed to load snappy with error: " + ex);
     }
     boolean hadoopNativeAvailable = NativeCodeLoader.isNativeCodeLoaded();
     LOADED = AVAILABLE && hadoopNativeAvailable;
