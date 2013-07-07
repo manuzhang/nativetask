@@ -47,13 +47,10 @@ install() {
 
 
 build() {
-.$basedir/configure
+.$basedir/configure CC="icc -intel-static" CXX="icpc -intel-static"
 make
 }
 
-
-clean
-init
 
 case "x$1" in
 xclean)

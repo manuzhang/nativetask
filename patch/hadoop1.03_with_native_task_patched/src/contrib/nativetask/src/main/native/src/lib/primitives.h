@@ -125,6 +125,11 @@ inline uint64_t bswap64(uint64_t val)
  * Fast memcmp
  */
 inline int64_t fmemcmp(const char * src, const char * dest, uint32_t len) {
+
+#ifdef BUILDIN_MEMCMP
+  return memcmp(src, dest, len);
+#else
+
   const uint8_t * src8 = (const uint8_t*)src;
   const uint8_t * dest8 = (const uint8_t*)dest;
   switch (len) {
@@ -178,6 +183,7 @@ inline int64_t fmemcmp(const char * src, const char * dest, uint32_t len) {
     return l > r ? 1 : -1;
   }
   return 0;
+#endif
 }
 
 inline int64_t fmemcmp(const char * src, const char * dest,
@@ -194,6 +200,10 @@ inline int64_t fmemcmp(const char * src, const char * dest,
  * Fast memory equal
  */
 inline bool fmemeq(const char * src, const char * dest, uint32_t len) {
+#ifdef BUILDIN_MEMCMP
+  return 0 == memcmp(src, dest, len);
+#else
+
   const uint8_t * src8 = (const uint8_t*)src;
   const uint8_t * dest8 = (const uint8_t*)dest;
   switch (len) {
@@ -229,6 +239,7 @@ inline bool fmemeq(const char * src, const char * dest, uint32_t len) {
     return false;
   }
   return true;
+#endif
 }
 
 inline bool fmemeq(const char * src, uint32_t srcLen, const char * dest, uint32_t destLen) {
