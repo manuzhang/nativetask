@@ -47,7 +47,7 @@ install() {
 
 
 build() {
-.$basedir/configure CC="icc -intel-static" CXX="icpc -intel-static"
+.$basedir/configure CC="icc -static-intel" CXX="icpc -static-intel"
 make
 }
 
