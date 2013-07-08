@@ -67,13 +67,16 @@ public class KVSerializer<K, V> implements IKVSerializer {
     int kvLength = keylength + valueLength + LENGTH_INT_BYTES
         + LENGTH_INT_BYTES;
 
-    if (-1 != remain && kvLength > remain) {
-      return 0;
+    if (-1 != remain) {
+      if( remain < kvLength + RESERVE_SPACE_FOR_META) {
+        return 0;
+      }
     }
-
-    int reserved = out.reserve(kvLength + RESERVE_SPACE_FOR_META);
-    if (kvLength > reserved) {
-      return 0;
+    else {
+      int reserved = out.reserve(kvLength + RESERVE_SPACE_FOR_META);
+      if (kvLength > reserved) {
+        return 0;
+      }
     }
 
     out.writeInt(keylength);

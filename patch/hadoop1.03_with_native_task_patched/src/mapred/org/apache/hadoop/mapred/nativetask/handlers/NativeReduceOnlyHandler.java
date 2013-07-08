@@ -116,6 +116,9 @@ public class NativeReduceOnlyHandler<IK, IV, OK, OV> extends
   private int refill(NativeDataWriter out, int length) throws IOException {
     int remain = length;
 
+    //reset the out
+    inputBuffer.position(0);
+    
     int totalWritten = 0;
 
     try {
@@ -135,6 +138,7 @@ public class NativeReduceOnlyHandler<IK, IV, OK, OV> extends
             tmpInputValue);
         if (written == 0) {
           totalWritten = length - remain;
+          
           return totalWritten;
         } else {
           inputKVBufferd = false;

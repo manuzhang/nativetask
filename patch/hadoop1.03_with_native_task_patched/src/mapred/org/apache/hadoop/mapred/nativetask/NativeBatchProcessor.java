@@ -32,7 +32,7 @@ public abstract class NativeBatchProcessor<IK, IV, OK, OV> implements
 
   private static Log LOG = LogFactory.getLog(NativeBatchProcessor.class);
 
-  private ByteBuffer inputBuffer;
+  protected ByteBuffer inputBuffer;
   private ByteBuffer outputBuffer;
 
   private String nativeHandlerName;
