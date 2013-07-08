@@ -32,7 +32,8 @@ WordCountMapper::WordCountMapper() {
 }
 
 void WordCountMapper::wordCount(const char * buff, uint32_t length) {
-  uint32_t count = 1;
+  //reverse  to big endium
+  uint32_t count = bswap(1);
   uint8_t * pos = (uint8_t*)buff;
   uint8_t * end = (uint8_t*)buff + length;
   uint8_t * start = NULL;
@@ -73,7 +74,8 @@ void IntSumReducer::reduce(KeyGroupIterator & input) {
   uint32_t count = 0;
   key = input.getKey(keyLen);
   while (NULL != (value=input.nextValue(valueLen))) {
-    count += *(uint32_t*)value;
+    uint32_t current =  bswap(*(uint32_t*)value);
+    count += current;
   }
   collect(key, keyLen, &count, 4);
 }
