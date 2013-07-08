@@ -50,10 +50,10 @@ public class BytesUtil {
       throw new RuntimeException(
           "toInt exception. length not equals to SIZE of Int or buffer overflow");
     }
-    int ch1 = bytes[0] & 0xff;
-    int ch2 = bytes[1] & 0xff;
-    int ch3 = bytes[2] & 0xff;
-    int ch4 = bytes[3] & 0xff;
+    int ch1 = bytes[offset] & 0xff;
+    int ch2 = bytes[offset + 1] & 0xff;
+    int ch3 = bytes[offset + 2] & 0xff;
+    int ch4 = bytes[offset + 3] & 0xff;
     return ((ch1 << 24) + (ch2 << 16) + (ch3 << 8) + (ch4 << 0));
 
   }
