@@ -243,7 +243,8 @@ MapOutputCollector::MapOutputCollector(uint32_t num_partition) :
   _config(NULL),
   _buckets(NULL),
   _keyComparator(NULL),
-  _sortFirst(false) {
+  _sortFirst(false),
+  combinerCreator(NULL){
   _num_partition = num_partition;
   _buckets = new PartitionBucket*[num_partition];
   memset(_buckets, 0, sizeof(PartitionBucket*) * num_partition);
@@ -298,10 +299,17 @@ void MapOutputCollector::configure(Config & config) {
   _sortFirst = config.getBool("native.spill.sort.first", true);
   MapOutputSpec::getSpecFromConfig(config, _mapOutputSpec);
 
-  //TODO: add support for comparator
-
-
   init(config.getInt("io.sort.mb", 300) * 1024 * 1024, getComparator(config, _mapOutputSpec));
+
+  // combiner
+  const char * combinerClass = config.get(NATIVE_COMBINER);
+  if (NULL != combinerClass) {
+    this->combinerCreator = NativeObjectFactory::GetObjectCreator(combinerClass);
+    if (NULL == this->combinerCreator) {
+      THROW_EXCEPTION_EX(UnsupportException, "Combiner not found: %s", combinerClass);
+    }
+  }
+
   _collectTimer.reset();
 }
 
@@ -355,8 +363,7 @@ void MapOutputCollector::spill_range(uint32_t start_partition,
                                      uint64_t & blockCount,
                                      uint64_t & recordCount,
                                      uint64_t & sortTime,
-                                     uint64_t & keyGroupCount,
-                                     ObjectCreatorFunc combinerCreator) {
+                                     uint64_t & keyGroupCount) {
   if (orderType == GROUPBY) {
     THROW_EXCEPTION(UnsupportException, "GROUPBY not supported");
   }
@@ -390,8 +397,7 @@ void MapOutputCollector::spill_range(uint32_t start_partition,
 
 void MapOutputCollector::mid_spill(std::vector<std::string> & filepaths,
                                    const std::string & idx_file_path,
-                                   MapOutputSpec & spec,
-                                   ObjectCreatorFunc combinerCreator) {
+                                   MapOutputSpec & spec) {
   uint64_t collecttime = _collectTimer.now() - _collectTimer.last();
   if (filepaths.size() == 1) {
     uint64_t blockCount = 0;
@@ -407,7 +413,7 @@ void MapOutputCollector::mid_spill(std::vector<std::string> & filepaths,
 
 
     spill_range(0, _num_partition, spec.orderType, spec.sortType, *writer,
-                blockCount, recordCount, sortTime, keyGroupCount, combinerCreator);
+                blockCount, recordCount, sortTime, keyGroupCount);
     IndexRange * info = writer->getIndex(0);
     info->filepath = filepaths[0];
     double interval = (timer.now() - timer.last()) / 1000000000.0;
@@ -466,10 +472,9 @@ void MapOutputCollector::mid_spill(std::vector<std::string> & filepaths,
  */
 void MapOutputCollector::final_merge_and_spill(std::vector<std::string> & filepaths,
                                                const std::string & idx_file_path,
-                                               MapOutputSpec & spec,
-                                               ObjectCreatorFunc combinerCreator) {
+                                               MapOutputSpec & spec) {
   if (_spills.size()==0) {
-    mid_spill(filepaths, idx_file_path, spec, combinerCreator);
+    mid_spill(filepaths, idx_file_path, spec);
     return;
   }
   Timer timer;

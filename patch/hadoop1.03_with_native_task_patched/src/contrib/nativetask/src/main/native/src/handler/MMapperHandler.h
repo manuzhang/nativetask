@@ -34,7 +34,6 @@ private:
   MapOutputCollector * _moc;
   Mapper * _mapper;
   Partitioner * _partitioner;
-  ObjectCreatorFunc _combinerCreator;
   int32_t _numPartition;
   // state info for large KV pairs
   char * _dest;
