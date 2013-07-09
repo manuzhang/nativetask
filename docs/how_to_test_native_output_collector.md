@@ -1,11 +1,46 @@
 Steps to test native output collector.
 ===========
-0. Go to patch/hadoop1.03_with_native_task_patched/
-1. ant; to build hadoop.jar.
-2. ant examples; to build hadoop-examples.jar
-3. ant compile-native to build libhadoop.so libnativetask.so, and libstreaming.so
-4. Copy build/*.jar to /usr/lib/hadoop/
-5. copy native libraries to /usr/lib/hadoop/lib/native/Linux-and64-64/. The native libraries is under build/native/Linux-amd64-64/lib/*.so
+Required software
+
+1. java
+
+ hadoop need java 1.6, set your JAVA_HOME like `JAVA_HOME=/usr/lib/jvm/java-1.6.0-openjdk-1.6.0.0.x86_64`
+
+1. maven
+
+	need version later than 3.0.4. 
+	If you need proxy, create settings.xml at ~/.m2/, and set it like
+ 
+		<settings>
+		    <proxies>
+		     <proxy>
+		        <active>true</active>
+		        <protocol>http</protocol>
+		        <host>your.proxy.url</host>
+		        <port>port number</port>
+		        <nonProxyHosts>sites.dont.need.proxy</nonProxyHosts>
+		      </proxy>
+		    </proxies>
+		</settings> 
+  
+   For more details, please ref to http://maven.apache.org/guides/mini/guide-proxies.html 
+
+1. ant
+
+	version lower than 1.8 will case problem, we using v1.9.1.
+
+	set your ANT_HOME like `ANT_HOME=/home/user/install/apache-ant-1.9.1`
+
+	set ant proxy (if you need) `ANT_OPTS="-Dhttp.proxyHost=your.proxy.url -Dhttp.proxyPort=port number"`
+
+===========
+
+0. cd patch/hadoop1.03_with_native_task_patched/ ; get to working directory.
+1. ant ; Build hadoop.jar.
+2. ant examples ; Build hadoop-examples.jar.
+3. ant compile-native ; Build libhadoop.so libnativetask.so, and libstreaming.so.
+4. cp build/*.jar /usr/lib/hadoop/ ; Copy jar need by nativetask.
+5. cp build/native/Linux-amd64-64/lib/*.so /usr/lib/hadoop/lib/native/Linux-amd64-64/ ; Copy native libraries.
 6. Restart namenode, datanode, jobtracker, and tasktracker.
 7. To enable native output collector, you need to point mapreduce.map.output.collector.delegator.class to buildin class
 ``mapreduce.map.output.collector.delegator.class=org.apache.hadoop.mapred.nativetask.NativeMapOutputCollectorDelegator``
@@ -52,4 +87,3 @@ bin/hadoop jar hadoop-examples-1.0.1-SNAPSHOT.jar terasort
 
 </code>
 </pre>
-
