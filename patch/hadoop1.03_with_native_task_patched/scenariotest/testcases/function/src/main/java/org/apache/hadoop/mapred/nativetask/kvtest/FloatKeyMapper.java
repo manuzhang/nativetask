@@ -7,16 +7,19 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.FloatWritable;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Text;
+import org.apache.hadoop.mapred.nativetask.kvtest.IntKeyMapper.ValueGen;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
+import org.apache.hadoop.mapreduce.Mapper.Context;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 
-public class IntKeyMapper {
-	public static final String inputFileDir = "/kvint/input/";
-	public static final String outputFileDir = "/kvint/output/";
+public class FloatKeyMapper {
+	public static final String inputFileDir = "/kvfloat/input/";
+	public static final String outputFileDir = "/kvfloat/output/";
 
 	public static class ValueGen {
 		public static <VType> void createHDFSintFile(String genfilepath,
@@ -26,7 +29,7 @@ public class IntKeyMapper {
 			FSDataOutputStream os = hdfs.create(new Path(genfilepath));
 			Random r = new Random();
 			for (int i = 0; i < lineNum; i++) {
-				String linecontent = new IntWritable(i) + "\t" + instance
+				String linecontent = new FloatWritable(i) + "\t" + instance
 						+ "\n";
 				os.write(linecontent.getBytes("utf-8"));
 			}
@@ -36,7 +39,7 @@ public class IntKeyMapper {
 	}
 
 	public static class ValueMapper<VTYPE> extends
-			Mapper<Object, Text, IntWritable, VTYPE> {
+			Mapper<Object, Text, FloatWritable, VTYPE> {
 		public void map(Object key, Text value, Context context)
 				throws IOException, InterruptedException {
 			Configuration conf = context.getConfiguration();
@@ -44,42 +47,27 @@ public class IntKeyMapper {
 				String classname = conf.get(KVTest.NATIVETASK_TEST_VALUECLASS);
 				Class<?> valueclass = Class.forName(classname);
 				String[] input = value.toString().split("\t");
-				IntWritable keyout = new IntWritable(Integer.valueOf(input[0]));
+				FloatWritable keyout = new FloatWritable(Float.valueOf(input[0]));
 				VTYPE valueout = (VTYPE)(valueclass.newInstance());
 				context.write(keyout, valueout);
-			} catch (ClassNotFoundException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			} catch (SecurityException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			} catch (InstantiationException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			} catch (IllegalAccessException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			} catch (IllegalArgumentException e) {
+			} catch (Exception e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 		}
 	}
 
-	public static <VType> Job getIntTestJob(VType instance) {
+	public static <VType> Job getFloatTestJob(VType instance) {
 		Configuration conf = new Configuration();
 		conf.addResource("test-conf.xml");
 		conf.set(KVTest.NATIVETASK_TEST_VALUECLASS, instance.getClass().getName());
 		System.out.println("*********instance type:" + instance.getClass());
 		Job job = null;
 		try {
-			@SuppressWarnings("rawtypes")
-			Class<? extends Mapper> mapClass = new IntKeyMapper.ValueMapper<VType>()
-					.getClass();
-			job = new Job(conf, "IntKeyTest");
-			job.setJarByClass(IntKeyMapper.class);
-			job.setMapperClass(mapClass);
-			job.setOutputKeyClass(IntWritable.class);
+			job = new Job(conf, "FloatKeyTest");
+			job.setJarByClass(FloatKeyMapper.class);
+			job.setMapperClass(FloatKeyMapper.ValueMapper.class);
+			job.setOutputKeyClass(FloatWritable.class);
 			job.setOutputValueClass(instance.getClass());
 			String currentInputFilePath = inputFileDir
 					+ instance.getClass().getName();
