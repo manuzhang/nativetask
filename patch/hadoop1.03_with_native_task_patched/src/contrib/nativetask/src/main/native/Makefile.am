@@ -22,7 +22,7 @@ endif
 if PLATFORM_IS_WIN
 # windows
 JNI_INCLUDE ?= -I$(JAVA_HOME)/include -I$(JAVA_HOME)/include/win32
-PLATFORM_LDFLAGS = -lrt  -L$(JAVA_HOME)/lib -ljvm
+PLATFORM_LDFLAGS = -lrt   -L$(JAVA_HOME)/lib -ljvm -Wl,--add-stdcall-alias -mno-cygwin
 MACRO = -D__X$(BITS) -D__int64="long long" -D__CYGWIN__  -DSOFTWARE_CRC
 endif
 
@@ -65,7 +65,7 @@ src/lib/NativeLibrary.cc \
 src/lib/NativeObjectFactory.cc \
 src/lib/NativeRuntimeJniImpl.cc \
 src/lib/NativeTask.cc \
-src/lib/PartitionIndex.cc \
+src/lib/SpillInfo.cc \
 src/lib/Path.cc \
 src/lib/Streams.cc \
 src/lib/TaskCounters.cc \
