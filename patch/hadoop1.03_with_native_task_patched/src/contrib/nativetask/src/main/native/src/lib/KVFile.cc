@@ -26,7 +26,7 @@ namespace NativeTask {
 ///////////////////////////////////////////////////////////
 
 KVFileReader::KVFileReader(InputStream * stream, ChecksumType checksumType,
-                           SpillInfo * spill_infos, const string & codec) :
+                           SingleSpillInfo * spill_infos, const string & codec) :
     _stream(stream),
     _source(NULL),
     _checksumType(checksumType),
@@ -131,12 +131,12 @@ void KVFileWriter::writeValue(const char * value, uint32_t value_len) {
 }
 
 
-SpillInfo * KVFileWriter::getIndex(uint32_t start) {
+SingleSpillInfo * KVFileWriter::getIndex(uint32_t start) {
   IFileSegment * segs = new IFileSegment[_spillInfo.size()];
   for (size_t i = 0; i < _spillInfo.size(); i++) {
     segs[i] = _spillInfo[i];
   }
-  return new SpillInfo(start, (uint32_t) _spillInfo.size(), "", segs);
+  return new SingleSpillInfo(segs, (uint32_t) _spillInfo.size(), "");
 }
 
 void KVFileWriter::getStatistics(uint64_t & offset, uint64_t & realoffset) {

@@ -25,7 +25,7 @@
 #include "Buffers.h"
 #include "MapOutputSpec.h"
 #include "IFile.h"
-#include "PartitionIndex.h"
+#include "SpillInfo.h"
 
 namespace NativeTask {
 
@@ -166,7 +166,7 @@ private:
   PartitionBucket ** _buckets;
   ComparatorPtr _keyComparator;
   uint32_t _num_partition;
-  std::vector<PartitionIndex *> _spills;
+  SpillInfos _spillInfo;
   MapOutputSpec _mapOutputSpec;
   Timer _collectTimer;
   ObjectCreatorFunc combinerCreator;

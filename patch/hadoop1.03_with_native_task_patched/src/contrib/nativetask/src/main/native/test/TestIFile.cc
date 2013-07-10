@@ -24,7 +24,7 @@
 #include "KVFile.h"
 #include "test_commons.h"
 
-SpillInfo * writeIFile(int partition,
+SingleSpillInfo * writeIFile(int partition,
                              vector<pair<string, string> > & kvs,
                              const string & path,
                              KeyValueType type,
@@ -40,14 +40,14 @@ SpillInfo * writeIFile(int partition,
     }
     iw->endPartition();
   }
-  SpillInfo * info = iw->getSpillInfo();
+  SingleSpillInfo * info = iw->getSpillInfo();
   delete iw;
   delete fout;
   return info;
 }
 
 void readIFile(vector<pair<string, string> > & kvs, const string & path,
-                KeyValueType type, SpillInfo * info, const string & codec) {
+                KeyValueType type, SingleSpillInfo * info, const string & codec) {
   FileInputStream * fin = (FileInputStream*) FileSystem::getLocal().open(path);
   IFileReader * ir = new IFileReader(fin, CHECKSUM_CRC32, type, type, info, codec);
   size_t count = 0;
@@ -68,7 +68,7 @@ void readIFile(vector<pair<string, string> > & kvs, const string & path,
 void TestIFileReadWrite(KeyValueType kvtype, int partition, int size,
                         vector<pair<string, string> > & kvs, const string & codec="") {
   string outputpath = "ifilewriter";
-  SpillInfo * info = writeIFile(partition, kvs, outputpath, kvtype, codec);
+  SingleSpillInfo * info = writeIFile(partition, kvs, outputpath, kvtype, codec);
   LOG("write finished");
   vector<pair<string, string> > readkvs;
   readIFile(readkvs, outputpath, kvtype, info, codec);
@@ -117,7 +117,7 @@ void TestIFileWriteRead2(vector<pair<string, string> > & kvs, char * buff,
     }
     iw->endPartition();
   }
-  SpillInfo * info = iw->getSpillInfo();
+  SingleSpillInfo * info = iw->getSpillInfo();
   LOG("%s", timer.getSpeedM2("Write data", info->getEndPosition(),
           info->getRealEndPosition()).c_str());
   delete iw;
@@ -154,7 +154,7 @@ void TestKVFileWriteRead2(vector<pair<string, string> > & kvs, char * buff,
     }
     iw->endPartition();
   }
-  SpillInfo * info = iw->getIndex(0);
+  SingleSpillInfo * info = iw->getIndex(0);
   LOG("%s", timer.getSpeedM2("Write data", info->getEndPosition(),
           info->getRealEndPosition()).c_str());
   delete iw;

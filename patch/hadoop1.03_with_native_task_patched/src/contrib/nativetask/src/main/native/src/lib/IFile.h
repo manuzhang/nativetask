@@ -23,7 +23,7 @@
 #include "Checksum.h"
 #include "Buffers.h"
 #include "WritableUtils.h"
-#include "PartitionIndex.h"
+#include "SpillInfo.h"
 #include "MapOutputSpec.h"
 
 namespace NativeTask {
@@ -41,14 +41,14 @@ private:
   KeyValueType _vType;
   string _codec;
   int32_t _segmentIndex;
-  SpillInfo * _spillInfo;
+  SingleSpillInfo * _spillInfo;
   const char * _valuePos;
   uint32_t _valueLen;
 
 public:
   IFileReader(InputStream * stream, ChecksumType checksumType,
                KeyValueType ktype, KeyValueType vtype,
-               SpillInfo * spill_infos, const string & codec);
+               SingleSpillInfo * spill_infos, const string & codec);
 
   virtual ~IFileReader();
 
@@ -154,7 +154,7 @@ public:
     writeValue(value, valueLen);
   }
 
-  SpillInfo * getSpillInfo();
+  SingleSpillInfo * getSpillInfo();
 
   void getStatistics(uint64_t & offset, uint64_t & realOffset);
 

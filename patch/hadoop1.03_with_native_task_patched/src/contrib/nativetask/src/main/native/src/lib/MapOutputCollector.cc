@@ -129,8 +129,6 @@ bool PartitionBucket::Iterator::next(Buffer & key, Buffer & value) {
   return false;
 }
 
-
-
 void PartitionBucket::spill(IFileWriter & writer, uint64_t & keyGroupCount, ObjectCreatorFunc combinerCreator, Config & config)
     throw (IOException, UnsupportException) {
 
@@ -186,14 +184,11 @@ void PartitionBucket::spill(IFileWriter & writer, uint64_t & keyGroupCount, Obje
   }
 }
 
-/**
- * DualPivotQuickSort compare function
- */
-class CompareOffset {
+class ComparatorForDualPivotSort {
 private:
   ComparatorPtr _keyComparator;
 public:
-  CompareOffset(ComparatorPtr comparator) : _keyComparator(comparator){
+  ComparatorForDualPivotSort(ComparatorPtr comparator) : _keyComparator(comparator){
   }
 
   inline int operator()(uint32_t lhs, uint32_t rhs) {
@@ -203,14 +198,11 @@ public:
   }
 };
 
-/**
- * cpp std::sort compare function
- */
-class OffsetLessThan {
+class ComparatorForStdSort {
 private:
   ComparatorPtr _keyComparator;
 public:
-  OffsetLessThan(ComparatorPtr comparator) : _keyComparator(comparator){
+  ComparatorForStdSort(ComparatorPtr comparator) : _keyComparator(comparator){
   }
 
 public:
@@ -226,13 +218,13 @@ void PartitionBucket::sort(SortAlgorithm type) {
   if ((!_sorted) && (_kv_offsets.size()>1)) {
     switch (type) {
     case CPPSORT:
-      std::sort(_kv_offsets.begin(), _kv_offsets.end(), OffsetLessThan(_keyComparator));
+      std::sort(_kv_offsets.begin(), _kv_offsets.end(), ComparatorForStdSort(_keyComparator));
       break;
     case DUALPIVOTSORT:
-      DualPivotQuicksort(_kv_offsets, CompareOffset(_keyComparator));
+      DualPivotQuicksort(_kv_offsets, ComparatorForDualPivotSort(_keyComparator));
       break;
     default:
-      THROW_EXCEPTION(UnsupportException, "SortType not support");
+      THROW_EXCEPTION(UnsupportException, "Sort Algorithm not support");
     }
   }
   _sorted = true;
@@ -273,17 +265,11 @@ MapOutputCollector::~MapOutputCollector() {
     }
   }
   delete[] _buckets;
-  for (size_t i = 0; i < _spills.size(); i++) {
-    delete _spills[i];
-  }
-  _spills.clear();
   MemoryBlockPool::release();
 }
 
 void MapOutputCollector::delete_temp_spill_files() {
-  for (size_t i = 0; i < _spills.size(); i++) {
-    _spills[i]->deleteFiles();
-  }
+  _spillInfo.deleteAllSpillFiles();
 }
 
 void MapOutputCollector::init(uint32_t memory_capacity, ComparatorPtr keyComparator) {
@@ -403,7 +389,7 @@ void MapOutputCollector::middle_spill(std::vector<std::string> & spillOutputs,
     const uint32_t beginPartition = 0;
     sort_and_spill_partitions(beginPartition, _num_partition, spec.sortOrder, spec.sortAlgorithm, *writer,
                 blockCount, recordCount, sortTime, keyGroupCount);
-    SpillInfo * info = writer->getSpillInfo();
+    SingleSpillInfo * info = writer->getSpillInfo();
     info->path = spillPath;
     double interval = (timer.now() - timer.last()) / 1000000000.0;
 
@@ -411,7 +397,7 @@ void MapOutputCollector::middle_spill(std::vector<std::string> & spillOutputs,
 
     if (keyGroupCount == 0) {
       LOG("[MapOutputCollector::mid_spill] Sort and spill: {spilled file id: %lu, partitions: [%u,%u), collect: %.3lfs, sort: %.3lfs, spill: %.3lfs, records: %llu, avg record size: %.3lf, blocks: %llu, uncompressed total bytes: %llu, compressed total bytes: %llu}",
-          _spills.size(),
+          _spillInfo.getSpillCount(),
           0,
           _num_partition,
           collecttime/1000000000.0,
@@ -424,7 +410,7 @@ void MapOutputCollector::middle_spill(std::vector<std::string> & spillOutputs,
           info->getRealEndPosition());
     } else {
       LOG("[MapOutputCollector::mid_spill] Sort and spill: {Spilled file id: %lu,  partition: [%u,%u), collect: %.3lfs, sort: %.3lfs, spill: %.3lfs, records: %llu, key count: %llu, blocks: %llu, uncompressed total bytes: %llu, compressed total bytes: %llu}",
-          _spills.size(),
+          _spillInfo.getSpillCount(),
           0,
           _num_partition,
           collecttime/1000000000.0,
@@ -436,13 +422,12 @@ void MapOutputCollector::middle_spill(std::vector<std::string> & spillOutputs,
           info->getEndPosition(),
           info->getRealEndPosition());
     }
-    PartitionIndex * si = new PartitionIndex(_num_partition);
-    si->add(info);
+
     if (idx_file_path.length()>0) {
-      si->writeIFile(idx_file_path);
-      delete si;
+      info->writeSpillInfo(idx_file_path);
+      delete info;
     } else {
-      _spills.push_back(si);
+      _spillInfo.add(info);
     }
     delete writer;
     delete fout;
@@ -462,7 +447,7 @@ void MapOutputCollector::middle_spill(std::vector<std::string> & spillOutputs,
 void MapOutputCollector::final_merge_and_spill(std::vector<std::string> & filepaths,
                                                const std::string & idx_file_path,
                                                MapOutputSpec & spec) {
-  if (_spills.size()==0) {
+  if (_spillInfo.getSpillCount()==0) {
     middle_spill(filepaths, idx_file_path, spec);
     return;
   }
@@ -472,14 +457,14 @@ void MapOutputCollector::final_merge_and_spill(std::vector<std::string> & filepa
                                            spec.keyType, spec.valueType,
                                            spec.codec);
   Merger * merger = new Merger(writer, *_config, _keyComparator, combinerCreator);
-  InputStream ** inputStreams = new InputStream*[_spills.size()];
-  IFileReader ** readers = new IFileReader*[_spills.size()];
-  for (size_t i = 0 ; i < _spills.size() ; i++) {
-    PartitionIndex * spill = _spills[i];
-    inputStreams[i] = FileSystem::getLocal().open(spill->ranges[0]->path);
+  InputStream ** inputStreams = new InputStream*[_spillInfo.getSpillCount()];
+  IFileReader ** readers = new IFileReader*[_spillInfo.getSpillCount()];
+  for (size_t i = 0 ; i < _spillInfo.getSpillCount() ; i++) {
+    SingleSpillInfo * spill = _spillInfo.getSingleSpillInfo(i);
+    inputStreams[i] = FileSystem::getLocal().open(spill->path);
     readers[i] = new IFileReader(inputStreams[i], spec.checksumType,
                                   spec.keyType, spec.valueType,
-                                  spill->ranges[0], spec.codec);
+                                  spill, spec.codec);
     MergeEntryPtr pme = new IFileMergeEntry(readers[i]);
     merger->addMergeEntry(pme);
   }
@@ -491,7 +476,7 @@ void MapOutputCollector::final_merge_and_spill(std::vector<std::string> & filepa
     timer.reset();
     sort_partitions(spec.sortAlgorithm, 0, _num_partition);
     LOG("[MapOutputCollector::final_merge_and_spill]  Sort:{spilling file id: %lu, partitions: [%u,%u), sort time: %.3lf s}",
-        _spills.size() + 1,
+        _spillInfo.getSpillCount() + 1,
         0,
         _num_partition,
         (timer.now()-timer.last())/1000000000.0);
@@ -502,7 +487,7 @@ void MapOutputCollector::final_merge_and_spill(std::vector<std::string> & filepa
   merger->merge();
 
   delete merger;
-  for (size_t i=0;i<_spills.size();i++) {
+  for (size_t i=0;i<_spillInfo.getSpillCount();i++) {
     delete readers[i];
     delete inputStreams[i];
   }
@@ -510,16 +495,14 @@ void MapOutputCollector::final_merge_and_spill(std::vector<std::string> & filepa
   delete [] inputStreams;
   delete fout;
   // write index
-  SpillInfo * spill_range = writer->getSpillInfo();
-  PartitionIndex * spill_info = new PartitionIndex(_num_partition);
-  spill_info->add(spill_range);
-  spill_info->writeIFile(idx_file_path);
-  delete spill_info;
+  SingleSpillInfo * spill_range = writer->getSpillInfo();
+  spill_range->writeSpillInfo(idx_file_path);
+  delete spill_range;
   delete_temp_spill_files();
   reset();
 
   LOG("[MapOutputCollector::final_merge_and_spill]  Merge and Spill:{spilled file id: %lu, merge and spill time: %.3lf s}",
-          _spills.size(),
+          _spillInfo.getSpillCount(),
           (timer.now()-timer.last())/1000000000.0);
 
 }

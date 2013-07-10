@@ -26,7 +26,7 @@ namespace NativeTask {
 
 IFileReader::IFileReader(InputStream * stream, ChecksumType checksumType,
                            KeyValueType ktype, KeyValueType vtype,
-                           SpillInfo * spill_infos, const string & codec) :
+                           SingleSpillInfo * spill_infos, const string & codec) :
     _stream(stream),
     _source(NULL),
     _checksumType(checksumType),
@@ -180,9 +180,9 @@ IFileSegment * IFileWriter::toArray(std::vector<IFileSegment> *segments) {
   return segs;
 }
 
-SpillInfo * IFileWriter::getSpillInfo() {
+SingleSpillInfo * IFileWriter::getSpillInfo() {
   const uint32_t size = _spillFileSegments.size();
-  return new SpillInfo(toArray(&_spillFileSegments), size, "");
+  return new SingleSpillInfo(toArray(&_spillFileSegments), size, "");
 }
 
 
