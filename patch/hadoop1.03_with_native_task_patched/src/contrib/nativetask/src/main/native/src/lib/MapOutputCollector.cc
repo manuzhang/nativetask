@@ -87,35 +87,6 @@ public:
   }
 };
 
-int BytesComparator(const char * src, uint32_t srcLength, const char * dest, uint32_t destLength) {
-
-    uint32_t minlen = std::min(srcLength, destLength);
-    int ret = fmemcmp(src, dest, minlen);
-    if (ret) {
-      return ret;
-    }
-    return srcLength - destLength;
-};
-
-int FloatComparator(const char * src, uint32_t srcLength, const char * dest, uint32_t destLength) {
-  if (srcLength != 4 || destLength != 4) {
-      THROW_EXCEPTION_EX(IOException, "float comparator, while src/dest lengt is not 4");
-    }
-    float * srcValue = (float *)src;
-    float * destValue = (float *)dest;
-    return ( (*srcValue) - (* destValue) >= 0) ? 1 : -1;
-};
-
-int DoubleComparator(const char * src, uint32_t srcLength, const char * dest, uint32_t destLength) {
-  if (srcLength != 8 || destLength != 8) {
-      THROW_EXCEPTION_EX(IOException, "double comparator, while src/dest lengt is not 4");
-    }
-    double * srcValue = (double *)src;
-    double * destValue = (double *)dest;
-    return (((*srcValue) - (* destValue) >= 0) ? 1 : -1);
-};
-
-
 /////////////////////////////////////////////////////////////////
 // PartitionBucket
 /////////////////////////////////////////////////////////////////
@@ -359,27 +330,7 @@ void MapOutputCollector::configure(Config & config) {
 
 ComparatorPtr MapOutputCollector::get_comparator(Config & config, MapOutputSpec & spec) {
   const char * comparatorName = config.get(NATIVE_MAPOUT_KEY_COMPARATOR);
-  if (NULL == comparatorName) {
-    if (spec.keyType == BytesType ||
-        spec.keyType == TextType ||
-        spec.keyType == ByteType ||
-        spec.keyType == BoolType ||
-        spec.keyType == IntType ||
-        spec.keyType == LongType) {
-      return &BytesComparator;
-    }
-    else if (spec.keyType == FloatType) {
-      return &FloatComparator;
-    }
-    else if (spec.keyType == DoubleType) {
-      return &DoubleComparator;
-    }
-  }
-  else {
-    void * func = NativeObjectFactory::GetFunction(comparatorName);
-    return (ComparatorPtr)func;
-  }
-  return NULL;
+  return get_default_comparator(spec.keyType, comparatorName);
 }
 
 /**
@@ -399,7 +350,7 @@ void MapOutputCollector::sort_partitions(SortType sort_type, uint32_t start_part
  * Spill buffer to file
  * @return Array of spill segments information
  */
-void MapOutputCollector::spill_range(uint32_t start_partition,
+void MapOutputCollector::sort_and_spill_partitions(uint32_t start_partition,
                                      uint32_t num_partition,
                                      RecordOrderType orderType,
                                      SortType sortType,
@@ -430,7 +381,7 @@ void MapOutputCollector::spill_range(uint32_t start_partition,
 }
 
 
-void MapOutputCollector::mid_spill(std::vector<std::string> & filepaths,
+void MapOutputCollector::middle_spill(std::vector<std::string> & filepaths,
                                    const std::string & idx_file_path,
                                    MapOutputSpec & spec) {
   uint64_t collecttime = _collectTimer.now() - _collectTimer.last();
@@ -447,7 +398,7 @@ void MapOutputCollector::mid_spill(std::vector<std::string> & filepaths,
 
 
 
-    spill_range(0, _num_partition, spec.orderType, spec.sortType, *writer,
+    sort_and_spill_partitions(0, _num_partition, spec.orderType, spec.sortType, *writer,
                 blockCount, recordCount, sortTime, keyGroupCount);
     IndexRange * info = writer->getIndex(0);
     info->filepath = filepaths[0];
@@ -509,7 +460,7 @@ void MapOutputCollector::final_merge_and_spill(std::vector<std::string> & filepa
                                                const std::string & idx_file_path,
                                                MapOutputSpec & spec) {
   if (_spills.size()==0) {
-    mid_spill(filepaths, idx_file_path, spec);
+    middle_spill(filepaths, idx_file_path, spec);
     return;
   }
   Timer timer;

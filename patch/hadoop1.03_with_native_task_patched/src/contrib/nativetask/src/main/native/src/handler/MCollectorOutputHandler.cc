@@ -93,7 +93,7 @@ void MCollectorOutputHandler::handleInput(char * buff, uint32_t length) {
       }
       vector<string> pathes;
       StringUtil::Split(spillpath, ";", pathes);
-      _collector->mid_spill(pathes, "", _collector->get_mapoutput_spec());
+      _collector->middle_spill(pathes, "", _collector->get_mapoutput_spec());
       dest = _collector->get_buffer_to_put(kvlength, partition);
       if (NULL == dest) {
         // io.sort.mb too small, cann't proceed

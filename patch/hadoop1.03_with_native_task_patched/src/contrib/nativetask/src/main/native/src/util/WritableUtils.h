@@ -22,21 +22,9 @@
 #include <stdint.h>
 #include <string>
 #include "Streams.h"
+#include "NativeTask.h"
 
 namespace NativeTask {
-
-enum KeyValueType {
-  TextType = 0,
-  BytesType = 1,
-  ByteType = 2,
-  BoolType = 3,
-  IntType = 4,
-  LongType = 5,
-  FloatType = 6,
-  DoubleType = 7,
-  MD5HashType = 8,
-  UnknownType = 9
-};
 
 KeyValueType JavaClassToKeyValueType(const std::string & clazz);
 

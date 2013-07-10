@@ -128,8 +128,8 @@ public:
    */
   virtual int nextPartition() {
     ++_cur_partition;
-    if (_cur_partition < _moc->num_partition()) {
-      _pb = _moc->bucket(_cur_partition);
+    if (_cur_partition < _moc->num_partitions()) {
+      _pb = _moc->get_partition_bucket(_cur_partition);
       _cur_index = -1ULL;
       return 0;
     }

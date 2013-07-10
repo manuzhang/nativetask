@@ -19,6 +19,7 @@
 #ifndef MAPOUTPUTBUFFER_H_
 #define MAPOUTPUTBUFFER_H_
 
+#include "NativeTask.h"
 #include "mempool.h"
 #include "Timer.h"
 #include "Buffers.h"
@@ -182,39 +183,11 @@ private:
    */
   void sort_partitions(SortType, uint32_t start_partition, uint32_t end_partition);
 
-public:
-  MapOutputCollector(uint32_t num_partition);
-
-  ~MapOutputCollector();
-
-  static ComparatorPtr get_comparator(Config & config, MapOutputSpec & spec);
-
-  void configure(Config & config);
-
-  MapOutputSpec & get_mapoutput_spec() {
-    return _mapOutputSpec;
-  }
-
-  uint32_t num_partition() const {
-    return _num_partition;
-  }
-
-  PartitionBucket * bucket(uint32_t partition) {
-    assert(partition<_num_partition);
-    return _buckets[partition];
-  }
-
-  /**
-   * estimate current spill file size
-   */
-  uint64_t estimate_spill_size(OutputFileType output_type, KeyValueType ktype,
-      KeyValueType vtype);
-
   /**
    * spill a range of partition buckets, prepare for future
    * Parallel sort & spill, TODO: parallel sort & spill
    */
-  void spill_range(uint32_t start_partition,
+  void sort_and_spill_partitions(uint32_t start_partition,
                    uint32_t num_partition,
                    RecordOrderType orderType,
                    SortType sortType,
@@ -225,10 +198,38 @@ public:
                    uint64_t & keyGroupCount);
 
   /**
+   * estimate current spill file size
+   */
+  uint64_t estimate_spill_size(OutputFileType output_type, KeyValueType ktype,
+      KeyValueType vtype);
+
+  ComparatorPtr get_comparator(Config & config, MapOutputSpec & spec);
+
+public:
+  MapOutputCollector(uint32_t num_partition);
+
+  ~MapOutputCollector();
+
+  void configure(Config & config);
+
+  MapOutputSpec & get_mapoutput_spec() {
+    return _mapOutputSpec;
+  }
+
+  uint32_t num_partitions() const {
+    return _num_partition;
+  }
+
+  PartitionBucket * get_partition_bucket(uint32_t partition) {
+    assert(partition<_num_partition);
+    return _buckets[partition];
+  }
+
+  /**
    * normal spill use options in _config
    * @param filepaths: spill file path
    */
-  void mid_spill(std::vector<std::string> & filepaths,
+  void middle_spill(std::vector<std::string> & filepaths,
                  const std::string & idx_file_path,
                  MapOutputSpec & spec);
 

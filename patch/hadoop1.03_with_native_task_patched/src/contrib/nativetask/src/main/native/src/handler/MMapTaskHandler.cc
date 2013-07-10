@@ -156,7 +156,7 @@ void MMapTaskHandler::collect(const void * key, uint32_t keyLen,
     }
     vector<string> pathes;
     StringUtil::Split(spillpath, ";", pathes);
-    _moc->mid_spill(pathes,"", _moc->get_mapoutput_spec());
+    _moc->middle_spill(pathes,"", _moc->get_mapoutput_spec());
     result =_moc->put(key, keyLen, value, valueLen, partition);
     if (0 != result) {
       // should not get here, cause _moc will throw Exceptions

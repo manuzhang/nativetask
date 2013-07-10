@@ -21,6 +21,7 @@
 
 #include "NativeTask.h"
 #include "Streams.h"
+#include "MapOutputSpec.h"
 
 namespace NativeTask {
 
@@ -52,6 +53,9 @@ public:
 
 protected:
   uint32_t binarySearchPartition(vector<string> & splits, const char * key, uint32_t keyLen);
+
+private:
+  ComparatorPtr get_comparator(Config & config, MapOutputSpec & spec);
 };
 
 } // namespace NativeTask
