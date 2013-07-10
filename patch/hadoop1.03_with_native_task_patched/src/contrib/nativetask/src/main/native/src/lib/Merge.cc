@@ -129,7 +129,7 @@ bool Merger::nextKey() {
         return false;
       }
     }
-    _currentGroupKey.assign(_heap[0]->_key, _heap[0]->_key_len);
+    _currentGroupKey.assign(_heap[0]->getKey(), _heap[0]->getKeyLength());
     _keyGroupIterState = NEW_KEY_VALUE;
     return true;
   }
@@ -149,9 +149,9 @@ const char * Merger::nextValue(uint32_t & len) {
   }
   case SAME_KEY: {
     if (next()) {
-      if (_heap[0]->_key_len == _currentGroupKey.length()) {
-        if (fmemeq(_heap[0]->_key, _currentGroupKey.c_str(), _heap[0]->_key_len)) {
-          len = _heap[0]->_value_len;
+      if (_heap[0]->getKeyLength() == _currentGroupKey.length()) {
+        if (fmemeq(_heap[0]->getKey(), _currentGroupKey.c_str(), _heap[0]->getKeyLength())) {
+          len = _heap[0]->getValueLength();
           return _heap[0]->getValue();
         }
       }
@@ -163,7 +163,7 @@ const char * Merger::nextValue(uint32_t & len) {
   }
   case NEW_KEY_VALUE: {
     _keyGroupIterState = SAME_KEY;
-    len = _heap[0]->_value_len;
+    len = _heap[0]->getValueLength();
     return _heap[0]->getValue();
   }
   case NO_MORE:
@@ -187,8 +187,8 @@ void Merger::merge() {
     _first = true;
     if (_combinerCreator == NULL) {
       while (next()) {
-        _writer->writeKey(base[0]->_key, base[0]->_key_len, base[0]->_value_len);
-        _writer->writeValue(base[0]->getValue(), base[0]->_value_len);
+        _writer->writeKey(base[0]->getKey(), base[0]->getKeyLength(), base[0]->getValueLength());
+        _writer->writeValue(base[0]->getValue(), base[0]->getValueLength());
         total_record++;
       }
     } else {
@@ -203,7 +203,7 @@ void Merger::merge() {
           mapper->setCollector(_writer);
           mapper->configure(_config);
           while (next()) {
-            mapper->map(base[0]->_key, base[0]->_key_len, base[0]->getValue(), base[0]->_value_len);
+            mapper->map(base[0]->getKey(), base[0]->getKeyLength(), base[0]->getValue(), base[0]->getValueLength());
           }
           mapper->close();
           delete mapper;

@@ -31,7 +31,8 @@ namespace NativeTask {
  * merger
  */
 class MergeEntry {
-public:
+
+private:
   // these 3 fields should be filled after next() is called
   const char *   _key;
   uint32_t _key_len;
@@ -42,6 +43,18 @@ public:
       _key_len(0),
       _value_len(0),
       _key(NULL){
+  }
+
+  const char * getKey() const {
+    return _key;
+  }
+
+  uint32_t getKeyLength() const {
+    return _key_len;
+  }
+
+  uint32_t getValueLength() const {
+    return _value_len;
   }
 
   virtual ~MergeEntry() {
@@ -82,7 +95,7 @@ public:
 
 public:
   bool operator()(const MergeEntryPtr lhs, const MergeEntryPtr rhs) {
-    return (*_keyComparator)(lhs->_key, lhs->_key_len, rhs->_key, rhs->_key_len) < 0;
+    return (*_keyComparator)(lhs->getKey(), lhs->getKeyLength(), rhs->getKey(), rhs->getKeyLength()) < 0;
   }
 };
 
