@@ -18,7 +18,6 @@
 
 #include "commons.h"
 #include "mempool.h"
-#include "util/DualPivotQuickSort.h"
 
 namespace NativeTask {
 
@@ -32,11 +31,9 @@ uint32_t MemoryBlockPool::_capacity = 0;
 
 uint32_t MemoryBlockPool::_used = 0;
 
-ComparatorPtr MemoryBlockPool::_keyComparator = NULL;
-
 std::vector<MemoryBlock> MemoryBlockPool::_blocks = std::vector<MemoryBlock>();
 
-bool MemoryBlockPool::init(uint32_t capacity, uint32_t min_block_size, ComparatorPtr keyComparator)
+bool MemoryBlockPool::init(uint32_t capacity, uint32_t min_block_size)
     throw (OutOfMemoryException) {
   _min_block_size = min_block_size;
   LOG("Native Total MemoryBlockPool: min_block_size %uK, capacity %uM",
@@ -54,7 +51,6 @@ bool MemoryBlockPool::init(uint32_t capacity, uint32_t min_block_size, Comparato
   _capacity = capacity;
   _used = 0;
   _inited = true;
-  _keyComparator = keyComparator;
   return true;
 }
 
@@ -67,23 +63,6 @@ void MemoryBlockPool::release() {
   _used = 0;
   _blocks.clear();
   _inited = false;
-}
-
-void MemoryBlockPool::sort(std::vector<uint32_t> & kvpairs_offsets, SortType type) {
-  switch (type) {
-  case CQSORT:
-    qsort(&kvpairs_offsets[0], kvpairs_offsets.size(), sizeof(uint32_t),
-          compare_offset);
-    break;
-  case CPPSORT:
-    std::sort(kvpairs_offsets.begin(), kvpairs_offsets.end(), OffsetLessThan());
-    break;
-  case DUALPIVOTSORT:
-    DualPivotQuicksort(kvpairs_offsets, CompareOffset());
-    break;
-  default:
-    THROW_EXCEPTION(UnsupportException, "SortType not support");
-  }
 }
 
 void MemoryBlockPool::dump(FILE *out)

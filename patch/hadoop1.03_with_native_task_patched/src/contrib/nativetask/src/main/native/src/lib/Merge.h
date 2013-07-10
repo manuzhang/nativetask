@@ -23,6 +23,7 @@
 #include "Buffers.h"
 #include "MapOutputCollector.h"
 #include "IFile.h"
+#include "NativeTask.h"
 
 namespace NativeTask {
 
@@ -36,21 +37,14 @@ public:
   uint32_t _key_len;
   uint32_t _value_len;
 
-private:
-  ComparatorPtr _keyComparator;
 public:
-  MergeEntry(ComparatorPtr keyComparator) :
+  MergeEntry() :
       _key_len(0),
       _value_len(0),
-      _key(NULL),
-      _keyComparator(keyComparator){
+      _key(NULL){
   }
 
   virtual ~MergeEntry() {
-  }
-
-  inline bool operator<(const MergeEntry & rhs) const {
-    return (*_keyComparator)(_key, _key_len, rhs._key, rhs._key_len) < 0;
   }
 
   /**
@@ -74,6 +68,25 @@ public:
 };
 
 /**
+ * Merger
+ */
+typedef MergeEntry * MergeEntryPtr;
+
+class MergeEntryComparator {
+private:
+  ComparatorPtr _keyComparator;
+
+public:
+  MergeEntryComparator(ComparatorPtr comparator) : _keyComparator(comparator) {
+  }
+
+public:
+  bool operator()(const MergeEntryPtr lhs, const MergeEntryPtr rhs) {
+    return (*_keyComparator)(lhs->_key, lhs->_key_len, rhs->_key, rhs->_key_len) < 0;
+  }
+};
+
+/**
  * Merge entry for in-memory partition bucket
  */
 class MemoryMergeEntry: public MergeEntry {
@@ -84,8 +97,7 @@ protected:
   int64_t              _cur_partition;
   int64_t              _cur_index;
 public:
-  MemoryMergeEntry(MapOutputCollector * moc, ComparatorPtr keyComparator) :
-    MergeEntry(keyComparator),
+  MemoryMergeEntry(MapOutputCollector * moc) :
       _moc(moc),
       _pb(NULL),
       _cur_partition(-1ULL),
@@ -157,8 +169,8 @@ public:
   /**
    * @param reader: managed by InterFileMergeEntry
    */
-  IFileMergeEntry(IFileReader * reader, ComparatorPtr keyComparator):
-    MergeEntry(keyComparator),_reader(reader) {
+  IFileMergeEntry(IFileReader * reader):
+    _reader(reader) {
     new_partition = false;
   }
 
@@ -207,7 +219,7 @@ public:
  * heap used by merge
  */
 template<typename T, typename Compare>
-void adjust_heap(T* first, int rt, int heap_len, Compare Comp) {
+void adjust_heap(T* first, int rt, int heap_len, Compare & Comp) {
   while (rt * 2 <= heap_len) // not leaf
   {
     int left = (rt << 1); // left child
@@ -230,7 +242,7 @@ void adjust_heap(T* first, int rt, int heap_len, Compare Comp) {
 }
 
 template<typename T, typename Compare>
-void make_heap(T* begin, T* end, Compare Comp) {
+void make_heap(T* begin, T* end, Compare & Comp) {
   int heap_len = end - begin;
   if (heap_len >= 0) {
     for (int i = heap_len / 2; i >= 1; i--) {
@@ -243,7 +255,7 @@ void make_heap(T* begin, T* end, Compare Comp) {
  * just for test
  */
 template<typename T, typename Compare>
-void check_heap(T* begin, T* end, Compare Comp) {
+void check_heap(T* begin, T* end, Compare & Comp) {
   int heap_len = end - begin;
   if (heap_len >= 0) {
     for (int i = heap_len / 2; i >= 1; i--) {
@@ -277,24 +289,11 @@ void push_heap(T* begin, T* end, Compare Comp) {
 }
 
 template<typename T, typename Compare>
-void pop_heap(T* begin, T* end, Compare Comp) {
+void pop_heap(T* begin, T* end, Compare & Comp) {
   *begin = *(end - 1);
   // adjust [begin, end - 1) to heap
   adjust_heap(begin, 1, end - begin - 1, Comp);
 }
-
-
-/**
- * Merger
- */
-typedef MergeEntry * MergeEntryPtr;
-
-class MergeEntryPtrLessThan {
-public:
-  bool operator()(const MergeEntryPtr lhs, const MergeEntryPtr rhs) {
-    return *lhs < *rhs;
-  }
-};
 
 class Merger : public KeyGroupIterator {
 
@@ -305,18 +304,14 @@ private:
   Config & _config;
   ObjectCreatorFunc _combinerCreator;
   bool _first;
+  MergeEntryComparator _comparator;
 
   // for KeyGroupIterator
   KeyGroupIterState _keyGroupIterState;
   string _currentGroupKey;
 public:
-  Merger(IFileWriter * writer, Config & config, ObjectCreatorFunc combinerCreator=NULL) :
-      _writer(writer),
-      _config(config),
-      _combinerCreator(combinerCreator),
-      _first(true),
-      _keyGroupIterState(NEW_KEY) {
-  }
+  Merger(IFileWriter * writer, Config & config, ComparatorPtr comparator, ObjectCreatorFunc combinerCreator=NULL);
+
   ~Merger();
 
   void addMergeEntry(MergeEntryPtr pme);

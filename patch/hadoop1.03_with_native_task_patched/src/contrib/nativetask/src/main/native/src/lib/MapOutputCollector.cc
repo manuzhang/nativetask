@@ -25,6 +25,7 @@
 #include "Merge.h"
 #include "NativeTask.h"
 #include "WritableUtils.h"
+#include "util/DualPivotQuickSort.h"
 
 namespace NativeTask {
 
@@ -214,9 +215,54 @@ void PartitionBucket::spill(IFileWriter & writer, uint64_t & keyGroupCount, Obje
   }
 }
 
+/**
+ * DualPivotQuickSort compare function
+ */
+class CompareOffset {
+private:
+  ComparatorPtr _keyComparator;
+public:
+  CompareOffset(ComparatorPtr comparator) : _keyComparator(comparator){
+  }
+
+  inline int operator()(uint32_t lhs, uint32_t rhs) {
+      InplaceBuffer * lhb = (InplaceBuffer*) MemoryBlockPool::get_position(lhs);
+      InplaceBuffer * rhb = (InplaceBuffer*) MemoryBlockPool::get_position(rhs);
+      return (*_keyComparator)(lhb->content, lhb->length, rhb->content, rhb->length);
+  }
+};
+
+/**
+ * cpp std::sort compare function
+ */
+class OffsetLessThan {
+private:
+  ComparatorPtr _keyComparator;
+public:
+  OffsetLessThan(ComparatorPtr comparator) : _keyComparator(comparator){
+  }
+
+public:
+  inline bool operator()(uint32_t lhs, uint32_t rhs) {
+      InplaceBuffer * lhb = (InplaceBuffer*) MemoryBlockPool::get_position(lhs);
+      InplaceBuffer * rhb = (InplaceBuffer*) MemoryBlockPool::get_position(rhs);
+      int ret =  (*_keyComparator)(lhb->content, lhb->length, rhb->content,  rhb->length);
+      return ret < 0;
+  }
+};
+
 void PartitionBucket::sort(SortType type) {
   if ((!_sorted) && (_kv_offsets.size()>1)) {
-    MemoryBlockPool::sort(_kv_offsets, type);
+    switch (type) {
+    case CPPSORT:
+      std::sort(_kv_offsets.begin(), _kv_offsets.end(), OffsetLessThan(_keyComparator));
+      break;
+    case DUALPIVOTSORT:
+      DualPivotQuicksort(_kv_offsets, CompareOffset(_keyComparator));
+      break;
+    default:
+      THROW_EXCEPTION(UnsupportException, "SortType not support");
+    }
   }
   _sorted = true;
 }
@@ -281,7 +327,7 @@ void MapOutputCollector::init(uint32_t memory_capacity, ComparatorPtr keyCompara
     s = std::min(s, DEFAULT_MAX_BLOCK_SIZE);
     //TODO: add support for customized comparator
     this->_keyComparator = keyComparator;
-    MemoryBlockPool::init(memory_capacity, s, keyComparator);
+    MemoryBlockPool::init(memory_capacity, s);
   }
 }
 
@@ -482,7 +528,7 @@ void MapOutputCollector::final_merge_and_spill(std::vector<std::string> & filepa
   IFileWriter * writer = new IFileWriter(fout, spec.checksumType,
                                            spec.keyType, spec.valueType,
                                            spec.codec);
-  Merger * merger = new Merger(writer, *_config, combinerCreator);
+  Merger * merger = new Merger(writer, *_config, _keyComparator, combinerCreator);
   InputStream ** inputStreams = new InputStream*[_spills.size()];
   IFileReader ** readers = new IFileReader*[_spills.size()];
   for (size_t i = 0 ; i < _spills.size() ; i++) {
@@ -491,7 +537,7 @@ void MapOutputCollector::final_merge_and_spill(std::vector<std::string> & filepa
     readers[i] = new IFileReader(inputStreams[i], spec.checksumType,
                                   spec.keyType, spec.valueType,
                                   spill->ranges[0], spec.codec);
-    MergeEntryPtr pme = new IFileMergeEntry(readers[i], _keyComparator);
+    MergeEntryPtr pme = new IFileMergeEntry(readers[i]);
     merger->addMergeEntry(pme);
   }
 
@@ -507,7 +553,7 @@ void MapOutputCollector::final_merge_and_spill(std::vector<std::string> & filepa
         _num_partition,
         (timer.now()-timer.last())/1000000000.0);
   }
-  merger->addMergeEntry(new MemoryMergeEntry(this, _keyComparator));
+  merger->addMergeEntry(new MemoryMergeEntry(this));
 
   timer.reset();
   merger->merge();

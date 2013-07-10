@@ -80,11 +80,14 @@ private:
   uint32_t _current_block_idx;
   std::vector<uint32_t> _kv_offsets;
   std::vector<uint32_t> _blk_ids;
+  ComparatorPtr _keyComparator;
+
 public:
-  PartitionBucket(uint32_t partition) :
+  PartitionBucket(uint32_t partition, ComparatorPtr comparator) :
     _sorted(false),
     _partition(partition),
-    _current_block_idx(NULL_BLOCK_INDEX) {
+    _current_block_idx(NULL_BLOCK_INDEX),
+    _keyComparator(comparator){
   }
 
   void clear() {
@@ -247,7 +250,7 @@ public:
     assert(partition<_num_partition);
     PartitionBucket * pb = _buckets[partition];
     if (unlikely(NULL==pb)) {
-      pb = new PartitionBucket(partition);
+      pb = new PartitionBucket(partition, _keyComparator);
       _buckets[partition] = pb;
     }
     return pb->get_buffer_to_put(length);

@@ -23,6 +23,15 @@
 
 namespace NativeTask {
 
+Merger::Merger(IFileWriter * writer, Config & config, ComparatorPtr comparator, ObjectCreatorFunc combinerCreator) :
+    _writer(writer),
+    _config(config),
+    _combinerCreator(combinerCreator),
+    _first(true),
+    _keyGroupIterState(NEW_KEY),
+    _comparator(comparator){
+}
+
 Merger::~Merger() {
   _heap.clear();
   for (size_t i = 0 ; i < _entries.size() ; i++) {
@@ -70,7 +79,7 @@ void Merger::initHeap() {
       _heap.push_back(pme);
     }
   }
-  make_heap(&(_heap[0]), &(_heap[0])+_heap.size(), MergeEntryPtrLessThan());
+  make_heap(&(_heap[0]), &(_heap[0])+_heap.size(), _comparator);
 }
 
 bool Merger::next() {
@@ -82,16 +91,17 @@ bool Merger::next() {
           return true;
         } else if (cur_heap_size == 2) {
           MergeEntryPtr * base = &(_heap[0]);
-          if (*(base[1]) < *(base[0])) {
+
+          if (_comparator(base[1], base[0])) {
             std::swap(base[0], base[1]);
           }
         } else {
           MergeEntryPtr * base = &(_heap[0]);
-          adjust_heap(base, 1, cur_heap_size, MergeEntryPtrLessThan());
+          adjust_heap(base, 1, cur_heap_size, _comparator);
         }
       } else { // no more, pop heap
         MergeEntryPtr * base = &(_heap[0]);
-        pop_heap(base, base+cur_heap_size, MergeEntryPtrLessThan());
+        pop_heap(base, base+cur_heap_size, _comparator);
         _heap.pop_back();
       }
     } else {
