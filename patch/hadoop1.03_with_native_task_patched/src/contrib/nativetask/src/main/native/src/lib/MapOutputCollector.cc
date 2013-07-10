@@ -222,7 +222,7 @@ public:
   }
 };
 
-void PartitionBucket::sort(SortType type) {
+void PartitionBucket::sort(SortAlgorithm type) {
   if ((!_sorted) && (_kv_offsets.size()>1)) {
     switch (type) {
     case CPPSORT:
@@ -330,13 +330,16 @@ void MapOutputCollector::configure(Config & config) {
 
 ComparatorPtr MapOutputCollector::get_comparator(Config & config, MapOutputSpec & spec) {
   const char * comparatorName = config.get(NATIVE_MAPOUT_KEY_COMPARATOR);
-  return get_default_comparator(spec.keyType, comparatorName);
+  if (NULL == comparatorName) {
+    return NULL;
+  }
+  return get_default_comparator(spec.keyType, string(comparatorName));
 }
 
 /**
  * sort all partitions
  */
-void MapOutputCollector::sort_partitions(SortType sort_type, uint32_t start_partition, uint32_t end_partition) {
+void MapOutputCollector::sort_partitions(SortAlgorithm sort_type, uint32_t start_partition, uint32_t end_partition) {
   // do sort
   for (uint32_t i = start_partition; i < end_partition; i++) {
     PartitionBucket * pb = _buckets[i];
@@ -352,8 +355,8 @@ void MapOutputCollector::sort_partitions(SortType sort_type, uint32_t start_part
  */
 void MapOutputCollector::sort_and_spill_partitions(uint32_t start_partition,
                                      uint32_t num_partition,
-                                     RecordOrderType orderType,
-                                     SortType sortType,
+                                     SortOrder orderType,
+                                     SortAlgorithm sortType,
                                      IFileWriter & writer,
                                      uint64_t & blockCount,
                                      uint64_t & recordCount,
@@ -364,7 +367,7 @@ void MapOutputCollector::sort_and_spill_partitions(uint32_t start_partition,
   }
 
   Timer timer;
-  if (orderType == FULLSORT) {
+  if (orderType == FULLORDER) {
     sort_partitions(sortType, start_partition, start_partition + num_partition);
   }
   sortTime = timer.now() - timer.last();
@@ -381,30 +384,30 @@ void MapOutputCollector::sort_and_spill_partitions(uint32_t start_partition,
 }
 
 
-void MapOutputCollector::middle_spill(std::vector<std::string> & filepaths,
+void MapOutputCollector::middle_spill(std::vector<std::string> & spillOutputs,
                                    const std::string & idx_file_path,
                                    MapOutputSpec & spec) {
   uint64_t collecttime = _collectTimer.now() - _collectTimer.last();
-  if (filepaths.size() == 1) {
+  if (spillOutputs.size() == 1) {
+    std::string & spillPath = spillOutputs.at(0);
     uint64_t blockCount = 0;
     uint64_t recordCount = 0;
     uint64_t sortTime = 0;
     uint64_t keyGroupCount = 0;
-    OutputStream * fout = FileSystem::getLocal().create(filepaths[0], true);
+    OutputStream * fout = FileSystem::getLocal().create(spillPath, true);
     IFileWriter * writer = new IFileWriter(fout, spec.checksumType,
                                              spec.keyType, spec.valueType,
                                              spec.codec);
     Timer timer;
 
-
-
-    sort_and_spill_partitions(0, _num_partition, spec.orderType, spec.sortType, *writer,
+    const uint32_t beginPartition = 0;
+    sort_and_spill_partitions(beginPartition, _num_partition, spec.sortOrder, spec.sortAlgorithm, *writer,
                 blockCount, recordCount, sortTime, keyGroupCount);
-    IndexRange * info = writer->getIndex(0);
-    info->filepath = filepaths[0];
+    SpillInfo * info = writer->getSpillInfo();
+    info->path = spillPath;
     double interval = (timer.now() - timer.last()) / 1000000000.0;
 
-    LOG("[MapOutputCollector::mid_spill] spilling file path: %s", info->filepath.c_str());
+    LOG("[MapOutputCollector::mid_spill] spilling file path: %s", info->path.c_str());
 
     if (keyGroupCount == 0) {
       LOG("[MapOutputCollector::mid_spill] Sort and spill: {spilled file id: %lu, partitions: [%u,%u), collect: %.3lfs, sort: %.3lfs, spill: %.3lfs, records: %llu, avg record size: %.3lf, blocks: %llu, uncompressed total bytes: %llu, compressed total bytes: %llu}",
@@ -445,7 +448,7 @@ void MapOutputCollector::middle_spill(std::vector<std::string> & filepaths,
     delete fout;
     reset();
     _collectTimer.reset();
-  } else if (filepaths.size() == 0) {
+  } else if (spillOutputs.size() == 0) {
     THROW_EXCEPTION(IOException, "MapOutputCollector: Spill file path empty");
   } else {
     THROW_EXCEPTION(UnsupportException, "MapOutputCollector: Parallel spill not support");
@@ -473,7 +476,7 @@ void MapOutputCollector::final_merge_and_spill(std::vector<std::string> & filepa
   IFileReader ** readers = new IFileReader*[_spills.size()];
   for (size_t i = 0 ; i < _spills.size() ; i++) {
     PartitionIndex * spill = _spills[i];
-    inputStreams[i] = FileSystem::getLocal().open(spill->ranges[0]->filepath);
+    inputStreams[i] = FileSystem::getLocal().open(spill->ranges[0]->path);
     readers[i] = new IFileReader(inputStreams[i], spec.checksumType,
                                   spec.keyType, spec.valueType,
                                   spill->ranges[0], spec.codec);
@@ -482,11 +485,11 @@ void MapOutputCollector::final_merge_and_spill(std::vector<std::string> & filepa
   }
 
   LOG("[MapOutputCollector::final_merge_and_spill] Spilling file path: %s", filepaths[0].c_str());
-  if (spec.orderType==GROUPBY) {
+  if (spec.sortOrder==GROUPBY) {
     THROW_EXCEPTION(UnsupportException, "GROUPBY not support");
-  } else if (spec.orderType==FULLSORT) {
+  } else if (spec.sortOrder==FULLORDER) {
     timer.reset();
-    sort_partitions(spec.sortType, 0, _num_partition);
+    sort_partitions(spec.sortAlgorithm, 0, _num_partition);
     LOG("[MapOutputCollector::final_merge_and_spill]  Sort:{spilling file id: %lu, partitions: [%u,%u), sort time: %.3lf s}",
         _spills.size() + 1,
         0,
@@ -507,7 +510,7 @@ void MapOutputCollector::final_merge_and_spill(std::vector<std::string> & filepa
   delete [] inputStreams;
   delete fout;
   // write index
-  IndexRange * spill_range = writer->getIndex(0);
+  SpillInfo * spill_range = writer->getSpillInfo();
   PartitionIndex * spill_info = new PartitionIndex(_num_partition);
   spill_info->add(spill_range);
   spill_info->writeIFile(idx_file_path);

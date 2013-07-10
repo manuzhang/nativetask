@@ -29,37 +29,36 @@ using std::string;
 /**
  * Store spill file segment information
  */
-struct IndexEntry {
+struct IFileSegment {
   // uncompressed stream end position
-  uint64_t endPosition;
+  uint64_t uncompressedEndOffset;
   // compressed stream end position
-  uint64_t realEndPosition;
+  uint64_t realEndOffset;
 };
 
-class IndexRange {
+class SpillInfo {
 public:
   uint32_t start;
   uint32_t length;
-  std::string filepath;
-  IndexEntry * segments;
+  std::string path;
+  IFileSegment * segments;
 
-  IndexRange(uint32_t start, uint32_t len, const string & filepath,
-      IndexEntry * segments) :
-    start(start), length(len), filepath(filepath), segments(segments) {
+  SpillInfo(IFileSegment * segments, uint32_t len, const string & path) :
+    start(start), length(len), path(path), segments(segments) {
   }
 
-  ~IndexRange() {
+  ~SpillInfo() {
     delete [] segments;
   }
 
   void delete_file();
 
   uint64_t getEndPosition() {
-    return segments ? segments[length-1].endPosition : 0;
+    return segments ? segments[length-1].uncompressedEndOffset : 0;
   }
 
   uint64_t getRealEndPosition() {
-    return segments ? segments[length-1].realEndPosition : 0;
+    return segments ? segments[length-1].realEndOffset : 0;
   }
 };
 
@@ -68,7 +67,7 @@ protected:
   // TODO: fix this field
   uint32_t _num_partition;
 public:
-  std::vector<IndexRange*> ranges;
+  std::vector<SpillInfo*> ranges;
   PartitionIndex(uint32_t num_partition) :
     _num_partition(num_partition) {
   }
@@ -86,7 +85,7 @@ public:
     }
   }
 
-  void add(IndexRange * sri) {
+  void add(SpillInfo * sri) {
     ranges.push_back(sri);
   }
 

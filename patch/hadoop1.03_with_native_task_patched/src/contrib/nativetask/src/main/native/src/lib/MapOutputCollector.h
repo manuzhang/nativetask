@@ -135,7 +135,7 @@ public:
     return get_buffer_to_put(keylen + valuelen + sizeof(uint32_t) * 2);
   }
 
-  void sort(SortType type);
+  void sort(SortAlgorithm type);
 
   uint64_t estimate_spill_size(OutputFileType output_type, KeyValueType ktype,
                                KeyValueType vtype);
@@ -181,7 +181,7 @@ private:
   /**
    * sort all partitions, just used for testing sort only
    */
-  void sort_partitions(SortType, uint32_t start_partition, uint32_t end_partition);
+  void sort_partitions(SortAlgorithm, uint32_t start_partition, uint32_t end_partition);
 
   /**
    * spill a range of partition buckets, prepare for future
@@ -189,8 +189,8 @@ private:
    */
   void sort_and_spill_partitions(uint32_t start_partition,
                    uint32_t num_partition,
-                   RecordOrderType orderType,
-                   SortType sortType,
+                   SortOrder orderType,
+                   SortAlgorithm sortType,
                    IFileWriter & writer,
                    uint64_t & blockCount,
                    uint64_t & recordCount,
