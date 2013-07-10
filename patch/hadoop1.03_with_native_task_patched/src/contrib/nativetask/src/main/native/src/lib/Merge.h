@@ -32,7 +32,7 @@ namespace NativeTask {
  */
 class MergeEntry {
 
-private:
+protected:
   // these 3 fields should be filled after next() is called
   const char *   _key;
   uint32_t _key_len;
