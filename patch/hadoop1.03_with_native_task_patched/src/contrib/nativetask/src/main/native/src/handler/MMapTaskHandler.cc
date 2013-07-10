@@ -95,15 +95,6 @@ void MMapTaskHandler::configure(Config & config) {
     _moc = new MapOutputCollector(_numPartition);
     _moc->configure(config);
 
-    // combiner
-    const char * combinerClass = config.get(NATIVE_COMBINER);
-    if (NULL != combinerClass) {
-      _combinerCreator = NativeObjectFactory::GetObjectCreator(combinerClass);
-      if (NULL == _combinerCreator) {
-        THROW_EXCEPTION_EX(UnsupportException, "Combiner not found: %s", combinerClass);
-      }
-    }
-
     // partitioner
     const char * partitionerClass = config.get(NATIVE_PARTITIONER);
     if (NULL != partitionerClass) {
@@ -165,7 +156,7 @@ void MMapTaskHandler::collect(const void * key, uint32_t keyLen,
     }
     vector<string> pathes;
     StringUtil::Split(spillpath, ";", pathes);
-    _moc->mid_spill(pathes,"", _moc->getMapOutputSpec(), _combinerCreator);
+    _moc->mid_spill(pathes,"", _moc->getMapOutputSpec());
     result =_moc->put(key, keyLen, value, valueLen, partition);
     if (0 != result) {
       // should not get here, cause _moc will throw Exceptions
@@ -219,7 +210,7 @@ void MMapTaskHandler::close() {
     }
     vector<string> pathes;
     StringUtil::Split(outputpath, ";", pathes);
-    _moc->final_merge_and_spill(pathes, indexpath, _moc->getMapOutputSpec(), _combinerCreator);
+    _moc->final_merge_and_spill(pathes, indexpath, _moc->getMapOutputSpec());
   } else {
     _writer->close();
   }

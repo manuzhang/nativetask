@@ -160,7 +160,7 @@ void JNICALL Java_org_apache_hadoop_mapred_nativetask_NativeBatchProcessor_setup
     JNU_ThrowByName(jenv, "java/lang/UnsupportedOperationException", e.what());
   }
   catch (NativeTask::OutOfMemoryException & e) {
-    JNU_ThrowByName(jenv, "java/lang/OutOfMemoryException", e.what());
+    JNU_ThrowByName(jenv, "java/lang/OutOfMemoryError", e.what());
   }
   catch (NativeTask::IOException & e) {
     JNU_ThrowByName(jenv, "java/io/IOException", e.what());
@@ -232,7 +232,7 @@ void JNICALL Java_org_apache_hadoop_mapred_nativetask_NativeBatchProcessor_nativ
     JNU_ThrowByName(jenv, "java/lang/UnsupportedOperationException", e.what());
   }
   catch (NativeTask::OutOfMemoryException & e) {
-    JNU_ThrowByName(jenv, "java/lang/OutOfMemoryException", e.what());
+    JNU_ThrowByName(jenv, "java/lang/OutOfMemoryError", e.what());
   }
   catch (NativeTask::IOException & e) {
     JNU_ThrowByName(jenv, "java/io/IOException", e.what());
@@ -272,7 +272,7 @@ jbyteArray JNICALL Java_org_apache_hadoop_mapred_nativetask_NativeBatchProcessor
     JNU_ThrowByName(jenv, "java/lang/UnsupportedOperationException", e.what());
   }
   catch (NativeTask::OutOfMemoryException & e) {
-    JNU_ThrowByName(jenv, "java/lang/OutOfMemoryException", e.what());
+    JNU_ThrowByName(jenv, "java/lang/OutOfMemoryError", e.what());
   }
   catch (NativeTask::IOException & e) {
     JNU_ThrowByName(jenv, "java/io/IOException", e.what());

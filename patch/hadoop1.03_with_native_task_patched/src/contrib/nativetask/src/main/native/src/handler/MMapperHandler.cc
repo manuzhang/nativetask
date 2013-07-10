@@ -29,7 +29,6 @@ MMapperHandler::MMapperHandler() :
     _moc(NULL),
     _mapper(NULL),
     _partitioner(NULL),
-    _combinerCreator(NULL),
     _numPartition(1),
     _dest(NULL),
     _remain(0),
@@ -51,7 +50,6 @@ void MMapperHandler::reset() {
   _moc = NULL;
   delete _partitioner;
   _partitioner = NULL;
-  _combinerCreator = NULL;
 }
 
 void MMapperHandler::configure(Config & config) {
@@ -60,14 +58,6 @@ void MMapperHandler::configure(Config & config) {
   // collector
   _numPartition = config.getInt("mapred.reduce.tasks", 1);
   if (_numPartition > 0) {
-    // combiner
-    const char * combinerClass = config.get(NATIVE_COMBINER);
-    if (NULL != combinerClass) {
-      _combinerCreator = NativeObjectFactory::GetObjectCreator(combinerClass);
-      if (NULL == _combinerCreator) {
-        THROW_EXCEPTION_EX(UnsupportException, "Combiner not found: %s", combinerClass);
-      }
-    }
 
     // partitioner
     const char * partitionerClass = config.get(NATIVE_PARTITIONER);
@@ -156,7 +146,7 @@ void MMapperHandler::collect(const void * key, uint32_t keyLen,
   }
   vector<string> pathes;
   StringUtil::Split(spillpath, ";", pathes);
-  _moc->mid_spill(pathes,"", _moc->getMapOutputSpec(), _combinerCreator);
+  _moc->mid_spill(pathes,"", _moc->getMapOutputSpec());
   result =_moc->put(key, keyLen, value, valueLen, partition);
   if (0 != result) {
     // should not get here, cause _moc will throw Exceptions
@@ -198,7 +188,7 @@ void MMapperHandler::close() {
   }
   vector<string> pathes;
   StringUtil::Split(outputpath, ";", pathes);
-  _moc->final_merge_and_spill(pathes, indexpath, _moc->getMapOutputSpec(), _combinerCreator);
+  _moc->final_merge_and_spill(pathes, indexpath, _moc->getMapOutputSpec());
 }
 
 } // namespace NativeTask

@@ -61,6 +61,15 @@ struct KVBuffer {
   }
 };
 
+
+class ICombinerRunner {
+public:
+  virtual void combine(KVIterator * kvIterator, IFileWriter * writer, uint64_t * keyGroupCount) = 0;
+  virtual ~ICombinerRunner() {
+
+  }
+};
+
 /**
  * Buffer for a single partition
  */
@@ -157,6 +166,8 @@ private:
   MapOutputSpec _mapOutputSpec;
   bool _sortFirst;
   Timer _collectTimer;
+  ObjectCreatorFunc combinerCreator;
+
 private:
   void init(uint32_t memory_capacity, ComparatorPtr keyComparator);
 
@@ -211,8 +222,7 @@ public:
                    uint64_t & blockCount,
                    uint64_t & recordCount,
                    uint64_t & sortTime,
-                   uint64_t & keyGroupCount,
-                   ObjectCreatorFunc combinerCreator);
+                   uint64_t & keyGroupCount);
 
   /**
    * normal spill use options in _config
@@ -220,16 +230,14 @@ public:
    */
   void mid_spill(std::vector<std::string> & filepaths,
                  const std::string & idx_file_path,
-                 MapOutputSpec & spec,
-                 ObjectCreatorFunc combinerCreator);
+                 MapOutputSpec & spec);
 
   /**
    * final merge and/or spill use options in _config, and
    * previous spilled file & in-memory data
    */
   void final_merge_and_spill(std::vector<std::string> & filepaths,
-      const std::string & indexpath, MapOutputSpec & spec,
-      ObjectCreatorFunc combinerCreator);
+      const std::string & indexpath, MapOutputSpec & spec);
 
   /**
    * collect one k/v pair
