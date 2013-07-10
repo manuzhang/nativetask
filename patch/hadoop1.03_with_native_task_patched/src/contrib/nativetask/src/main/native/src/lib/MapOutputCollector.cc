@@ -289,7 +289,6 @@ MapOutputCollector::MapOutputCollector(uint32_t num_partition) :
   _config(NULL),
   _buckets(NULL),
   _keyComparator(NULL),
-  _sortFirst(false),
   combinerCreator(NULL){
   _num_partition = num_partition;
   _buckets = new PartitionBucket*[num_partition];
@@ -342,7 +341,6 @@ void MapOutputCollector::reset() {
 
 void MapOutputCollector::configure(Config & config) {
   _config = &config;
-  _sortFirst = config.getBool("native.spill.sort.first", true);
   MapOutputSpec::getSpecFromConfig(config, _mapOutputSpec);
 
   init(config.getInt("io.sort.mb", 300) * 1024 * 1024, get_comparator(config, _mapOutputSpec));
@@ -387,16 +385,15 @@ ComparatorPtr MapOutputCollector::get_comparator(Config & config, MapOutputSpec 
 /**
  * sort all partitions
  */
-void MapOutputCollector::sort_all_partitions(SortType sort_type) {
+void MapOutputCollector::sort_partitions(SortType sort_type, uint32_t start_partition, uint32_t end_partition) {
   // do sort
-  for (uint32_t i = 0; i < _num_partition; i++) {
+  for (uint32_t i = start_partition; i < end_partition; i++) {
     PartitionBucket * pb = _buckets[i];
     if ((NULL != pb) && (pb->current_block_idx() != NULL_BLOCK_INDEX)) {
       pb->sort(sort_type);
     }
   }
 }
-
 
 /**
  * Spill buffer to file
@@ -414,28 +411,19 @@ void MapOutputCollector::spill_range(uint32_t start_partition,
   if (orderType == GROUPBY) {
     THROW_EXCEPTION(UnsupportException, "GROUPBY not supported");
   }
-  IndexEntry * ret = new IndexEntry[_num_partition];
+
   Timer timer;
-  if (_sortFirst && orderType==FULLSORT) {
-    Timer timer;
-    for (uint32_t i = 0; i < num_partition; i++) {
-      PartitionBucket * pb = _buckets[start_partition+i];
-      if ((NULL != pb) && (pb->current_block_idx() != NULL_BLOCK_INDEX)) {
-        pb->sort(sortType);
-      }
-    }
-    sortTime += (timer.now() - timer.last());
+  if (orderType == FULLSORT) {
+    sort_partitions(sortType, start_partition, start_partition + num_partition);
   }
+  sortTime = timer.now() - timer.last();
+
   for (uint32_t i = 0; i < num_partition; i++) {
     writer.startPartition();
-    PartitionBucket * pb = _buckets[start_partition+i];
+
+    PartitionBucket * pb = _buckets[start_partition + i];
     if (pb != NULL) {
-      if (orderType == FULLSORT) {
-        pb->sort(sortType);
-      }
       pb->spill(writer, keyGroupCount, combinerCreator, *_config);
-      recordCount += pb->recored_count();
-      blockCount += pb->blk_count();
     }
     writer.endPartition();
   }
@@ -547,7 +535,7 @@ void MapOutputCollector::final_merge_and_spill(std::vector<std::string> & filepa
     THROW_EXCEPTION(UnsupportException, "GROUPBY not support");
   } else if (spec.orderType==FULLSORT) {
     timer.reset();
-    sort_all_partitions(spec.sortType);
+    sort_partitions(spec.sortType, 0, _num_partition);
     LOG("[MapOutputCollector::final_merge_and_spill]  Sort:{spilling file id: %lu, partitions: [%u,%u), sort time: %.3lf s}",
         _spills.size() + 1,
         0,

@@ -167,7 +167,6 @@ private:
   uint32_t _num_partition;
   std::vector<PartitionIndex *> _spills;
   MapOutputSpec _mapOutputSpec;
-  bool _sortFirst;
   Timer _collectTimer;
   ObjectCreatorFunc combinerCreator;
 
@@ -181,7 +180,7 @@ private:
   /**
    * sort all partitions, just used for testing sort only
    */
-  void sort_all_partitions(SortType);
+  void sort_partitions(SortType, uint32_t start_partition, uint32_t end_partition);
 
 public:
   MapOutputCollector(uint32_t num_partition);
