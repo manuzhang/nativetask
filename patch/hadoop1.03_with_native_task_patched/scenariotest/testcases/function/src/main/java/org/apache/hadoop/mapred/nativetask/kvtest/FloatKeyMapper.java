@@ -59,7 +59,7 @@ public class FloatKeyMapper {
 
 	public static <VType> Job getFloatTestJob(VType instance) {
 		Configuration conf = new Configuration();
-		conf.addResource("test-conf.xml");
+		conf.addResource(KVTest.NATIVETASK_KVTEST_CONF_PATH);
 		conf.set(KVTest.NATIVETASK_TEST_VALUECLASS, instance.getClass().getName());
 		System.out.println("*********instance type:" + instance.getClass());
 		Job job = null;
