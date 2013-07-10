@@ -345,7 +345,7 @@ void MapOutputCollector::configure(Config & config) {
   _sortFirst = config.getBool("native.spill.sort.first", true);
   MapOutputSpec::getSpecFromConfig(config, _mapOutputSpec);
 
-  init(config.getInt("io.sort.mb", 300) * 1024 * 1024, getComparator(config, _mapOutputSpec));
+  init(config.getInt("io.sort.mb", 300) * 1024 * 1024, get_comparator(config, _mapOutputSpec));
 
   // combiner
   const char * combinerClass = config.get(NATIVE_COMBINER);
@@ -359,7 +359,7 @@ void MapOutputCollector::configure(Config & config) {
   _collectTimer.reset();
 }
 
-ComparatorPtr MapOutputCollector::getComparator(Config & config, MapOutputSpec & spec) {
+ComparatorPtr MapOutputCollector::get_comparator(Config & config, MapOutputSpec & spec) {
   const char * comparatorName = config.get(NATIVE_MAPOUT_KEY_COMPARATOR);
   if (NULL == comparatorName) {
     if (spec.keyType == BytesType ||
@@ -387,7 +387,7 @@ ComparatorPtr MapOutputCollector::getComparator(Config & config, MapOutputSpec &
 /**
  * sort all partitions
  */
-void MapOutputCollector::sort_all(SortType sort_type) {
+void MapOutputCollector::sort_all_partitions(SortType sort_type) {
   // do sort
   for (uint32_t i = 0; i < _num_partition; i++) {
     PartitionBucket * pb = _buckets[i];
@@ -396,6 +396,7 @@ void MapOutputCollector::sort_all(SortType sort_type) {
     }
   }
 }
+
 
 /**
  * Spill buffer to file
@@ -546,7 +547,7 @@ void MapOutputCollector::final_merge_and_spill(std::vector<std::string> & filepa
     THROW_EXCEPTION(UnsupportException, "GROUPBY not support");
   } else if (spec.orderType==FULLSORT) {
     timer.reset();
-    sort_all(spec.sortType);
+    sort_all_partitions(spec.sortType);
     LOG("[MapOutputCollector::final_merge_and_spill]  Sort:{spilling file id: %lu, partitions: [%u,%u), sort time: %.3lf s}",
         _spills.size() + 1,
         0,

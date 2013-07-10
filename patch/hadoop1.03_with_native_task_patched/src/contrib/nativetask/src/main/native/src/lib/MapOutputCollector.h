@@ -178,18 +178,21 @@ private:
 
   void delete_temp_spill_files();
 
-
+  /**
+   * sort all partitions, just used for testing sort only
+   */
+  void sort_all_partitions(SortType);
 
 public:
   MapOutputCollector(uint32_t num_partition);
 
   ~MapOutputCollector();
 
-  static ComparatorPtr getComparator(Config & config, MapOutputSpec & spec);
+  static ComparatorPtr get_comparator(Config & config, MapOutputSpec & spec);
 
   void configure(Config & config);
 
-  MapOutputSpec & getMapOutputSpec() {
+  MapOutputSpec & get_mapoutput_spec() {
     return _mapOutputSpec;
   }
 
@@ -207,11 +210,6 @@ public:
    */
   uint64_t estimate_spill_size(OutputFileType output_type, KeyValueType ktype,
       KeyValueType vtype);
-
-  /**
-   * sort all partitions, just used for testing sort only
-   */
-  void sort_all(SortType);
 
   /**
    * spill a range of partition buckets, prepare for future

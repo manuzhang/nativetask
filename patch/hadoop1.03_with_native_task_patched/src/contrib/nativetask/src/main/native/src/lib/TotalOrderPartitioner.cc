@@ -177,7 +177,7 @@ void TotalOrderPartitioner::configure(Config & config) {
     MakeTrie(_splits, _trie, maxDepth);
   }
   else {
-    this->_keyComparator = MapOutputCollector::getComparator(config, spec);
+    this->_keyComparator = MapOutputCollector::get_comparator(config, spec);
   }
 }
 
