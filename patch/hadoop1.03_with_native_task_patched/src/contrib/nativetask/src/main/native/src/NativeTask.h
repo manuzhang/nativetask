@@ -551,7 +551,7 @@ enum KeyValueType {
 
 typedef int (* ComparatorPtr)(const char * src, uint32_t srcLength, const char * dest, uint32_t destLength);
 
-ComparatorPtr get_default_comparator(const KeyValueType keyType, const std::string& comparatorName);
+ComparatorPtr get_default_comparator(const KeyValueType keyType, const char * comparatorName);
 
 typedef void (*ANY_FUNC_PTR)();
 
