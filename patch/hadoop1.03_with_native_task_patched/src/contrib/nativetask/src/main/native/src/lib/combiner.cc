@@ -6,7 +6,7 @@ namespace NativeTask {
 KeyGroupIteratorImpl::KeyGroupIteratorImpl(KVIterator * iterator) :
   _keyGroupIterState(NEW_KEY),
   _iterator(iterator),
-  _first(false){
+  _first(true){
 }
 
 bool KeyGroupIteratorImpl::nextKey() {

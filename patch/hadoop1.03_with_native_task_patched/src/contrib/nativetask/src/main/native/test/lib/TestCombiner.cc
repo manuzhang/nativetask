@@ -26,9 +26,12 @@ namespace NativeTask {
 class Iterator : public KVIterator {
   std::vector<std::pair<int, int> > * kvs;
   int index;
+  char * buffer;
 
 public:
-  Iterator() : index(0){
+  Iterator() : index(0),
+  buffer(NULL){
+	buffer= new char[8];
     kvs = new std::vector<std::pair<int, int> >();
     kvs->push_back(std::pair<int, int>(10, 100));
 
@@ -43,11 +46,13 @@ public:
     kvs->push_back(std::pair<int, int>(40, 302));
   }
 
-  bool next(Buffer & key, Buffer & value) {
+  bool next(Buffer & key, Buffer & outValue) {
     if (index < kvs->size()) {
       std::pair<int, int> value = kvs->at(index);
-      key.reset((const char *)(&(value.first)), 4);
-      key.reset((const char *)(&(value.second)), 4);
+      *((int *)buffer) =  value.first;
+      *(((int *)buffer) + 1) =  value.second;
+      key.reset(buffer, 4);
+      outValue.reset(buffer + 4, 4);
       index++;
       return true;
     }
@@ -63,14 +68,14 @@ void TestKeyGroupIterator() {
     uint32_t length = 0;
     key = groupIterator->getKey(length);
     int * keyPtr = (int *)key;
-    std::cout<< "new key: " << *keyPtr;
+    std::cout<< "new key: " << *keyPtr << std::endl;
     const char * value = NULL;
     while(NULL != (value = groupIterator->nextValue(length))) {
       int * valuePtr = (int *)value;
-      std::cout<< "==== key: " << *keyPtr << "value: " << *valuePtr;
+      std::cout<< "==== key: " << *keyPtr << "value: " << *valuePtr  << std::endl;
     }
   }
-  std::cout <<"Done!!!!!!!";
+  std::cout <<"Done!!!!!!! "  << std::endl;
 }
 
 TEST(Combiner, keyGroupIterator) {
