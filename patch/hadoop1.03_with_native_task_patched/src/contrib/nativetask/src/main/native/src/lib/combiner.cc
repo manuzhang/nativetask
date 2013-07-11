@@ -34,6 +34,7 @@ public:
     }
     if (_keyGroupIterState ==  NEW_KEY) {
       if (_first == true) {
+        _first = false;
         if (!next()) {
           _keyGroupIterState = NO_MORE;
           return false;

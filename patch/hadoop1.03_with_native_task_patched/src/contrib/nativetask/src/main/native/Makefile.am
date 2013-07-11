@@ -68,6 +68,7 @@ src/lib/NativeTask.cc \
 src/lib/SpillInfo.cc \
 src/lib/Path.cc \
 src/lib/Streams.cc \
+src/lib/combiner.cc \
 src/lib/TaskCounters.cc \
 src/lib/TeraSort.cc \
 src/lib/TotalOrderPartitioner.cc \
@@ -80,7 +81,6 @@ src/util/StringUtil.cc \
 src/util/SyncUtils.cc \
 src/util/Timer.cc \
 src/util/WritableUtils.cc               
-
 
 
 COMMONHEADERS = \
@@ -131,7 +131,7 @@ noinst_PROGRAMS = nttest
 noinst_SCRIPTS = test.sh
 
 libnativetask_la_SOURCES = $(COMMONSOURCES)
-libnativetask_la_CPPFLAGS = -g -O2 -DNDEBUG $(MACRO) -fPIC $(AM_CFLAGS)
+libnativetask_la_CPPFLAGS = -g -O0 -DNDEBUG $(MACRO) -fPIC $(AM_CFLAGS)
 libnativetask_la_LDFLAGS =  -version-info 0:1:0 $(AM_LDFLAGS)
 
 libstreaming_la_SOURCES = examples/Streaming.cc
