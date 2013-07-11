@@ -26,143 +26,10 @@
 #include "NativeTask.h"
 #include "WritableUtils.h"
 #include "util/DualPivotQuickSort.h"
+#include "combiner.h"
 
 namespace NativeTask {
 
-class KeyGroupIteratorImpl: public KeyGroupIterator {
-protected:
-  std::vector<uint32_t> & _kv_offsets;
-  InplaceBuffer * currentKey;
-  size_t index;
-  size_t size;
-  bool hasNext;
-
-public:
-  KeyGroupIteratorImpl(std::vector<uint32_t> & kv_offsets) :
-    _kv_offsets(kv_offsets),currentKey(NULL), index(0), size(kv_offsets.size()), hasNext(false) {
-    if (size>0) {
-      KVBuffer * kvBuffer = (KVBuffer*)MemoryBlockPool::get_position(kv_offsets[0]);
-      currentKey = &(kvBuffer->get_key());
-    }
-  }
-
-  bool nextKey() {
-    uint32_t temp;
-    while (hasNext) {
-      nextValue(temp);
-    }
-    return index < size;
-  }
-
-  const char * getKey(uint32_t & len) {
-    len = currentKey->length;
-    return currentKey->content;
-  }
-
-  const char * nextValue(uint32_t & len) {
-    if (hasNext) {
-      if (++index >= size) {
-        hasNext = false;
-        return NULL;
-      }
-      KVBuffer * pkvbuffer = (KVBuffer*)MemoryBlockPool::get_position(_kv_offsets[index]);
-      InplaceBuffer & bkey = pkvbuffer->get_key();
-      if ((bkey.length != currentKey->length) ||
-          (!fmemeq(bkey.content, currentKey->content, currentKey->length))) {
-        KVBuffer * groupkeybuffer = (KVBuffer*)MemoryBlockPool::get_position(_kv_offsets[index]);
-        currentKey = &(groupkeybuffer->get_key());
-        hasNext = false;
-        return NULL;
-      }
-      InplaceBuffer & bvalue = pkvbuffer->get_value();
-      len = bvalue.length;
-      return bvalue.content;
-    } else {
-      hasNext = true;
-      KVBuffer * pkvbuffer = (KVBuffer*)MemoryBlockPool::get_position(_kv_offsets[index]);
-      InplaceBuffer & bvalue = pkvbuffer->get_value();
-      len = bvalue.length;
-      return bvalue.content;
-    }
-  }
-};
-
-
-class DirectMemoryBufferedKVIterator : public KVIterator {
-private:
-  std::vector<uint32_t> & _kvOffsets;
-  uint32_t _index;
-  uint32_t _recordSize;
-  const char * _base;
-
-public:
-  DirectMemoryBufferedKVIterator(const char * base, std::vector<uint32_t> & kvOffsets):
-    _base(base), _kvOffsets(kvOffsets), _index(0), _recordSize(kvOffsets.size()){
-  }
-
-  KeyGroupIterator * getKeyGroupIterator() {
-    return new KeyGroupIteratorImpl(_kvOffsets);
-  }
-
-  const char * getBase() {
-    return _base;
-  }
-
-  std::vector<uint32_t> * getKVOffsets() {
-    return &_kvOffsets;
-  }
-
-  bool next(Buffer & key, Buffer & value) {
-    if (_index < _recordSize) {
-      KVBuffer * pkvbuffer = (KVBuffer*)MemoryBlockPool::get_position(_kvOffsets[_index]);
-      InplaceBuffer & bkey = pkvbuffer->get_key();
-      InplaceBuffer & bvalue = pkvbuffer->get_value();
-
-      key.reset(bkey.content, bkey.length);
-      value.reset(bvalue.content, bvalue.length);
-      _index++;
-      return true;
-    }
-    return false;
-  }
-};
-
-
-void CombineRunner::combineOnDirectMemory(KVIterator * iterator, IFileWriter * writer) {
-  DirectMemoryBufferedKVIterator * kvIterator = (DirectMemoryBufferedKVIterator *)iterator;
-  std::vector<uint32_t> * kvOffsets = kvIterator->getKVOffsets();
-  switch (_type) {
-  case MapperType: {
-      Mapper * mapper = (Mapper*)_combiner;
-      mapper->setCollector(writer);
-
-      for (size_t i = 0; i<kvOffsets->size() ; i++) {
-        KVBuffer * pkvbuffer = (KVBuffer*)MemoryBlockPool::get_position(kvOffsets->at(i));
-        InplaceBuffer & bkey = pkvbuffer->get_key();
-        InplaceBuffer & bvalue = pkvbuffer->get_value();
-        mapper->map(bkey.content, bkey.length, bvalue.content, bvalue.length);
-      }
-      mapper->close();
-      delete mapper;
-    }
-    break;
-  case ReducerType:
-    {
-      Reducer * reducer = (Reducer*)_combiner;
-      reducer->setCollector(writer);
-      KeyGroupIteratorImpl kg = KeyGroupIteratorImpl(*kvOffsets);
-      while (kg.nextKey()) {
-        _keyGroupCount++;
-        reducer->reduce(kg);
-      }
-      reducer->close();
-      delete reducer;
-    }
-    break;
-  default:
-    THROW_EXCEPTION(UnsupportException, "Combiner type not support");
-  }
-}
 
 /////////////////////////////////////////////////////////////////
 // PartitionBucket
@@ -206,6 +73,41 @@ bool PartitionBucket::Iterator::next(Buffer & key, Buffer & value) {
   return false;
 }
 
+class DirectMemoryBufferedKVIterator : public MemoryBufferKVIterator {
+private:
+  std::vector<uint32_t> & _kvOffsets;
+  uint32_t _index;
+  uint32_t _recordSize;
+  const char * _base;
+
+public:
+  DirectMemoryBufferedKVIterator(const char * base, std::vector<uint32_t> & kvOffsets):
+    _base(base), _kvOffsets(kvOffsets), _index(0), _recordSize(kvOffsets.size()){
+  }
+
+  const char * getBase() {
+    return _base;
+  }
+
+  std::vector<uint32_t> * getKVOffsets() {
+    return &_kvOffsets;
+  }
+
+  bool next(Buffer & key, Buffer & value) {
+    if (_index < _recordSize) {
+      KVBuffer * pkvbuffer = (KVBuffer*)MemoryBlockPool::get_position(_kvOffsets[_index]);
+      InplaceBuffer & bkey = pkvbuffer->get_key();
+      InplaceBuffer & bvalue = pkvbuffer->get_value();
+
+      key.reset(bkey.content, bkey.length);
+      value.reset(bvalue.content, bvalue.length);
+      _index++;
+      return true;
+    }
+    return false;
+  }
+};
+
 void PartitionBucket::spill(IFileWriter & writer, uint64_t & keyGroupCount)
     throw (IOException, UnsupportException) {
 
@@ -223,7 +125,7 @@ void PartitionBucket::spill(IFileWriter & writer, uint64_t & keyGroupCount)
 
     DirectMemoryBufferedKVIterator * kvIterator = new DirectMemoryBufferedKVIterator(MemoryBlockPool::get_position(0),
         _kv_offsets);
-    _combineRunner->combine(ICombineRunner::DIRECT_MEMORY_ITERATOR, kvIterator, &writer);
+    _combineRunner->combine(CombineContext(CONTINUOUS_MEMORY_BUFFER), kvIterator, &writer);
     delete kvIterator;
   }
 }
@@ -447,7 +349,7 @@ void MapOutputCollector::middle_spill(std::vector<std::string> & spillOutputs,
     LOG("[MapOutputCollector::mid_spill] spilling file path: %s", info->path.c_str());
 
     if (keyGroupCount == 0) {
-      LOG("[MapOutputCollector::mid_spill] Sort and spill: {spilled file id: %lu, partitions: [%u,%u), collect: %.3lfs, sort: %.3lfs, spill: %.3lfs, records: %llu, avg record size: %.3lf, blocks: %llu, uncompressed total bytes: %llu, compressed total bytes: %llu}",
+      LOG("[MapOutputCollector::mid_spill] Sort and spill: {spilled file id: %d, partitions: [%u,%u), collect: %.3lfs, sort: %.3lfs, spill: %.3lfs, records: %llu, avg record size: %.3lf, blocks: %llu, uncompressed total bytes: %llu, compressed total bytes: %llu}",
           _spillInfo.getSpillCount(),
           0,
           _num_partition,
@@ -460,7 +362,7 @@ void MapOutputCollector::middle_spill(std::vector<std::string> & spillOutputs,
           info->getEndPosition(),
           info->getRealEndPosition());
     } else {
-      LOG("[MapOutputCollector::mid_spill] Sort and spill: {Spilled file id: %lu,  partition: [%u,%u), collect: %.3lfs, sort: %.3lfs, spill: %.3lfs, records: %llu, key count: %llu, blocks: %llu, uncompressed total bytes: %llu, compressed total bytes: %llu}",
+      LOG("[MapOutputCollector::mid_spill] Sort and spill: {Spilled file id: %d,  partition: [%u,%u), collect: %.3lfs, sort: %.3lfs, spill: %.3lfs, records: %llu, key count: %llu, blocks: %llu, uncompressed total bytes: %llu, compressed total bytes: %llu}",
           _spillInfo.getSpillCount(),
           0,
           _num_partition,
@@ -526,7 +428,7 @@ void MapOutputCollector::final_merge_and_spill(std::vector<std::string> & filepa
   } else if (spec.sortOrder==FULLORDER) {
     timer.reset();
     sort_partitions(spec.sortAlgorithm, 0, _num_partition);
-    LOG("[MapOutputCollector::final_merge_and_spill]  Sort:{spilling file id: %lu, partitions: [%u,%u), sort time: %.3lf s}",
+    LOG("[MapOutputCollector::final_merge_and_spill]  Sort:{spilling file id: %d, partitions: [%u,%u), sort time: %.3lf s}",
         _spillInfo.getSpillCount() + 1,
         0,
         _num_partition,
@@ -552,7 +454,7 @@ void MapOutputCollector::final_merge_and_spill(std::vector<std::string> & filepa
   delete_temp_spill_files();
   reset();
 
-  LOG("[MapOutputCollector::final_merge_and_spill]  Merge and Spill:{spilled file id: %lu, merge and spill time: %.3lf s}",
+  LOG("[MapOutputCollector::final_merge_and_spill]  Merge and Spill:{spilled file id: %d, merge and spill time: %.3lf s}",
           _spillInfo.getSpillCount(),
           (timer.now()-timer.last())/1000000000.0);
 

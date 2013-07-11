@@ -26,6 +26,7 @@
 #include "MapOutputSpec.h"
 #include "IFile.h"
 #include "SpillInfo.h"
+#include "combiner.h"
 
 namespace NativeTask {
 
@@ -63,54 +64,6 @@ struct KVBuffer {
 };
 
 
-
-class ICombineRunner {
-public:
-  enum Type {
-    UNKNOWN = 0,
-    DIRECT_MEMORY_ITERATOR = 1,
-    MERGE_SORT_ITERATOR = 2,
-    SINGLE_FILE_ITERATOR = 3,
-  };
-
-public:
-  virtual void combine(Type type, KVIterator * kvIterator, IFileWriter * writer) = 0;
-  virtual ~ICombineRunner() {
-  }
-};
-
-class CombineRunner : public ICombineRunner {
-private:
-  Configurable * _combiner;
-  uint32_t _keyGroupCount;
-  NativeObjectType _type;
-
-public:
-
-  CombineRunner(Configurable * combiner) :
-    _combiner(combiner),
-    _keyGroupCount(0),
-    _type(UnknownObjectType){
-    if (NULL == _combiner) {
-      THROW_EXCEPTION_EX(UnsupportException, "Create combiner failed");
-    }
-    _type = _combiner->type();
-  }
-private:
-  void combineOnDirectMemory(KVIterator * kvIterator, IFileWriter * writer);
-
-public:
-  void combine(Type type, KVIterator * kvIterator, IFileWriter * writer) {
-
-    if (type == DIRECT_MEMORY_ITERATOR) {
-      combineOnDirectMemory(kvIterator, writer);
-      return;
-    }
-    else {
-      //TODO:
-    }
-  }
-};
 
 /**
  * Buffer for a single partition
