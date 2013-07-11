@@ -58,6 +58,7 @@ src/lib/MapOutputCollector.cc \
 src/lib/MapOutputSpec.cc \
 src/lib/mempool.cc \
 src/lib/Merge.cc \
+src/lib/combiner.cc \
 src/lib/NativeLibrary.cc \
 src/lib/NativeObjectFactory.cc \
 src/lib/NativeRuntimeJniImpl.cc \
@@ -89,6 +90,7 @@ src/util/WritableUtils.h              \
 src/lib/LineRecordReader.h            \
 src/lib/LineRecordWriter.h            \
 src/lib/commons.h                         \
+src/lib/combiner.h                         \
 src/lib/Log.h                             \
 src/lib/primitives.h                      \
 src/lib/Buffers.h                         \

@@ -308,7 +308,7 @@ void pop_heap(T* begin, T* end, Compare & Comp) {
   adjust_heap(begin, 1, end - begin - 1, Comp);
 }
 
-class Merger : public KeyGroupIterator {
+class Merger : public  KVIterator {
 
 private:
   vector<MergeEntryPtr> _entries;
@@ -319,9 +319,6 @@ private:
   bool _first;
   MergeEntryComparator _comparator;
 
-  // for KeyGroupIterator
-  KeyGroupIterState _keyGroupIterState;
-  string _currentGroupKey;
 public:
   Merger(IFileWriter * writer, Config & config, ComparatorPtr comparator, ICombineRunner * combineRunner=NULL);
 
@@ -331,17 +328,12 @@ public:
 
   void merge();
 
-  bool next();
-
-  virtual bool nextKey();
-
-  virtual const char * getKey(uint32_t & len);
-
-  virtual const char * nextValue(uint32_t & len);
+  virtual bool next(Buffer & key, Buffer & value);
 protected:
   int startPartition();
   void endPartition();
   void initHeap();
+  bool next();
 };
 
 } // namespace NativeTask

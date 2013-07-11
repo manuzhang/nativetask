@@ -122,8 +122,7 @@ void PartitionBucket::spill(IFileWriter & writer, uint64_t & keyGroupCount)
       writer.write(bkey.content, bkey.length, bvalue.content, bvalue.length);
     }
   } else {
-
-    DirectMemoryBufferedKVIterator * kvIterator = new DirectMemoryBufferedKVIterator(MemoryBlockPool::get_position(0),
+    MemoryBufferKVIterator * kvIterator = new DirectMemoryBufferedKVIterator(MemoryBlockPool::get_position(0),
         _kv_offsets);
     _combineRunner->combine(CombineContext(CONTINUOUS_MEMORY_BUFFER), kvIterator, &writer);
     delete kvIterator;

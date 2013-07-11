@@ -212,7 +212,7 @@ public:
 
 class Buffer {
 protected:
-  char * _data;
+  const char * _data;
   uint32_t _length;
 
 public:
@@ -221,19 +221,19 @@ public:
     _length(0) {
   }
 
-  Buffer(char * data, uint32_t length) :
+  Buffer(const char * data, uint32_t length) :
     _data(data),
     _length(length) {
   }
 
   ~Buffer() {}
 
-  void reset(char * data, uint32_t length) {
+  void reset(const char * data, uint32_t length) {
     this->_data = data;
     this->_length = length;
   }
 
-  char * data() const {
+  const char * data() const {
     return _data;
   }
 
@@ -241,7 +241,7 @@ public:
     return _length;
   }
 
-  void data(char * data) {
+  void data(const char * data) {
     this->_data = data;
   }
 
