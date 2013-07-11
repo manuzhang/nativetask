@@ -108,6 +108,7 @@ test/handler/TestRReducerHandler.cc   \
 test/handler/TestMMapTaskHandler.cc   \
 test/lib/TestLineRecordReader.cc      \
 test/lib/TestTotalOrderPartitioner.cc \
+test/lib/TestCombiner.cc \
 test/util/TestChecksum.cc             \
 test/util/TestHash.cc                 \
 test/util/TestStringUtil.cc           \

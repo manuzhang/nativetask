@@ -298,12 +298,12 @@ TEST(Perf, memcpy_batch) {
   for (size_t i=0;i<mb;i+=size) {
     memcpy(dest, src, size);
   }
-  LOG("%s", t.getSpeedM("memcmp", mb).c_str());
+  LOG("%s", t.getSpeedM("memcpy", mb).c_str());
   t.reset();
   for (size_t i=0;i<mb;i+=size) {
     simple_memcpy(dest, src, size);
   }
-  LOG("%s", t.getSpeedM("simple_memcmp", mb).c_str());
+  LOG("%s", t.getSpeedM("simple_memcpy", mb).c_str());
   delete [] src;
   delete [] dest;
 }
