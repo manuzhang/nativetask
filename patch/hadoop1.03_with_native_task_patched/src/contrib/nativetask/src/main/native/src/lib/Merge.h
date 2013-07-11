@@ -287,7 +287,7 @@ void check_heap(T* begin, T* end, Compare & Comp) {
 }
 
 template<typename T, typename Compare>
-void push_heap(T* begin, T* end, Compare Comp) {
+void push_heap(T* begin, T* end, Compare & Comp) {
   int now = end - begin;
   while (now > 1) {
     int parent = (now >> 1);
@@ -315,7 +315,7 @@ private:
   vector<MergeEntryPtr> _heap;
   IFileWriter * _writer;
   Config & _config;
-  ObjectCreatorFunc _combinerCreator;
+  ICombineRunner * _combineRunner;
   bool _first;
   MergeEntryComparator _comparator;
 
@@ -323,7 +323,7 @@ private:
   KeyGroupIterState _keyGroupIterState;
   string _currentGroupKey;
 public:
-  Merger(IFileWriter * writer, Config & config, ComparatorPtr comparator, ObjectCreatorFunc combinerCreator=NULL);
+  Merger(IFileWriter * writer, Config & config, ComparatorPtr comparator, ICombineRunner * combineRunner=NULL);
 
   ~Merger();
 

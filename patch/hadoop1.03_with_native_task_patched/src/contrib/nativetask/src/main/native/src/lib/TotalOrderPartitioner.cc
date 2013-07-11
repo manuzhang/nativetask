@@ -152,9 +152,6 @@ TotalOrderPartitioner::TotalOrderPartitioner() :
 
 ComparatorPtr TotalOrderPartitioner::get_comparator(Config & config, MapOutputSpec & spec) {
   const char * comparatorName = config.get(NATIVE_MAPOUT_KEY_COMPARATOR);
-  if (NULL == comparatorName) {
-    return NULL;
-  }
   return get_default_comparator(spec.keyType, string(comparatorName));
 }
 

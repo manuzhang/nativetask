@@ -129,13 +129,13 @@ bool PartitionBucket::Iterator::next(Buffer & key, Buffer & value) {
   return false;
 }
 
-void PartitionBucket::spill(IFileWriter & writer, uint64_t & keyGroupCount, ObjectCreatorFunc combinerCreator, Config & config)
+void PartitionBucket::spill(IFileWriter & writer, uint64_t & keyGroupCount)
     throw (IOException, UnsupportException) {
 
   if (_kv_offsets.size() == 0) {
     return;
   }
-  if (combinerCreator == NULL) {
+  if (_combineRunner == NULL) {
     for (size_t i = 0; i<_kv_offsets.size() ; i++) {
       KVBuffer * pkvbuffer = (KVBuffer*)MemoryBlockPool::get_position(_kv_offsets[i]);
       InplaceBuffer & bkey = pkvbuffer->get_key();
@@ -143,7 +143,8 @@ void PartitionBucket::spill(IFileWriter & writer, uint64_t & keyGroupCount, Obje
       writer.write(bkey.content, bkey.length, bvalue.content, bvalue.length);
     }
   } else {
-    NativeObject * combiner = combinerCreator();
+    ObjectCreatorFunc objectCreater = _combineRunner->getCombinerCreater();
+    NativeObject * combiner = objectCreater();
     if (combiner == NULL) {
       THROW_EXCEPTION_EX(UnsupportException, "Create combiner failed");
     }
@@ -152,7 +153,7 @@ void PartitionBucket::spill(IFileWriter & writer, uint64_t & keyGroupCount, Obje
       {
         Mapper * mapper = (Mapper*)combiner;
         mapper->setCollector(&writer);
-        mapper->configure(config);
+        mapper->configure(*(_config));
         for (size_t i = 0; i<_kv_offsets.size() ; i++) {
           KVBuffer * pkvbuffer = (KVBuffer*)MemoryBlockPool::get_position(_kv_offsets[i]);
           InplaceBuffer & bkey = pkvbuffer->get_key();
@@ -167,7 +168,7 @@ void PartitionBucket::spill(IFileWriter & writer, uint64_t & keyGroupCount, Obje
       {
         Reducer * reducer = (Reducer*)combiner;
         reducer->setCollector(&writer);
-        reducer->configure(config);
+        reducer->configure(*(_config));
         KeyGroupIteratorImpl kg = KeyGroupIteratorImpl(this->_kv_offsets);
         while (kg.nextKey()) {
           keyGroupCount++;
@@ -252,7 +253,7 @@ MapOutputCollector::MapOutputCollector(uint32_t num_partition) :
   _config(NULL),
   _buckets(NULL),
   _keyComparator(NULL),
-  combinerCreator(NULL){
+  _combineRunner(NULL){
   _num_partition = num_partition;
   _buckets = new PartitionBucket*[num_partition];
   memset(_buckets, 0, sizeof(PartitionBucket*) * num_partition);
@@ -305,10 +306,14 @@ void MapOutputCollector::configure(Config & config) {
   // combiner
   const char * combinerClass = config.get(NATIVE_COMBINER);
   if (NULL != combinerClass) {
-    this->combinerCreator = NativeObjectFactory::GetObjectCreator(combinerClass);
-    if (NULL == this->combinerCreator) {
+    ObjectCreatorFunc objectCreater = NativeObjectFactory::GetObjectCreator(combinerClass);
+    if (NULL == objectCreater) {
       THROW_EXCEPTION_EX(UnsupportException, "Combiner not found: %s", combinerClass);
     }
+    else {
+      LOG("[MapOutputCollector::configure] native combiner is enabled: %s", combinerClass);
+    }
+    this->_combineRunner = new CombineRunner(objectCreater);
   }
 
   _collectTimer.reset();
@@ -316,9 +321,6 @@ void MapOutputCollector::configure(Config & config) {
 
 ComparatorPtr MapOutputCollector::get_comparator(Config & config, MapOutputSpec & spec) {
   const char * comparatorName = config.get(NATIVE_MAPOUT_KEY_COMPARATOR);
-  if (NULL == comparatorName) {
-    return NULL;
-  }
   return get_default_comparator(spec.keyType, string(comparatorName));
 }
 
@@ -363,7 +365,7 @@ void MapOutputCollector::sort_and_spill_partitions(uint32_t start_partition,
 
     PartitionBucket * pb = _buckets[start_partition + i];
     if (pb != NULL) {
-      pb->spill(writer, keyGroupCount, combinerCreator, *_config);
+      pb->spill(writer, keyGroupCount);
     }
     writer.endPartition();
   }
@@ -456,7 +458,7 @@ void MapOutputCollector::final_merge_and_spill(std::vector<std::string> & filepa
   IFileWriter * writer = new IFileWriter(fout, spec.checksumType,
                                            spec.keyType, spec.valueType,
                                            spec.codec);
-  Merger * merger = new Merger(writer, *_config, _keyComparator, combinerCreator);
+  Merger * merger = new Merger(writer, *_config, _keyComparator, _combineRunner);
   InputStream ** inputStreams = new InputStream*[_spillInfo.getSpillCount()];
   IFileReader ** readers = new IFileReader*[_spillInfo.getSpillCount()];
   for (size_t i = 0 ; i < _spillInfo.getSpillCount() ; i++) {

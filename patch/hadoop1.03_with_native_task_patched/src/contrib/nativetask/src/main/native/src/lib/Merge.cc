@@ -23,10 +23,10 @@
 
 namespace NativeTask {
 
-Merger::Merger(IFileWriter * writer, Config & config, ComparatorPtr comparator, ObjectCreatorFunc combinerCreator) :
+Merger::Merger(IFileWriter * writer, Config & config, ComparatorPtr comparator, ICombineRunner * combineRunner) :
     _writer(writer),
     _config(config),
-    _combinerCreator(combinerCreator),
+    _combineRunner(combineRunner),
     _first(true),
     _keyGroupIterState(NEW_KEY),
     _comparator(comparator){
@@ -185,14 +185,15 @@ void Merger::merge() {
       continue;
     }
     _first = true;
-    if (_combinerCreator == NULL) {
+    if (_combineRunner == NULL) {
       while (next()) {
         _writer->writeKey(base[0]->getKey(), base[0]->getKeyLength(), base[0]->getValueLength());
         _writer->writeValue(base[0]->getValue(), base[0]->getValueLength());
         total_record++;
       }
     } else {
-      NativeObject * combiner = _combinerCreator();
+      ObjectCreatorFunc objectCreater = _combineRunner->getCombinerCreater();
+      NativeObject * combiner = objectCreater();
       if (combiner == NULL) {
         THROW_EXCEPTION_EX(UnsupportException, "Create combiner failed");
       }

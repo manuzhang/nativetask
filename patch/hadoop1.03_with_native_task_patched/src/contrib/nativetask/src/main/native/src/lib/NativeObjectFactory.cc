@@ -354,8 +354,8 @@ int DoubleComparator(const char * src, uint32_t srcLength, const char * dest, ui
     return (((*srcValue) - (* destValue) >= 0) ? 1 : -1);
 };
 
-ComparatorPtr get_default_comparator(const KeyValueType keyType, const std::string & comparatorName) {
-  if (comparatorName.size() != 0) {
+ComparatorPtr get_default_comparator(const KeyValueType keyType, const char * comparatorName) {
+  if (NULL == comparatorName) {
     if (keyType == BytesType ||
         keyType == TextType ||
         keyType == ByteType ||
@@ -372,7 +372,7 @@ ComparatorPtr get_default_comparator(const KeyValueType keyType, const std::stri
     }
   }
   else {
-    void * func = NativeObjectFactory::GetFunction(comparatorName);
+    void * func = NativeObjectFactory::GetFunction(string(comparatorName));
     return (ComparatorPtr)func;
   }
   return NULL;

@@ -31,7 +31,6 @@ MMapTaskHandler::MMapTaskHandler() :
     _reader(NULL),
     _mapper(NULL),
     _partitioner(NULL),
-    _combinerCreator(NULL),
     _moc(NULL),
     _writer(NULL),
     _mapInputRecords(NULL),
@@ -49,7 +48,6 @@ void MMapTaskHandler::reset() {
   _reader = NULL;
   delete _mapper;
   _mapper = NULL;
-  _combinerCreator = NULL;
   delete _partitioner;
   _partitioner = NULL;
   delete _moc;

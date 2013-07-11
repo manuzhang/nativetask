@@ -63,10 +63,31 @@ struct KVBuffer {
 };
 
 
-class ICombinerRunner {
+class ICombineRunner {
 public:
-  virtual void combine(KVIterator * kvIterator, IFileWriter * writer, uint64_t * keyGroupCount) = 0;
-  virtual ~ICombinerRunner() {
+  virtual void combine(KVIterator * kvIterator, IFileWriter * writer) = 0;
+  virtual ~ICombineRunner() {
+  }
+
+  virtual ObjectCreatorFunc getCombinerCreater() = 0;
+};
+
+class CombineRunner : public ICombineRunner {
+public:
+  ObjectCreatorFunc _combinerCreator;
+
+public:
+
+  CombineRunner(ObjectCreatorFunc combinerCreator) :
+    _combinerCreator(combinerCreator){
+  }
+
+public:
+  ObjectCreatorFunc getCombinerCreater() {
+    return _combinerCreator;
+  }
+
+  void combine(KVIterator * kvIterator, IFileWriter * writer) {
 
   }
 };
@@ -82,13 +103,17 @@ private:
   std::vector<uint32_t> _kv_offsets;
   std::vector<uint32_t> _blk_ids;
   ComparatorPtr _keyComparator;
+  ICombineRunner * _combineRunner;
+  Config * _config;
 
 public:
-  PartitionBucket(uint32_t partition, ComparatorPtr comparator) :
+  PartitionBucket(uint32_t partition, ComparatorPtr comparator, ICombineRunner * combineRunner, Config * config) :
     _sorted(false),
     _partition(partition),
     _current_block_idx(NULL_BLOCK_INDEX),
-    _keyComparator(comparator){
+    _keyComparator(comparator),
+    _combineRunner(combineRunner),
+    _config(config){
   }
 
   void clear() {
@@ -140,7 +165,7 @@ public:
   uint64_t estimate_spill_size(OutputFileType output_type, KeyValueType ktype,
                                KeyValueType vtype);
 
-  void spill(IFileWriter & writer, uint64_t & keyGroupCount, ObjectCreatorFunc combinerCreator, Config & config)
+  void spill(IFileWriter & writer, uint64_t & keyGroupCount)
       throw (IOException, UnsupportException);
 
   void dump(int fd, uint64_t offset, uint32_t & crc);
@@ -169,7 +194,7 @@ private:
   SpillInfos _spillInfo;
   MapOutputSpec _mapOutputSpec;
   Timer _collectTimer;
-  ObjectCreatorFunc combinerCreator;
+  ICombineRunner * _combineRunner;
 
 private:
   void init(uint32_t memory_capacity, ComparatorPtr keyComparator);
@@ -248,7 +273,7 @@ public:
     assert(partition<_num_partition);
     PartitionBucket * pb = _buckets[partition];
     if (unlikely(NULL==pb)) {
-      pb = new PartitionBucket(partition, _keyComparator);
+      pb = new PartitionBucket(partition, _keyComparator, _combineRunner, _config);
       _buckets[partition] = pb;
     }
     return pb->get_buffer_to_put(length);
