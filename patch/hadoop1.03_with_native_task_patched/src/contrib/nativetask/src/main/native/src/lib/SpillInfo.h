@@ -38,13 +38,12 @@ struct IFileSegment {
 
 class SingleSpillInfo {
 public:
-  uint32_t start;
   uint32_t length;
   std::string path;
   IFileSegment * segments;
 
   SingleSpillInfo(IFileSegment * segments, uint32_t len, const string & path) :
-    start(start), length(len), path(path), segments(segments) {
+    length(len), path(path), segments(segments) {
   }
 
   ~SingleSpillInfo() {
