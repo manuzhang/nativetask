@@ -65,9 +65,9 @@ int KVFileReader::nextPartition() {
   }
   _segmentIndex++;
   if (_segmentIndex < (int)(_spillInfo->length)) {
-    int64_t end_pos = (int64_t)_spillInfo->segments[_spillInfo->start + _segmentIndex].realEndOffset;
+    int64_t end_pos = (int64_t)_spillInfo->segments[ _segmentIndex].realEndOffset;
     if (_segmentIndex > 0) {
-      end_pos -= (int64_t)_spillInfo->segments[_spillInfo->start + _segmentIndex - 1].realEndOffset;
+      end_pos -= (int64_t)_spillInfo->segments[ _segmentIndex - 1].realEndOffset;
     }
     if (end_pos < 0) {
       THROW_EXCEPTION(IOException, "bad ifile format");
