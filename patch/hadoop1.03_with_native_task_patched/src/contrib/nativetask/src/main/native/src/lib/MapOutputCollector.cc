@@ -87,6 +87,83 @@ public:
   }
 };
 
+
+class DirectMemoryBufferedKVIterator : public KVIterator {
+private:
+  std::vector<uint32_t> & _kvOffsets;
+  uint32_t _index;
+  uint32_t _recordSize;
+  const char * _base;
+
+public:
+  DirectMemoryBufferedKVIterator(const char * base, std::vector<uint32_t> & kvOffsets):
+    _base(base), _kvOffsets(kvOffsets), _index(0), _recordSize(kvOffsets.size()){
+  }
+
+  KeyGroupIterator * getKeyGroupIterator() {
+    return new KeyGroupIteratorImpl(_kvOffsets);
+  }
+
+  const char * getBase() {
+    return _base;
+  }
+
+  std::vector<uint32_t> * getKVOffsets() {
+    return &_kvOffsets;
+  }
+
+  bool next(Buffer & key, Buffer & value) {
+    if (_index < _recordSize) {
+      KVBuffer * pkvbuffer = (KVBuffer*)MemoryBlockPool::get_position(_kvOffsets[_index]);
+      InplaceBuffer & bkey = pkvbuffer->get_key();
+      InplaceBuffer & bvalue = pkvbuffer->get_value();
+
+      key.reset(bkey.content, bkey.length);
+      value.reset(bvalue.content, bvalue.length);
+      _index++;
+      return true;
+    }
+    return false;
+  }
+};
+
+
+void CombineRunner::combineOnDirectMemory(KVIterator * iterator, IFileWriter * writer) {
+  DirectMemoryBufferedKVIterator * kvIterator = (DirectMemoryBufferedKVIterator *)iterator;
+  std::vector<uint32_t> * kvOffsets = kvIterator->getKVOffsets();
+  switch (_type) {
+  case MapperType: {
+      Mapper * mapper = (Mapper*)_combiner;
+      mapper->setCollector(writer);
+
+      for (size_t i = 0; i<kvOffsets->size() ; i++) {
+        KVBuffer * pkvbuffer = (KVBuffer*)MemoryBlockPool::get_position(kvOffsets->at(i));
+        InplaceBuffer & bkey = pkvbuffer->get_key();
+        InplaceBuffer & bvalue = pkvbuffer->get_value();
+        mapper->map(bkey.content, bkey.length, bvalue.content, bvalue.length);
+      }
+      mapper->close();
+      delete mapper;
+    }
+    break;
+  case ReducerType:
+    {
+      Reducer * reducer = (Reducer*)_combiner;
+      reducer->setCollector(writer);
+      KeyGroupIteratorImpl kg = KeyGroupIteratorImpl(*kvOffsets);
+      while (kg.nextKey()) {
+        _keyGroupCount++;
+        reducer->reduce(kg);
+      }
+      reducer->close();
+      delete reducer;
+    }
+    break;
+  default:
+    THROW_EXCEPTION(UnsupportException, "Combiner type not support");
+  }
+}
+
 /////////////////////////////////////////////////////////////////
 // PartitionBucket
 /////////////////////////////////////////////////////////////////
@@ -143,45 +220,11 @@ void PartitionBucket::spill(IFileWriter & writer, uint64_t & keyGroupCount)
       writer.write(bkey.content, bkey.length, bvalue.content, bvalue.length);
     }
   } else {
-    ObjectCreatorFunc objectCreater = _combineRunner->getCombinerCreater();
-    NativeObject * combiner = objectCreater();
-    if (combiner == NULL) {
-      THROW_EXCEPTION_EX(UnsupportException, "Create combiner failed");
-    }
-    switch (combiner->type()) {
-    case MapperType:
-      {
-        Mapper * mapper = (Mapper*)combiner;
-        mapper->setCollector(&writer);
-        mapper->configure(*(_config));
-        for (size_t i = 0; i<_kv_offsets.size() ; i++) {
-          KVBuffer * pkvbuffer = (KVBuffer*)MemoryBlockPool::get_position(_kv_offsets[i]);
-          InplaceBuffer & bkey = pkvbuffer->get_key();
-          InplaceBuffer & bvalue = pkvbuffer->get_value();
-          mapper->map(bkey.content, bkey.length, bvalue.content, bvalue.length);
-        }
-        mapper->close();
-        delete mapper;
-      }
-      break;
-    case ReducerType:
-      {
-        Reducer * reducer = (Reducer*)combiner;
-        reducer->setCollector(&writer);
-        reducer->configure(*(_config));
-        KeyGroupIteratorImpl kg = KeyGroupIteratorImpl(this->_kv_offsets);
-        while (kg.nextKey()) {
-          keyGroupCount++;
-          reducer->reduce(kg);
-        }
-        reducer->close();
-        delete reducer;
-      }
-      break;
-    default:
-      delete combiner;
-      THROW_EXCEPTION(UnsupportException, "Combiner type not support");
-    }
+
+    DirectMemoryBufferedKVIterator * kvIterator = new DirectMemoryBufferedKVIterator(MemoryBlockPool::get_position(0),
+        _kv_offsets);
+    _combineRunner->combine(ICombineRunner::DIRECT_MEMORY_ITERATOR, kvIterator, &writer);
+    delete kvIterator;
   }
 }
 
@@ -313,7 +356,12 @@ void MapOutputCollector::configure(Config & config) {
     else {
       LOG("[MapOutputCollector::configure] native combiner is enabled: %s", combinerClass);
     }
-    this->_combineRunner = new CombineRunner(objectCreater);
+
+    Configurable * combiner = (Configurable *)(objectCreater());
+    if (NULL != combiner) {
+      combiner->configure(config);
+      this->_combineRunner = new CombineRunner(combiner);
+    }
   }
 
   _collectTimer.reset();

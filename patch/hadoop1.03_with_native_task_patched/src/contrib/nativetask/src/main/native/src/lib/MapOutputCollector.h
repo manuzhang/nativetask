@@ -63,32 +63,52 @@ struct KVBuffer {
 };
 
 
+
 class ICombineRunner {
 public:
-  virtual void combine(KVIterator * kvIterator, IFileWriter * writer) = 0;
+  enum Type {
+    UNKNOWN = 0,
+    DIRECT_MEMORY_ITERATOR = 1,
+    MERGE_SORT_ITERATOR = 2,
+    SINGLE_FILE_ITERATOR = 3,
+  };
+
+public:
+  virtual void combine(Type type, KVIterator * kvIterator, IFileWriter * writer) = 0;
   virtual ~ICombineRunner() {
   }
-
-  virtual ObjectCreatorFunc getCombinerCreater() = 0;
 };
 
 class CombineRunner : public ICombineRunner {
-public:
-  ObjectCreatorFunc _combinerCreator;
+private:
+  Configurable * _combiner;
+  uint32_t _keyGroupCount;
+  NativeObjectType _type;
 
 public:
 
-  CombineRunner(ObjectCreatorFunc combinerCreator) :
-    _combinerCreator(combinerCreator){
+  CombineRunner(Configurable * combiner) :
+    _combiner(combiner),
+    _keyGroupCount(0),
+    _type(UnknownObjectType){
+    if (NULL == _combiner) {
+      THROW_EXCEPTION_EX(UnsupportException, "Create combiner failed");
+    }
+    _type = _combiner->type();
   }
+private:
+  void combineOnDirectMemory(KVIterator * kvIterator, IFileWriter * writer);
 
 public:
-  ObjectCreatorFunc getCombinerCreater() {
-    return _combinerCreator;
-  }
+  void combine(Type type, KVIterator * kvIterator, IFileWriter * writer) {
 
-  void combine(KVIterator * kvIterator, IFileWriter * writer) {
-
+    if (type == DIRECT_MEMORY_ITERATOR) {
+      combineOnDirectMemory(kvIterator, writer);
+      return;
+    }
+    else {
+      //TODO:
+    }
   }
 };
 

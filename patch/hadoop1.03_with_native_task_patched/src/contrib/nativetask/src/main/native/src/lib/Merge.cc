@@ -192,42 +192,42 @@ void Merger::merge() {
         total_record++;
       }
     } else {
-      ObjectCreatorFunc objectCreater = _combineRunner->getCombinerCreater();
-      NativeObject * combiner = objectCreater();
-      if (combiner == NULL) {
-        THROW_EXCEPTION_EX(UnsupportException, "Create combiner failed");
-      }
-      switch (combiner->type()) {
-      case MapperType:
-        {
-          Mapper * mapper = (Mapper*)combiner;
-          mapper->setCollector(_writer);
-          mapper->configure(_config);
-          while (next()) {
-            mapper->map(base[0]->getKey(), base[0]->getKeyLength(), base[0]->getValue(), base[0]->getValueLength());
-          }
-          mapper->close();
-          delete mapper;
-        }
-        break;
-      case ReducerType:
-        {
-          _keyGroupIterState = NEW_KEY;
-          Reducer * reducer = (Reducer*)combiner;
-          reducer->setCollector(_writer);
-          reducer->configure(_config);
-          while (nextKey()) {
-            keyGroupCount++;
-            reducer->reduce(*this);
-          }
-          reducer->close();
-          delete reducer;
-        }
-        break;
-      default:
-        delete combiner;
-        THROW_EXCEPTION(UnsupportException, "Combiner type not support");
-      }
+//      ObjectCreatorFunc objectCreater = _combineRunner->getCombinerCreater();
+//      NativeObject * combiner = objectCreater();
+//      if (combiner == NULL) {
+//        THROW_EXCEPTION_EX(UnsupportException, "Create combiner failed");
+//      }
+//      switch (combiner->type()) {
+//      case MapperType:
+//        {
+//          Mapper * mapper = (Mapper*)combiner;
+//          mapper->setCollector(_writer);
+//          mapper->configure(_config);
+//          while (next()) {
+//            mapper->map(base[0]->getKey(), base[0]->getKeyLength(), base[0]->getValue(), base[0]->getValueLength());
+//          }
+//          mapper->close();
+//          delete mapper;
+//        }
+//        break;
+//      case ReducerType:
+//        {
+//          _keyGroupIterState = NEW_KEY;
+//          Reducer * reducer = (Reducer*)combiner;
+//          reducer->setCollector(_writer);
+//          reducer->configure(_config);
+//          while (nextKey()) {
+//            keyGroupCount++;
+//            reducer->reduce(*this);
+//          }
+//          reducer->close();
+//          delete reducer;
+//        }
+//        break;
+//      default:
+//        delete combiner;
+//        THROW_EXCEPTION(UnsupportException, "Combiner type not support");
+//      }
     }
     endPartition();
   }
