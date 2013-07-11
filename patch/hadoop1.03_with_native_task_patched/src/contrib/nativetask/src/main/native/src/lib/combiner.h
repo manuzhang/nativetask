@@ -36,6 +36,27 @@ protected:
   }
 };
 
+class KeyGroupIteratorImpl : public KeyGroupIterator {
+protected:
+  // for KeyGroupIterator
+  KeyGroupIterState _keyGroupIterState;
+  KVIterator * _iterator;
+  string _currentGroupKey;
+  Buffer _key;
+  Buffer _value;
+  bool _first;
+
+public:
+  KeyGroupIteratorImpl(KVIterator * iterator);
+  bool nextKey();
+  const char * getKey(uint32_t & len);
+  const char * nextValue(uint32_t & len);
+
+protected:
+  bool next();
+};
+
+
 class CombineRunner : public ICombineRunner {
 private:
   Configurable * _combiner;
