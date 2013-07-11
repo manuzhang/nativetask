@@ -354,7 +354,7 @@ int DoubleComparator(const char * src, uint32_t srcLength, const char * dest, ui
     return (((*srcValue) - (* destValue) >= 0) ? 1 : -1);
 };
 
-ComparatorPtr get_default_comparator(const KeyValueType keyType, const char * comparatorName) {
+ComparatorPtr get_comparator(const KeyValueType keyType, const char * comparatorName) {
   if (NULL == comparatorName) {
     if (keyType == BytesType ||
         keyType == TextType ||

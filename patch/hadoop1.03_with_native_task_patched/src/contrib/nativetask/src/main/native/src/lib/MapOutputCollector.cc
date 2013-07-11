@@ -322,7 +322,7 @@ void MapOutputCollector::configure(Config & config) {
 ComparatorPtr MapOutputCollector::get_comparator(Config & config, MapOutputSpec & spec) {
   const char * comparatorName = config.get(NATIVE_MAPOUT_KEY_COMPARATOR);
 
-  return get_default_comparator(spec.keyType, comparatorName);
+  return NativeTask::get_comparator(spec.keyType, comparatorName);
 }
 
 /**
