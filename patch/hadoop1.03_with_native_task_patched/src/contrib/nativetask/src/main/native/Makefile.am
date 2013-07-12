@@ -132,7 +132,7 @@ noinst_PROGRAMS = nttest
 noinst_SCRIPTS = test.sh
 
 libnativetask_la_SOURCES = $(COMMONSOURCES)
-libnativetask_la_CPPFLAGS = -g -O0 -DNDEBUG $(MACRO) -fPIC $(AM_CFLAGS)
+libnativetask_la_CPPFLAGS = -g -O2 -DNDEBUG $(MACRO) -fPIC $(AM_CFLAGS)
 libnativetask_la_LDFLAGS =  -version-info 0:1:0 $(AM_LDFLAGS)
 
 libstreaming_la_SOURCES = examples/Streaming.cc
