@@ -5,16 +5,8 @@
 
 <configuration>
 <property>
-<name>mapreduce.map.output.collector.delegator.class</name>
-<value>org.apache.hadoop.mapred.nativetask.NativeMapOutputCollectorDelegator</value>
-</property>
-<property>
 <name>nativetask.kvtest.inputdir</name>
 <value>/kvtest/input</value>
-</property>
-<property>
-<name>nativetask.kvtest.outputdir</name>
-<value>/kvtest/output</value>
 </property>
 <property>
 <name>normal.kvtest.outputdir</name>

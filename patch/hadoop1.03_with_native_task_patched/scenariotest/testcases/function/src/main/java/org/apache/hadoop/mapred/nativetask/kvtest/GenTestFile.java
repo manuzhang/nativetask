@@ -1,25 +1,42 @@
 package org.apache.hadoop.mapred.nativetask.kvtest;
 
-import java.util.Random;
-
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.IOUtils;
+import org.apache.hadoop.io.SequenceFile;
 
 public class GenTestFile {
-	public static void createHDFSintFile(String genfilepath, Class<?> keytype,
-			Class<?> valuetype, int lineNum) throws Exception {
-		Configuration conf = new Configuration();
-		FileSystem hdfs = FileSystem.get(conf);
-		FSDataOutputStream os = hdfs.create(new Path(genfilepath));
-		Random r = new Random();
-		for (int i = 0; i < lineNum; i++) {
-			String linecontent = keytype.newInstance().toString() + "\t"
-					+ valuetype.newInstance().toString() + "\n";
-			os.write(linecontent.getBytes("utf-8"));
+	public static void createSequenceTestFile(String filepath, Class<?> keytype,
+			Class<?> valuetype, int linenum) {
+		SequenceFile.Writer writer = null;
+		try {
+			Configuration conf = new Configuration();
+			FileSystem hdfs = FileSystem.get(conf);
+			Path outputfilepath = new Path(filepath);
+			writer = new SequenceFile.Writer(hdfs, conf, outputfilepath,
+					keytype, valuetype);
+			for (int i = 0; i < linenum; i++) {
+				writer.append(generateData(keytype), generateData(valuetype));
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		} finally {
+			IOUtils.closeStream(writer);
 		}
-		os.close();
-		hdfs.close();
+	}
+
+	private static Object generateData(Class<?> dataclass) {
+		try {
+			return dataclass.newInstance();
+		} catch (InstantiationException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IllegalAccessException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return null;
 	}
 }

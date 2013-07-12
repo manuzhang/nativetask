@@ -2,6 +2,8 @@ package org.apache.hadoop.mapred.nativetask.kvtest;
 
 import java.io.IOException;
 
+import junit.framework.TestCase;
+
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -15,138 +17,211 @@ import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.VIntWritable;
 import org.apache.hadoop.io.VLongWritable;
-import org.apache.hadoop.mapreduce.Job;
 import org.junit.Before;
 import org.junit.Test;
 
-public class KVTest {
-	public static final String NATIVETASK_TEST_VALUECLASS = "nativetask.test.valueclass";
-	private Class<?>[] valueclasses = {IntWritable.class,LongWritable.class,DoubleWritable.class,FloatWritable.class,
-										VIntWritable.class,VLongWritable.class,BooleanWritable.class,Text.class,
-										ByteWritable.class,BytesWritable.class};
-	public static final String NATIVETASK_KVTEST_CONF_PATH="test-kv-conf.xml";
+public class KVTest extends TestCase {
+	public static final String NATIVETASK_KVTEST_CONF_KEYCLASS = "nativetask.kvtest.keyclass";
+	public static final String NATIVETASK_KVTEST_CONF_VALUECLASS = "nativetask.kvtest.valueclass";
+	private Class<?>[] valueclasses = { IntWritable.class, LongWritable.class,
+			DoubleWritable.class, FloatWritable.class, VIntWritable.class,
+			VLongWritable.class, BooleanWritable.class, Text.class,
+			ByteWritable.class, BytesWritable.class };
+	public static final String NATIVETASK_KVTEST_CONF_PATH = "test-kv-conf.xml";
+	public static final String NATIVETASK_KVTEST_CONF_INPUTDIR = "nativetask.kvtest.inputdir";
+	public static final String NATIVETASK_KVTEST_CONF_OUTPUTDIR = "nativetask.kvtest.outputdir";
+	public static final String NATIVETASK_KVTEST_CONF_NORMAL_OUTPUTDIR = "normal.kvtest.outputdir";
+
 	@Test
-	public void testIntKey() throws InstantiationException, IllegalAccessException, ClassNotFoundException, IOException, InterruptedException{
-		Configuration conf = new Configuration();
-		FileSystem fs = FileSystem.get(conf);
-		fs.delete(new Path(IntKeyMapper.inputFileDir));
-		fs.delete(new Path(IntKeyMapper.outputFileDir));
-		fs.close();
-		for(Class<?> valueclass:valueclasses){
-			Job job =  IntKeyMapper.getIntTestJob(valueclass.newInstance());
-			job.waitForCompletion(true);
-		}
+	public void testIntKey() throws InstantiationException,
+			IllegalAccessException, ClassNotFoundException, IOException,
+			InterruptedException {
+		String[] nativeOutputfiles = runNativeTest("NativeIntKeyTest",
+				IntWritable.class);
+		String[] normalOutputfiles = runNormalTest("NormalIntKeyTest",
+				IntWritable.class);
+		compareResult(normalOutputfiles,nativeOutputfiles);
 	}
+
 	@Test
-	public void testFloatKey() throws InstantiationException, IllegalAccessException, ClassNotFoundException, IOException, InterruptedException{
-		Configuration conf = new Configuration();
-		FileSystem fs = FileSystem.get(conf);
-		fs.delete(new Path(FloatKeyMapper.inputFileDir));
-		fs.delete(new Path(FloatKeyMapper.outputFileDir));
-		fs.close();
-		for(Class<?> valueclass:valueclasses){
-			Job job =  FloatKeyMapper.getFloatTestJob(valueclass.newInstance());
-			job.waitForCompletion(true);
+	public void testFloatKey() throws InstantiationException,
+			IllegalAccessException, ClassNotFoundException, IOException,
+			InterruptedException {
+		String[] nativeOutputfile = runNativeTest("NativeFloatKeyTest",
+				FloatWritable.class);
+		String[] normalOutputfile = runNormalTest("NormalFloatKeyTest",
+				FloatWritable.class);
+		String expected = "";
+		String factual = "";
+		for (int i = 0; i < nativeOutputfile.length; i++) {
+			expected += "1,";
+			factual += ResultCertification.verify(nativeOutputfile[i],
+					normalOutputfile[i]) + ",";
 		}
+		assertEquals(expected, factual);
 	}
+
 	@Test
-	public void testDoubleKey() throws InstantiationException, IllegalAccessException, ClassNotFoundException, IOException, InterruptedException{
-		Configuration conf = new Configuration();
-		FileSystem fs = FileSystem.get(conf);
-		fs.delete(new Path(DoubleKeyMapper.inputFileDir));
-		fs.delete(new Path(DoubleKeyMapper.outputFileDir));
-		fs.close();
-		for(Class<?> valueclass:valueclasses){
-			Job job =  DoubleKeyMapper.getDoubleTestJob(valueclass.newInstance());
-			job.waitForCompletion(true);
-		}
+	public void testDoubleKey() throws InstantiationException,
+			IllegalAccessException, ClassNotFoundException, IOException,
+			InterruptedException {
+		String[] nativeOutputfiles = runNativeTest("NativeDoubleKeyTest",
+				DoubleWritable.class);
+		String[] normalOutputfiles = runNormalTest("NormalDoubleKeyTest",
+				DoubleWritable.class);
+		compareResult(normalOutputfiles,nativeOutputfiles);
 	}
+
 	@Test
-	public void testLongKey() throws InstantiationException, IllegalAccessException, ClassNotFoundException, IOException, InterruptedException{
-		Configuration conf = new Configuration();
-		FileSystem fs = FileSystem.get(conf);
-		fs.delete(new Path(LongKeyMapper.inputFileDir));
-		fs.delete(new Path(LongKeyMapper.outputFileDir));
-		fs.close();
-		for(Class<?> valueclass:valueclasses){
-			Job job =  LongKeyMapper.getLongTestJob(valueclass.newInstance());
-			job.waitForCompletion(true);
-		}
+	public void testLongKey() throws InstantiationException,
+			IllegalAccessException, ClassNotFoundException, IOException,
+			InterruptedException {
+		String[] nativeOutputfiles = runNativeTest("NativeLongKeyTest",
+				LongWritable.class);
+		String[] normalOutputfiles = runNormalTest("NormalLongKeyTest",
+				LongWritable.class);
+		compareResult(normalOutputfiles,nativeOutputfiles);
 	}
+
 	@Test
-	public void testVIntKey() throws InstantiationException, IllegalAccessException, ClassNotFoundException, IOException, InterruptedException{
-		Configuration conf = new Configuration();
-		FileSystem fs = FileSystem.get(conf);
-		fs.delete(new Path(VIntKeyMapper.inputFileDir));
-		fs.delete(new Path(VIntKeyMapper.outputFileDir));
-		fs.close();
-		for(Class<?> valueclass:valueclasses){
-			Job job =  VIntKeyMapper.getVIntTestJob(valueclass.newInstance());
-			job.waitForCompletion(true);
-		}
+	public void testVIntKey() throws InstantiationException,
+			IllegalAccessException, ClassNotFoundException, IOException,
+			InterruptedException {
+		String[] nativeOutputfiles = runNativeTest("NativeVIntKeyTest",
+				VIntWritable.class);
+		String[] normalOutputfiles = runNormalTest("NormalVIntKeyTest",
+				VIntWritable.class);
+		compareResult(normalOutputfiles,nativeOutputfiles);
 	}
+
 	@Test
-	public void testVLongKey() throws InstantiationException, IllegalAccessException, ClassNotFoundException, IOException, InterruptedException{
-		Configuration conf = new Configuration();
-		FileSystem fs = FileSystem.get(conf);
-		fs.delete(new Path(VLongKeyMapper.inputFileDir));
-		fs.delete(new Path(VLongKeyMapper.outputFileDir));
-		fs.close();
-		for(Class<?> valueclass:valueclasses){
-			Job job =  VLongKeyMapper.getVLongTestJob(valueclass.newInstance());
-			job.waitForCompletion(true);
-		}
+	public void testVLongKey() throws InstantiationException,
+			IllegalAccessException, ClassNotFoundException, IOException,
+			InterruptedException {
+		String[] nativeOutputfiles = runNativeTest("NativeVLongKeyTest",
+				VLongWritable.class);
+		String[] normalOutputfiles = runNormalTest("NormalVLongKeyTest",
+				VLongWritable.class);
+		compareResult(normalOutputfiles,nativeOutputfiles);
 	}
+
 	@Test
-	public void testBooleanKey() throws InstantiationException, IllegalAccessException, ClassNotFoundException, IOException, InterruptedException{
-		Configuration conf = new Configuration();
-		FileSystem fs = FileSystem.get(conf);
-		fs.delete(new Path(BooleanKeyMapper.inputFileDir));
-		fs.delete(new Path(BooleanKeyMapper.outputFileDir));
-		fs.close();
-		for(Class<?> valueclass:valueclasses){
-			Job job =  BooleanKeyMapper.getBooleanTestJob(valueclass.newInstance());
-			job.waitForCompletion(true);
-		}
+	public void testBooleanKey() throws InstantiationException,
+			IllegalAccessException, ClassNotFoundException, IOException,
+			InterruptedException {
+		String[] nativeOutputfiles = runNativeTest("NativeBooleanKeyTest",
+				BooleanWritable.class);
+		String[] normalOutputfiles = runNormalTest("NormalBooleanKeyTest",
+				BooleanWritable.class);
+		compareResult(normalOutputfiles,nativeOutputfiles);
 	}
+
 	@Test
-	public void testTextKey() throws InstantiationException, IllegalAccessException, ClassNotFoundException, IOException, InterruptedException{
-		Configuration conf = new Configuration();
-		FileSystem fs = FileSystem.get(conf);
-		fs.delete(new Path(TextKeyMapper.inputFileDir));
-		fs.delete(new Path(TextKeyMapper.outputFileDir));
-		fs.close();
-		for(Class<?> valueclass:valueclasses){
-			Job job =  TextKeyMapper.getTextTestJob(valueclass.newInstance());
-			job.waitForCompletion(true);
-		}
+	public void testTextKey() throws InstantiationException,
+			IllegalAccessException, ClassNotFoundException, IOException,
+			InterruptedException {
+		String[] nativeOutputfiles = runNativeTest("NativeTextKeyTest",
+				Text.class);
+		String[] normalOutputfiles = runNormalTest("NormalTextKeyTest",
+				Text.class);
+		compareResult(normalOutputfiles,nativeOutputfiles);
 	}
+
 	@Test
-	public void testByteKey() throws InstantiationException, IllegalAccessException, ClassNotFoundException, IOException, InterruptedException{
-		Configuration conf = new Configuration();
-		FileSystem fs = FileSystem.get(conf);
-		fs.delete(new Path(ByteKeyMapper.inputFileDir));
-		fs.delete(new Path(ByteKeyMapper.outputFileDir));
-		fs.close();
-		for(Class<?> valueclass:valueclasses){
-			Job job =  ByteKeyMapper.getByteTestJob(valueclass.newInstance());
-			job.waitForCompletion(true);
-		}
+	public void testByteKey() throws InstantiationException,
+			IllegalAccessException, ClassNotFoundException, IOException,
+			InterruptedException {
+		String[] nativeOutputfiles = runNativeTest("NativeByteKeyTest",
+				ByteWritable.class);
+		String[] normalOutputfiles = runNormalTest("NormalByteKeyTest",
+				ByteWritable.class);
+		compareResult(normalOutputfiles,nativeOutputfiles);
 	}
+
 	@Test
-	public void testBytesKey() throws InstantiationException, IllegalAccessException, ClassNotFoundException, IOException, InterruptedException{
-		Configuration conf = new Configuration();
-		FileSystem fs = FileSystem.get(conf);
-		fs.delete(new Path(BytesKeyMapper.inputFileDir));
-		fs.delete(new Path(BytesKeyMapper.outputFileDir));
-		fs.close();
-		for(Class<?> valueclass:valueclasses){
-			Job job =  BytesKeyMapper.getBytesTestJob(valueclass.newInstance());
-			job.waitForCompletion(true);
-		}
+	public void testBytesKey() throws InstantiationException,
+			IllegalAccessException, ClassNotFoundException, IOException,
+			InterruptedException {
+		String[] nativeOutputfiles = runNativeTest("NativeBytesKeyTest",
+				BytesWritable.class);
+		String[] normalOutputfiles = runNormalTest("NormalBytesKeyTest",
+				BytesWritable.class);
+		compareResult(normalOutputfiles,nativeOutputfiles);
 	}
+
 	@Before
-	public void startUp(){
-		
+	public void startUp() {
+
+	}
+
+	private String[] runNativeTest(String jobname, Class<?> keyclass)
+			throws IOException {
+		String[] ret = new String[valueclasses.length];
+		Configuration conf = new Configuration();
+		conf.addResource(NATIVETASK_KVTEST_CONF_PATH);
+		String inputdir = conf.get(NATIVETASK_KVTEST_CONF_INPUTDIR) + "/"
+				+ jobname;
+		String outputdir = conf.get(NATIVETASK_KVTEST_CONF_OUTPUTDIR) + "/"
+				+ jobname;
+		FileSystem fs = FileSystem.get(conf);
+		fs.delete(new Path(inputdir));
+		fs.delete(new Path(outputdir));
+		fs.close();
+		conf.set(NATIVETASK_KVTEST_CONF_INPUTDIR, inputdir);
+		conf.set(NATIVETASK_KVTEST_CONF_OUTPUTDIR, outputdir);
+		conf.set(NATIVETASK_KVTEST_CONF_KEYCLASS, IntWritable.class.getName());
+		for (int i = 0; i < valueclasses.length; i++) {
+			conf.set(NATIVETASK_KVTEST_CONF_VALUECLASS,
+					valueclasses[i].getName());
+			KVJob keyJob = new KVJob();
+			keyJob.setJob(conf, jobname);
+			keyJob.runJob();
+			ret[i] = outputdir + "/" + valueclasses[i].getName()
+					+ "/part-r-00000";
+		}
+		return ret;
+	}
+
+	private String[] runNormalTest(String jobname, Class<?> keyclass)
+			throws IOException {
+		String[] ret = new String[valueclasses.length];
+		Configuration conf = new Configuration();
+		conf.addResource("test-kv-normal-conf.xml");
+		String inputdir = conf.get(NATIVETASK_KVTEST_CONF_INPUTDIR) + "/"
+				+ jobname;
+		String outputdir = conf.get(NATIVETASK_KVTEST_CONF_NORMAL_OUTPUTDIR)
+				+ "/" + jobname;
+		FileSystem fs = FileSystem.get(conf);
+		fs.delete(new Path(inputdir));
+		fs.delete(new Path(outputdir));
+		fs.close();
+		conf.set(NATIVETASK_KVTEST_CONF_INPUTDIR, inputdir);
+		conf.set(NATIVETASK_KVTEST_CONF_OUTPUTDIR, outputdir);
+		conf.set(NATIVETASK_KVTEST_CONF_KEYCLASS, IntWritable.class.getName());
+		for (int i = 0; i < valueclasses.length; i++) {
+			conf.set(NATIVETASK_KVTEST_CONF_VALUECLASS,
+					valueclasses[i].getName());
+			KVJob keyJob = new KVJob();
+			keyJob.setJob(conf, jobname);
+			keyJob.runJob();
+			ret[i] = outputdir + "/" + valueclasses[i].getName()
+					+ "/part-r-00000";
+		}
+		return ret;
+	}
+
+	private void compareResult(String[] normalfiles, String[] nativefiles) {
+		if (normalfiles.length != nativefiles.length) {
+			assertEquals("normal file num equals native file num",
+					"normal file num do not equals native file num");
+		}
+		String expected = "";
+		String factual = "";
+		for (int i = 0; i < nativefiles.length; i++) {
+			expected += "1,";
+			factual += ResultCertification.verify(nativefiles[i],
+					normalfiles[i]) + ",";
+		}
+		assertEquals(expected, factual);
 	}
 }
