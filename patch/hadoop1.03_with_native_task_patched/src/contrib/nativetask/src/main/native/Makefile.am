@@ -1,5 +1,5 @@
-export PLATFORM = $(shell uname | tr [A-Z] [a-z])
-export BITS = $(shell ./getosbits.sh)
+export PLATFORM = `uname | tr [A-Z] [a-z]`
+export BITS = `./getosbits.sh`
 
 ACLOCAL_AMFLAGS = -I m4
 
