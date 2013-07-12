@@ -50,7 +50,7 @@ static int test_memcmp() {
   }
   std::random_shuffle(buff, buff+2048);
   int r = 0;
-  for (int i=0;i<1000000;i++) {
+  for (int i=0;i<100000000;i++) {
     int offset = i % 1000;
     r += memcmp(buff, buff+1024, 5);
     r += memcmp(buff+offset, buff+1124, 9);
@@ -72,7 +72,7 @@ static int test_fmemcmp() {
   }
   std::random_shuffle(buff, buff+2048);
   int r = 0;
-  for (int i=0;i<1000000;i++) {
+  for (int i=0;i<100000000;i++) {
     int offset = i % 1000;
     r += fmemcmp(buff, buff+1024, 5);
     r += fmemcmp(buff+offset, buff+1124, 9);
