@@ -20,45 +20,43 @@
 #include "Streams.h"
 #include "FileSystem.h"
 #include "Buffers.h"
-#include "PartitionIndex.h"
+#include "SpillInfo.h"
 
 namespace NativeTask {
 
-void IndexRange::delete_file() {
-  if (filepath.length()>0) {
+void SingleSpillInfo::deleteSpillFile() {
+  if (path.length()>0) {
     struct stat st;
-    if (0 == stat(filepath.c_str(),&st)) {
-      remove(filepath.c_str());
+    if (0 == stat(path.c_str(),&st)) {
+      remove(path.c_str());
     }
   }
 }
 
-void PartitionIndex::writeIFile(const std::string & filepath) {
+void SingleSpillInfo::writeSpillInfo(const std::string & filepath) {
   OutputStream * fout = FileSystem::getLocal().create(filepath, true);
   {
     ChecksumOutputStream dest = ChecksumOutputStream(fout, CHECKSUM_CRC32);
     AppendBuffer appendBuffer;
     appendBuffer.init(32*1024, &dest, "");
-    uint64_t current_base = 0;
-    for (size_t i = 0; i < ranges.size(); i++) {
-      IndexRange * range = ranges[i];
-      for (size_t j=0; j<range->length;j++) {
-        IndexEntry * segment = &(range->segments[j]);
-        if (j==0) {
-          appendBuffer.write_uint64_be(current_base);
-          appendBuffer.write_uint64_be(segment->endPosition);
-          appendBuffer.write_uint64_be(segment->realEndPosition);
-        }
-        else {
-          appendBuffer.write_uint64_be(current_base
-                                       + range->segments[j - 1].realEndPosition);
-          appendBuffer.write_uint64_be(segment->endPosition
-                                       - range->segments[j - 1].endPosition);
-          appendBuffer.write_uint64_be(segment->realEndPosition
-                                       - range->segments[j - 1].realEndPosition);
-        }
+    uint64_t base = 0;
+
+    for (size_t j=0; j<this->length;j++) {
+      IFileSegment * segment = &(this->segments[j]);
+      const bool firstSegment = (j == 0);
+      if (firstSegment) {
+        appendBuffer.write_uint64_be(base);
+        appendBuffer.write_uint64_be(segment->uncompressedEndOffset);
+        appendBuffer.write_uint64_be(segment->realEndOffset);
       }
-      current_base += range->segments[range->length - 1].realEndPosition;
+      else {
+        appendBuffer.write_uint64_be(base
+                                     + this->segments[j - 1].realEndOffset);
+        appendBuffer.write_uint64_be(segment->uncompressedEndOffset
+                                     - this->segments[j - 1].uncompressedEndOffset);
+        appendBuffer.write_uint64_be(segment->realEndOffset
+                                     - this->segments[j - 1].realEndOffset);
+      }
     }
     appendBuffer.flush();
     uint32_t chsum = dest.getChecksum();

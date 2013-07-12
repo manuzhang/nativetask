@@ -21,7 +21,7 @@
 
 #include "Checksum.h"
 #include "Buffers.h"
-#include "PartitionIndex.h"
+#include "SpillInfo.h"
 
 namespace NativeTask {
 
@@ -33,11 +33,11 @@ private:
   ChecksumType _checksumType;
   string _codec;
   int32_t _segmentIndex;
-  IndexRange * _spillInfo;
+  SingleSpillInfo * _spillInfo;
 
 public:
   KVFileReader(InputStream * stream, ChecksumType checksumType,
-               IndexRange * spill_infos, const string & codec);
+               SingleSpillInfo * spill_infos, const string & codec);
 
   virtual ~KVFileReader();
 
@@ -76,7 +76,7 @@ protected:
   ChecksumType _checksumType;
   string       _codec;
   AppendBuffer _appendBuffer;
-  vector<IndexEntry> _spillInfo;
+  vector<IFileSegment> _spillInfo;
 
 public:
   KVFileWriter(OutputStream * stream, ChecksumType checksumType,
@@ -99,7 +99,7 @@ public:
     writeValue(value, value_len);
   }
 
-  IndexRange * getIndex(uint32_t start);
+  SingleSpillInfo * getIndex(uint32_t start);
 
   void getStatistics(uint64_t & offset, uint64_t & realoffset);
 };

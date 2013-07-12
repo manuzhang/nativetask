@@ -20,7 +20,6 @@
 #include "WritableUtils.h"
 #include "FileSystem.h"
 #include "TotalOrderPartitioner.h"
-#include "MapOutputSpec.h"
 #include "MapOutputCollector.h"
 #include "StringUtil.h"
 
@@ -151,6 +150,12 @@ TotalOrderPartitioner::TotalOrderPartitioner() :
     _keyComparator(NULL) {
 }
 
+ComparatorPtr TotalOrderPartitioner::get_comparator(Config & config, MapOutputSpec & spec) {
+  const char * comparatorName = config.get(NATIVE_MAPOUT_KEY_COMPARATOR);
+  return NativeTask::get_comparator(spec.keyType, comparatorName);
+}
+
+
 void TotalOrderPartitioner::configure(Config & config) {
   string path = config.get(TOTAL_ORDER_PARTITIONER_PATH, PARTITION_FILE_NAME);
   uint32_t maxDepth = config.getInt("total.order.partitioner.max.trie.depth", 2);
@@ -177,7 +182,7 @@ void TotalOrderPartitioner::configure(Config & config) {
     MakeTrie(_splits, _trie, maxDepth);
   }
   else {
-    this->_keyComparator = MapOutputCollector::getComparator(config, spec);
+    this->_keyComparator = get_comparator(config, spec);
   }
 }
 

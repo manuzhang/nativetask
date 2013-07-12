@@ -19,12 +19,14 @@
 #ifndef MAPOUTPUTBUFFER_H_
 #define MAPOUTPUTBUFFER_H_
 
+#include "NativeTask.h"
 #include "mempool.h"
 #include "Timer.h"
 #include "Buffers.h"
 #include "MapOutputSpec.h"
 #include "IFile.h"
-#include "PartitionIndex.h"
+#include "SpillInfo.h"
+#include "combiner.h"
 
 namespace NativeTask {
 
@@ -62,13 +64,6 @@ struct KVBuffer {
 };
 
 
-class ICombinerRunner {
-public:
-  virtual void combine(KVIterator * kvIterator, IFileWriter * writer, uint64_t * keyGroupCount) = 0;
-  virtual ~ICombinerRunner() {
-
-  }
-};
 
 /**
  * Buffer for a single partition
@@ -80,11 +75,18 @@ private:
   uint32_t _current_block_idx;
   std::vector<uint32_t> _kv_offsets;
   std::vector<uint32_t> _blk_ids;
+  ComparatorPtr _keyComparator;
+  ICombineRunner * _combineRunner;
+  Config * _config;
+
 public:
-  PartitionBucket(uint32_t partition) :
+  PartitionBucket(uint32_t partition, ComparatorPtr comparator, ICombineRunner * combineRunner, Config * config) :
     _sorted(false),
     _partition(partition),
-    _current_block_idx(NULL_BLOCK_INDEX) {
+    _current_block_idx(NULL_BLOCK_INDEX),
+    _keyComparator(comparator),
+    _combineRunner(combineRunner),
+    _config(config){
   }
 
   void clear() {
@@ -131,12 +133,12 @@ public:
     return get_buffer_to_put(keylen + valuelen + sizeof(uint32_t) * 2);
   }
 
-  void sort(SortType type);
+  void sort(SortAlgorithm type);
 
   uint64_t estimate_spill_size(OutputFileType output_type, KeyValueType ktype,
                                KeyValueType vtype);
 
-  void spill(IFileWriter & writer, uint64_t & keyGroupCount, ObjectCreatorFunc combinerCreator, Config & config)
+  void spill(IFileWriter & writer, uint64_t & keyGroupCount)
       throw (IOException, UnsupportException);
 
   void dump(int fd, uint64_t offset, uint32_t & crc);
@@ -162,11 +164,10 @@ private:
   PartitionBucket ** _buckets;
   ComparatorPtr _keyComparator;
   uint32_t _num_partition;
-  std::vector<PartitionIndex *> _spills;
+  SpillInfos _spillInfo;
   MapOutputSpec _mapOutputSpec;
-  bool _sortFirst;
   Timer _collectTimer;
-  ObjectCreatorFunc combinerCreator;
+  ICombineRunner * _combineRunner;
 
 private:
   void init(uint32_t memory_capacity, ComparatorPtr keyComparator);
@@ -175,49 +176,19 @@ private:
 
   void delete_temp_spill_files();
 
-
-
-public:
-  MapOutputCollector(uint32_t num_partition);
-
-  ~MapOutputCollector();
-
-  static ComparatorPtr getComparator(Config & config, MapOutputSpec & spec);
-
-  void configure(Config & config);
-
-  MapOutputSpec & getMapOutputSpec() {
-    return _mapOutputSpec;
-  }
-
-  uint32_t num_partition() const {
-    return _num_partition;
-  }
-
-  PartitionBucket * bucket(uint32_t partition) {
-    assert(partition<_num_partition);
-    return _buckets[partition];
-  }
-
-  /**
-   * estimate current spill file size
-   */
-  uint64_t estimate_spill_size(OutputFileType output_type, KeyValueType ktype,
-      KeyValueType vtype);
-
   /**
    * sort all partitions, just used for testing sort only
    */
-  void sort_all(SortType);
+  void sort_partitions(SortAlgorithm, uint32_t start_partition, uint32_t end_partition);
 
   /**
    * spill a range of partition buckets, prepare for future
    * Parallel sort & spill, TODO: parallel sort & spill
    */
-  void spill_range(uint32_t start_partition,
+  void sort_and_spill_partitions(uint32_t start_partition,
                    uint32_t num_partition,
-                   RecordOrderType orderType,
-                   SortType sortType,
+                   SortOrder orderType,
+                   SortAlgorithm sortType,
                    IFileWriter & writer,
                    uint64_t & blockCount,
                    uint64_t & recordCount,
@@ -225,10 +196,38 @@ public:
                    uint64_t & keyGroupCount);
 
   /**
+   * estimate current spill file size
+   */
+  uint64_t estimate_spill_size(OutputFileType output_type, KeyValueType ktype,
+      KeyValueType vtype);
+
+  ComparatorPtr get_comparator(Config & config, MapOutputSpec & spec);
+
+public:
+  MapOutputCollector(uint32_t num_partition);
+
+  ~MapOutputCollector();
+
+  void configure(Config & config);
+
+  MapOutputSpec & get_mapoutput_spec() {
+    return _mapOutputSpec;
+  }
+
+  uint32_t num_partitions() const {
+    return _num_partition;
+  }
+
+  PartitionBucket * get_partition_bucket(uint32_t partition) {
+    assert(partition<_num_partition);
+    return _buckets[partition];
+  }
+
+  /**
    * normal spill use options in _config
    * @param filepaths: spill file path
    */
-  void mid_spill(std::vector<std::string> & filepaths,
+  void middle_spill(std::vector<std::string> & filepaths,
                  const std::string & idx_file_path,
                  MapOutputSpec & spec);
 
@@ -247,7 +246,7 @@ public:
     assert(partition<_num_partition);
     PartitionBucket * pb = _buckets[partition];
     if (unlikely(NULL==pb)) {
-      pb = new PartitionBucket(partition);
+      pb = new PartitionBucket(partition, _keyComparator, _combineRunner, _config);
       _buckets[partition] = pb;
     }
     return pb->get_buffer_to_put(length);

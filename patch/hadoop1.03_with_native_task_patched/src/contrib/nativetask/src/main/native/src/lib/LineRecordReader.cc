@@ -26,7 +26,7 @@
 
 namespace NativeTask {
 
-inline char * memchr(char * p, char ch, size_t len) {
+inline const char * memchr(const char * p, char ch, size_t len) {
   size_t i = 0;
   for (;i+4<len;i+=4) {
     if (p[i]==ch) {

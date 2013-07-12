@@ -1,5 +1,5 @@
-export PLATFORM = $(shell uname | tr [A-Z] [a-z])
-export BITS = $(shell ./getosbits.sh)
+export PLATFORM = `uname | tr [A-Z] [a-z]`
+export BITS = `./getosbits.sh`
 
 ACLOCAL_AMFLAGS = -I m4
 
@@ -22,7 +22,7 @@ endif
 if PLATFORM_IS_WIN
 # windows
 JNI_INCLUDE ?= -I$(JAVA_HOME)/include -I$(JAVA_HOME)/include/win32
-PLATFORM_LDFLAGS = -lrt  -L$(JAVA_HOME)/lib -ljvm
+PLATFORM_LDFLAGS = -lrt   -L$(JAVA_HOME)/lib -ljvm -Wl,--add-stdcall-alias -mno-cygwin
 MACRO = -D__X$(BITS) -D__int64="long long" -D__CYGWIN__  -DSOFTWARE_CRC
 endif
 
@@ -65,9 +65,10 @@ src/lib/NativeLibrary.cc \
 src/lib/NativeObjectFactory.cc \
 src/lib/NativeRuntimeJniImpl.cc \
 src/lib/NativeTask.cc \
-src/lib/PartitionIndex.cc \
+src/lib/SpillInfo.cc \
 src/lib/Path.cc \
 src/lib/Streams.cc \
+src/lib/combiner.cc \
 src/lib/TaskCounters.cc \
 src/lib/TeraSort.cc \
 src/lib/TotalOrderPartitioner.cc \
@@ -80,7 +81,6 @@ src/util/StringUtil.cc \
 src/util/SyncUtils.cc \
 src/util/Timer.cc \
 src/util/WritableUtils.cc               
-
 
 
 COMMONHEADERS = \
@@ -108,6 +108,7 @@ test/handler/TestRReducerHandler.cc   \
 test/handler/TestMMapTaskHandler.cc   \
 test/lib/TestLineRecordReader.cc      \
 test/lib/TestTotalOrderPartitioner.cc \
+test/lib/TestCombiner.cc \
 test/util/TestChecksum.cc             \
 test/util/TestHash.cc                 \
 test/util/TestStringUtil.cc           \

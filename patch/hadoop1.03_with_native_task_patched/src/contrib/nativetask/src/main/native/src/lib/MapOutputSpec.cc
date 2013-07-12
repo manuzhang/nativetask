@@ -26,9 +26,9 @@ void MapOutputSpec::getSpecFromConfig(Config & config, MapOutputSpec & spec) {
   spec.checksumType = CHECKSUM_CRC32;
   string sortType = config.get(NATIVE_SORT_TYPE, "DUALPIVOTSORT");
   if (sortType == "DUALPIVOTSORT") {
-    spec.sortType = DUALPIVOTSORT;
+    spec.sortAlgorithm = DUALPIVOTSORT;
   } else {
-    spec.sortType = CPPSORT;
+    spec.sortAlgorithm = CPPSORT;
   }
   if (config.get(MAPRED_COMPRESS_MAP_OUTPUT,"false")=="true") {
     spec.codec = config.get(MAPRED_MAP_OUTPUT_COMPRESSION_CODEC);
@@ -36,9 +36,9 @@ void MapOutputSpec::getSpecFromConfig(Config & config, MapOutputSpec & spec) {
     spec.codec = "";
   }
   if (config.getBool("mapred.map.output.sort", true)) {
-    spec.orderType = FULLSORT;
+    spec.sortOrder = FULLORDER;
   } else {
-    spec.orderType = NOSORT;
+    spec.sortOrder = NOSORT;
   }
   const char * key_class = config.get(MAPRED_MAPOUTPUT_KEY_CLASS);
   if (NULL == key_class) {

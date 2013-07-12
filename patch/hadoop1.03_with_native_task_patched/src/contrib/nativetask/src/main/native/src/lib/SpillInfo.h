@@ -29,68 +29,70 @@ using std::string;
 /**
  * Store spill file segment information
  */
-struct IndexEntry {
+struct IFileSegment {
   // uncompressed stream end position
-  uint64_t endPosition;
+  uint64_t uncompressedEndOffset;
   // compressed stream end position
-  uint64_t realEndPosition;
+  uint64_t realEndOffset;
 };
 
-class IndexRange {
+class SingleSpillInfo {
 public:
-  uint32_t start;
   uint32_t length;
-  std::string filepath;
-  IndexEntry * segments;
+  std::string path;
+  IFileSegment * segments;
 
-  IndexRange(uint32_t start, uint32_t len, const string & filepath,
-      IndexEntry * segments) :
-    start(start), length(len), filepath(filepath), segments(segments) {
+  SingleSpillInfo(IFileSegment * segments, uint32_t len, const string & path) :
+    length(len), path(path), segments(segments) {
   }
 
-  ~IndexRange() {
+  ~SingleSpillInfo() {
     delete [] segments;
   }
 
-  void delete_file();
+  void deleteSpillFile();
 
   uint64_t getEndPosition() {
-    return segments ? segments[length-1].endPosition : 0;
+    return segments ? segments[length-1].uncompressedEndOffset : 0;
   }
 
   uint64_t getRealEndPosition() {
-    return segments ? segments[length-1].realEndPosition : 0;
+    return segments ? segments[length-1].realEndOffset : 0;
   }
+
+  void writeSpillInfo(const std::string & filepath);
 };
 
-class PartitionIndex {
-protected:
-  // TODO: fix this field
-  uint32_t _num_partition;
+class SpillInfos {
 public:
-  std::vector<IndexRange*> ranges;
-  PartitionIndex(uint32_t num_partition) :
-    _num_partition(num_partition) {
+  std::vector<SingleSpillInfo*> spills;
+  SpillInfos(){
   }
 
-  ~PartitionIndex() {
-    for (size_t i = 0; i < ranges.size(); i++) {
-      delete ranges[i];
+  ~SpillInfos() {
+    for (size_t i = 0; i < spills.size(); i++) {
+      delete spills[i];
     }
-    ranges.clear();
+    spills.clear();
   }
 
-  void deleteFiles() {
-    for (size_t i = 0; i < ranges.size(); i++) {
-      ranges[i]->delete_file();
+  void deleteAllSpillFiles() {
+    for (size_t i = 0; i < spills.size(); i++) {
+      spills[i]->deleteSpillFile();
     }
   }
 
-  void add(IndexRange * sri) {
-    ranges.push_back(sri);
+  void add(SingleSpillInfo * sri) {
+    spills.push_back(sri);
   }
 
-  void writeIFile(const std::string & filepath);
+  uint32_t getSpillCount() const {
+    return spills.size();
+  }
+
+  SingleSpillInfo* getSingleSpillInfo(int index) {
+    return spills.at(index);
+  }
 };
 
 

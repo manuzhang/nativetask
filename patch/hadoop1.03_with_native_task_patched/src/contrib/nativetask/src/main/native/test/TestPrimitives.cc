@@ -50,7 +50,7 @@ static int test_memcmp() {
   }
   std::random_shuffle(buff, buff+2048);
   int r = 0;
-  for (int i=0;i<1000000;i++) {
+  for (int i=0;i<100000000;i++) {
     int offset = i % 1000;
     r += memcmp(buff, buff+1024, 5);
     r += memcmp(buff+offset, buff+1124, 9);
@@ -72,7 +72,7 @@ static int test_fmemcmp() {
   }
   std::random_shuffle(buff, buff+2048);
   int r = 0;
-  for (int i=0;i<1000000;i++) {
+  for (int i=0;i<100000000;i++) {
     int offset = i % 1000;
     r += fmemcmp(buff, buff+1024, 5);
     r += fmemcmp(buff+offset, buff+1124, 9);
@@ -298,12 +298,12 @@ TEST(Perf, memcpy_batch) {
   for (size_t i=0;i<mb;i+=size) {
     memcpy(dest, src, size);
   }
-  LOG("%s", t.getSpeedM("memcmp", mb).c_str());
+  LOG("%s", t.getSpeedM("memcpy", mb).c_str());
   t.reset();
   for (size_t i=0;i<mb;i+=size) {
     simple_memcpy(dest, src, size);
   }
-  LOG("%s", t.getSpeedM("simple_memcmp", mb).c_str());
+  LOG("%s", t.getSpeedM("simple_memcpy", mb).c_str());
   delete [] src;
   delete [] dest;
 }

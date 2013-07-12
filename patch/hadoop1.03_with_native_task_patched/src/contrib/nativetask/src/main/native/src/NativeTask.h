@@ -212,7 +212,7 @@ public:
 
 class Buffer {
 protected:
-  char * _data;
+  const char * _data;
   uint32_t _length;
 
 public:
@@ -221,19 +221,19 @@ public:
     _length(0) {
   }
 
-  Buffer(char * data, uint32_t length) :
+  Buffer(const char * data, uint32_t length) :
     _data(data),
     _length(length) {
   }
 
   ~Buffer() {}
 
-  void reset(char * data, uint32_t length) {
+  void reset(const char * data, uint32_t length) {
     this->_data = data;
     this->_length = length;
   }
 
-  char * data() const {
+  const char * data() const {
     return _data;
   }
 
@@ -241,7 +241,7 @@ public:
     return _length;
   }
 
-  void data(char * data) {
+  void data(const char * data) {
     this->_data = data;
   }
 
@@ -535,8 +535,23 @@ public:
   virtual void final(const char * key, uint32_t keyLen, void * dest) {}
 };
 
+enum KeyValueType {
+  TextType = 0,
+  BytesType = 1,
+  ByteType = 2,
+  BoolType = 3,
+  IntType = 4,
+  LongType = 5,
+  FloatType = 6,
+  DoubleType = 7,
+  MD5HashType = 8,
+  UnknownType = 9
+};
+
 
 typedef int (* ComparatorPtr)(const char * src, uint32_t srcLength, const char * dest, uint32_t destLength);
+
+ComparatorPtr get_comparator(const KeyValueType keyType, const char * comparatorName);
 
 typedef void (*ANY_FUNC_PTR)();
 

@@ -325,5 +325,58 @@ NativeObject * NativeObjectFactory::CreateDefaultObject(NativeObjectType type) {
   }
 }
 
+
+int BytesComparator(const char * src, uint32_t srcLength, const char * dest, uint32_t destLength) {
+
+    uint32_t minlen = std::min(srcLength, destLength);
+    int ret = fmemcmp(src, dest, minlen);
+    if (ret) {
+      return ret;
+    }
+    return srcLength - destLength;
+};
+
+int FloatComparator(const char * src, uint32_t srcLength, const char * dest, uint32_t destLength) {
+  if (srcLength != 4 || destLength != 4) {
+      THROW_EXCEPTION_EX(IOException, "float comparator, while src/dest lengt is not 4");
+    }
+    float * srcValue = (float *)src;
+    float * destValue = (float *)dest;
+    return ( (*srcValue) - (* destValue) >= 0) ? 1 : -1;
+};
+
+int DoubleComparator(const char * src, uint32_t srcLength, const char * dest, uint32_t destLength) {
+  if (srcLength != 8 || destLength != 8) {
+      THROW_EXCEPTION_EX(IOException, "double comparator, while src/dest lengt is not 4");
+    }
+    double * srcValue = (double *)src;
+    double * destValue = (double *)dest;
+    return (((*srcValue) - (* destValue) >= 0) ? 1 : -1);
+};
+
+ComparatorPtr get_comparator(const KeyValueType keyType, const char * comparatorName) {
+  if (NULL == comparatorName) {
+    if (keyType == BytesType ||
+        keyType == TextType ||
+        keyType == ByteType ||
+        keyType == BoolType ||
+        keyType == IntType ||
+        keyType == LongType) {
+      return &BytesComparator;
+    }
+    else if (keyType == FloatType) {
+      return &FloatComparator;
+    }
+    else if (keyType == DoubleType) {
+      return &DoubleComparator;
+    }
+  }
+  else {
+    void * func = NativeObjectFactory::GetFunction(string(comparatorName));
+    return (ComparatorPtr)func;
+  }
+  return NULL;
+}
+
 } // namespace NativeTask
 

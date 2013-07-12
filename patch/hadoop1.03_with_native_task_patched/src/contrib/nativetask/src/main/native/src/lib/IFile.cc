@@ -26,7 +26,7 @@ namespace NativeTask {
 
 IFileReader::IFileReader(InputStream * stream, ChecksumType checksumType,
                            KeyValueType ktype, KeyValueType vtype,
-                           IndexRange * spill_infos, const string & codec) :
+                           SingleSpillInfo * spill_infos, const string & codec) :
     _stream(stream),
     _source(NULL),
     _checksumType(checksumType),
@@ -69,9 +69,9 @@ int IFileReader::nextPartition() {
   }
   _segmentIndex++;
   if (_segmentIndex < (int)(_spillInfo->length)) {
-    int64_t end_pos = (int64_t)_spillInfo->segments[_spillInfo->start + _segmentIndex].realEndPosition;
+    int64_t end_pos = (int64_t)_spillInfo->segments[_segmentIndex].realEndOffset;
     if (_segmentIndex > 0) {
-      end_pos -= (int64_t)_spillInfo->segments[_spillInfo->start + _segmentIndex - 1].realEndPosition;
+      end_pos -= (int64_t)_spillInfo->segments[_segmentIndex - 1].realEndOffset;
     }
     if (end_pos < 0) {
       THROW_EXCEPTION(IOException, "bad ifile format");
@@ -108,7 +108,7 @@ IFileWriter::~IFileWriter() {
 }
 
 void IFileWriter::startPartition() {
-  _spillInfo.push_back(IndexEntry());
+  _spillFileSegments.push_back(IFileSegment());
   _dest->resetChecksum();
 }
 
@@ -120,9 +120,9 @@ void IFileWriter::endPartition() {
   chsum = bswap(chsum);
   _stream->write(&chsum, sizeof(chsum));
   _stream->flush();
-  IndexEntry * info = &(_spillInfo[_spillInfo.size()-1]);
-  info->endPosition = _appendBuffer.getCounter();
-  info->realEndPosition = _stream->tell();
+  IFileSegment * info = &(_spillFileSegments[_spillFileSegments.size()-1]);
+  info->uncompressedEndOffset = _appendBuffer.getCounter();
+  info->realEndOffset = _stream->tell();
 }
 
 void IFileWriter::writeKey(const char * key, uint32_t keyLen, uint32_t valueLen) {
@@ -172,19 +172,25 @@ void IFileWriter::writeValue(const char * value, uint32_t valueLen) {
   }
 }
 
-
-IndexRange * IFileWriter::getIndex(uint32_t start) {
-  IndexEntry * segs = new IndexEntry[_spillInfo.size()];
-  for (size_t i = 0; i < _spillInfo.size(); i++) {
-    segs[i] = _spillInfo[i];
+IFileSegment * IFileWriter::toArray(std::vector<IFileSegment> *segments) {
+  IFileSegment * segs = new IFileSegment[segments->size()];
+  for (size_t i = 0; i < segments->size(); i++) {
+    segs[i] = segments->at(i);
   }
-  return new IndexRange(start, (uint32_t) _spillInfo.size(), "", segs);
+  return segs;
 }
 
+SingleSpillInfo * IFileWriter::getSpillInfo() {
+  const uint32_t size = _spillFileSegments.size();
+  return new SingleSpillInfo(toArray(&_spillFileSegments), size, "");
+}
+
+
+
 void IFileWriter::getStatistics(uint64_t & offset, uint64_t & realOffset) {
-  if (_spillInfo.size()>0) {
-    offset = _spillInfo[_spillInfo.size()-1].endPosition;
-    realOffset = _spillInfo[_spillInfo.size()-1].realEndPosition;
+  if (_spillFileSegments.size()>0) {
+    offset = _spillFileSegments[_spillFileSegments.size()-1].uncompressedEndOffset;
+    realOffset = _spillFileSegments[_spillFileSegments.size()-1].realEndOffset;
   } else{
     offset = 0;
     realOffset = 0;

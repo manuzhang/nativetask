@@ -104,11 +104,10 @@ private:
   static uint32_t _capacity;
   static uint32_t _used;
   static std::vector<MemoryBlock> _blocks;
-  static ComparatorPtr _keyComparator;
 
 public:
   static bool init(uint32_t capacity,
-      uint32_t min_block_size, ComparatorPtr keyComparator)
+      uint32_t min_block_size)
       throw (OutOfMemoryException);
 
   static void release();
@@ -173,43 +172,6 @@ public:
   }
 
   static void dump(FILE * out);
-
-  /**
-   * c qsort compare function
-   */
-  static inline  int compare_offset(const void * plh, const void * prh) {
-    InplaceBuffer * lhb = (InplaceBuffer*) get_position(*(uint32_t*) plh);
-    InplaceBuffer * rhb = (InplaceBuffer*) get_position(*(uint32_t*) prh);
-    return (*_keyComparator)(lhb->content, lhb->length,  rhb->content,  rhb->length);
-  }
-
-  /**
-   * DualPivotQuickSort compare function
-   */
-  class CompareOffset {
-  public:
-    inline int operator()(uint32_t lhs, uint32_t rhs) {
-        InplaceBuffer * lhb = (InplaceBuffer*) get_position(lhs);
-        InplaceBuffer * rhb = (InplaceBuffer*) get_position(rhs);
-        return (*_keyComparator)(lhb->content, lhb->length, rhb->content, rhb->length);
-    }
-  };
-
-  /**
-   * cpp std::sort compare function
-   */
-  class OffsetLessThan {
-  public:
-    inline bool operator()(uint32_t lhs, uint32_t rhs) {
-        InplaceBuffer * lhb = (InplaceBuffer*) get_position(lhs);
-        InplaceBuffer * rhb = (InplaceBuffer*) get_position(rhs);
-        int ret =  (*_keyComparator)(lhb->content, lhb->length, rhb->content,  rhb->length);
-        return ret < 0;
-    }
-  };
-
-  static void sort(std::vector<uint32_t> & kvpairs_offsets, SortType type);
-
 };
 
 } // namespace NativeTask

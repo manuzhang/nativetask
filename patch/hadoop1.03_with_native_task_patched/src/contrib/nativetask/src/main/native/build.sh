@@ -24,8 +24,7 @@ clean() {
         echo 'cleaning...'
         make distclean >/dev/null 2>&1
         rm -rf autom4te.cache m4
-        for fn in aclocal.m4 configure config.guess config.sub depcomp install-sh \
-                ltmain.sh libtool missing mkinstalldirs config.log config.status Makefile; do
+        for fn in mkinstalldirs config.log config.status Makefile simple.sh config.h.in~; do
                 rm -f $fn
         done
 
@@ -47,6 +46,7 @@ install() {
 
 
 build() {
+automake --foreign --copy --add-missing
 if hash icpc 2>/dev/null; then
 echo "We are going to use Intel compiler icpc"
 .$basedir/configure CC="icc -static-intel" CXX="icpc -static-intel"
@@ -59,13 +59,13 @@ make
 
 case "x$1" in
 xclean)
-	make clean
+	clean
 	;;
 xinit)
 	
 ;;	
 xall)
-	make clean
+        clean
 	build
 	;;
 xinstall)
