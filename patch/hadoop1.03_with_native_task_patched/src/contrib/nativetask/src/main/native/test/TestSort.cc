@@ -203,7 +203,7 @@ void printOffsets(string & dest, vector<uint32_t> & offsets) {
 
 TEST(Perf, sort) {
   vector<uint32_t> offsets;
-  makeInputWord(gBuffer, offsets, 6000000);
+  makeInputWord(gBuffer, offsets, 800000000);
   Timer timer;
   vector<uint32_t> offsetstemp1_0 = offsets;
   vector<uint32_t> offsetstemp1_1 = offsets;
@@ -265,4 +265,61 @@ TEST(Perf, sort) {
   DualPivotQuicksort(offsetstemp1_2, CompareOffset2());
   DualPivotQuicksort(offsetstemp1_3, CompareOffset2());
   LOG("%s", timer.getInterval("DualPivotQuicksort 2").c_str());
+}
+
+TEST(Perf, sortCacheMiss) {
+
+  LOG("Testing partition based sort, sort 4MB every time");
+
+  vector<uint32_t> offsets;
+  makeInputWord(gBuffer, offsets, 800000000);
+  Timer timer;
+  vector<uint32_t> offsetstemp1_0 = offsets;
+  vector<uint32_t> offsetstemp1_1 = offsets;
+  vector<uint32_t> offsetstemp1_2 = offsets;
+  vector<uint32_t> offsetstemp1_3 = offsets;
+
+  timer.reset();
+  DualPivotQuicksort(offsetstemp1_0, CompareOffset2());
+  DualPivotQuicksort(offsetstemp1_1, CompareOffset2());
+  DualPivotQuicksort(offsetstemp1_2, CompareOffset2());
+  DualPivotQuicksort(offsetstemp1_3, CompareOffset2());
+  LOG("%s", timer.getInterval("DualPivotQuicksort 2 full sort").c_str());
+
+  uint32_t MOD = 128000;
+  uint32_t END = offsets.size();
+
+  for (MOD = 1024; MOD < END; MOD <<= 1){
+    offsetstemp1_0 = offsets;
+    offsetstemp1_1 = offsets;
+    offsetstemp1_2 = offsets;
+    offsetstemp1_3 = offsets;
+    timer.reset();
+
+
+    for (int i = 0; i <= END/MOD; i++) {
+      int base = i * MOD;
+      int max = (base + MOD) > END ? END : (base + MOD);
+      DualPivotQuicksort(offsetstemp1_0, base, max - 1, 3, CompareOffset2());
+    }
+
+    for (int i = 0; i <= END/MOD; i++) {
+      int base = i * MOD;
+      int max = (base + MOD) > END ? END : (base + MOD);
+      DualPivotQuicksort(offsetstemp1_1, base, max - 1, 3, CompareOffset2());
+    }
+
+    for (int i = 0; i <= END/MOD; i++) {
+      int base = i * MOD;
+      int max = (base + MOD) > END ? END : (base + MOD);
+      DualPivotQuicksort(offsetstemp1_2, base, max - 1, 3, CompareOffset2());
+    }
+
+    for (int i = 0; i <= END/MOD; i++) {
+      int base = i * MOD;
+      int max = (base + MOD) > END ? END : (base + MOD);
+      DualPivotQuicksort(offsetstemp1_3, base, max - 1, 3, CompareOffset2());
+    }
+    LOG("%s, MOD: %d", timer.getInterval("DualPivotQuicksort 2 partition sort").c_str(), MOD);
+  }
 }
