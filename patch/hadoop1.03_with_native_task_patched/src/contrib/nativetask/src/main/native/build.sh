@@ -46,13 +46,13 @@ install() {
 
 
 build() {
+automake --foreign --copy --add-missing
 if hash icpc 2>/dev/null; then
 echo "We are going to use Intel compiler icpc"
 .$basedir/configure CC="icc -static-intel" CXX="icpc -static-intel"
 else
 .$basedir/configure
 fi
-automake
 make
 }
 
