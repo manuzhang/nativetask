@@ -137,11 +137,9 @@ string  toString(uint32_t length) {
 
 std::string CombineHandler::command(const std::string & cmd) {
 
-  LOG("Accepting native command, %s", cmd.c_str());
   if ( 0 == memcmp(cmd.c_str(), REFILL, LENGTH_OF_REFILL)) {
     uint32_t * serialzationType = (uint32_t *)(cmd.c_str() +  LENGTH_OF_REFILL);
     uint32_t type = bswap(*serialzationType);
-    LOG("Serialization type is , %d", type);
     return toString(bswap(refill(type)));
   }
 

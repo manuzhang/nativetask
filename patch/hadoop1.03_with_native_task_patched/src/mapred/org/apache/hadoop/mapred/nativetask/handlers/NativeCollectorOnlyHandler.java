@@ -85,8 +85,12 @@ public class NativeCollectorOnlyHandler<K extends Writable, V extends Writable>
   @Override
   public void init(Configuration conf) throws IOException {
     
-    this.combinerHandler = CombinerHandler.create(conf, outputKeyClass, outputValueClass,
-        bufferSize, bufferSize, reporter, taskAttemptID);
+    try {
+      this.combinerHandler = CombinerHandler.create(conf, outputKeyClass, outputValueClass,
+          bufferSize, bufferSize, reporter, taskAttemptID);
+    } catch (ClassNotFoundException e) {
+      throw new IOException(e);
+    }
     super.init(conf);
   }
   

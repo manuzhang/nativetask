@@ -41,13 +41,15 @@ public class CombinerHandler<K, V> extends NativeBatchProcessor<K, V, K, V>
   private TaskAttemptID taskAttemptID;
 
   private Counter combineInputCounter;
+  
+  private CombinerRunner<K, V> combinerRunner;
 
   int remains = 0;
   private boolean noMoreData = false;
 
   public CombinerHandler(Configuration conf, Class<K> iKClass,
       Class<V> iVClass, int inputBufferCapacity, int outputBufferCapacity,
-      TaskReporter reporter, TaskAttemptID taskAttemptID) throws IOException {
+      TaskReporter reporter, TaskAttemptID taskAttemptID) throws IOException, ClassNotFoundException {
     super(iKClass, iVClass, iKClass, iVClass, "NativeTask.CombineHandler",
         inputBufferCapacity, outputBufferCapacity);
     this.jobConf = new JobConf(conf);
@@ -55,6 +57,9 @@ public class CombinerHandler<K, V> extends NativeBatchProcessor<K, V, K, V>
     this.taskAttemptID = taskAttemptID;
 
     this.combineInputCounter = reporter.getCounter(COMBINE_INPUT_RECORDS);
+    
+    this.combinerRunner = CombinerRunner.create(jobConf, taskAttemptID,
+        combineInputCounter, reporter, null);
   }
 
   @Override
@@ -76,12 +81,11 @@ public class CombinerHandler<K, V> extends NativeBatchProcessor<K, V, K, V>
 
   @Override
   public int combine() {
-    CombinerRunner<K, V> combinerRunner;
+    noMoreData = false;
+    
     try {
-      combinerRunner = CombinerRunner.create(jobConf, taskAttemptID,
-          combineInputCounter, reporter, null);
       combinerRunner.combine(this, this);
-      nativeWriter.close();
+      nativeWriter.flush();
       return 0;
     } catch (Exception e) {
       e.printStackTrace();
@@ -148,7 +152,7 @@ public class CombinerHandler<K, V> extends NativeBatchProcessor<K, V, K, V>
   public static <K, V> ICombineHandler create(Configuration conf,
       Class<K> iKClass, Class<V> iVClass, int inputBufferCapacity,
       int outputBufferCapacity, TaskReporter reporter,
-      TaskAttemptID taskAttemptID) throws IOException {
+      TaskAttemptID taskAttemptID) throws IOException, ClassNotFoundException {
 
     String combinerClazz = conf.get("mapred.combiner.class");
     if (null == combinerClazz) {
