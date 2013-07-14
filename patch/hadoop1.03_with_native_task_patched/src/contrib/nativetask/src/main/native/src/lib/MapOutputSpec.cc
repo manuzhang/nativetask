@@ -30,6 +30,7 @@ void MapOutputSpec::getSpecFromConfig(Config & config, MapOutputSpec & spec) {
   } else {
     spec.sortAlgorithm = CPPSORT;
   }
+  LOG("[MapOutputSpec::getSpecFromConfig] The sorting algorithm is: %s", sortType.c_str());
   if (config.get(MAPRED_COMPRESS_MAP_OUTPUT,"false")=="true") {
     spec.codec = config.get(MAPRED_MAP_OUTPUT_COMPRESSION_CODEC);
   } else {
