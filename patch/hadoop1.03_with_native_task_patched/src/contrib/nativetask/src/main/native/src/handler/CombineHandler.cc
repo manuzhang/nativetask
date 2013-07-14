@@ -43,11 +43,8 @@ uint32_t CombineHandler::refill(int serializationType) {
   char vIntBuffer[8];
 
     //flush output to make sure we have enough room to hold the key and value
-    if (_ob.position + keyLen + valueLen + 2 * sizeof(uint32_t) > _ob.capacity) {
+    if (_ob.position + keyLen + valueLen + 2 * sizeof(uint32_t) + 32 > _ob.capacity) {
       _kvCached = true;
-
-      LOG("Refill data into java, length: %d, serialization type: %d", 
-         _ob.position, serializationType);
       return _ob.position;
     }
 
@@ -99,8 +96,6 @@ uint32_t CombineHandler::refill(int serializationType) {
       put((char *)value, valueLen);
     }
   }
-  LOG("Refill data into java, length: %d, serialization type: %d", 
-    _ob.position, serializationType);
   return _ob.position;
 }
 
