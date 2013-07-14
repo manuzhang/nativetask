@@ -33,10 +33,10 @@ public abstract class NativeBatchProcessor<IK, IV, OK, OV> implements
   private static Log LOG = LogFactory.getLog(NativeBatchProcessor.class);
 
   protected ByteBuffer inputBuffer;
-  private ByteBuffer outputBuffer;
+  protected ByteBuffer outputBuffer;
 
   private String nativeHandlerName;
-  private long nativeHandlerAddr;
+  protected long nativeHandlerAddr;
   private boolean isInputFinished = false;
 
   protected KVSerializer<IK, IV> serializer;
@@ -200,5 +200,9 @@ public abstract class NativeBatchProcessor<IK, IV, OK, OV> implements
   protected boolean flushOutputAndProcess(NativeDataReader outputbuffer,
       int length) throws IOException {
     return true;
+  }
+  
+  public long getNativeHandler() {
+    return nativeHandlerAddr;
   }
 }

@@ -204,7 +204,7 @@ private:
   ComparatorPtr get_comparator(Config & config, MapOutputSpec & spec);
 
 public:
-  MapOutputCollector(uint32_t num_partition);
+  MapOutputCollector(uint32_t num_partition, ICombineRunner * combinerHandler);
 
   ~MapOutputCollector();
 

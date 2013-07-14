@@ -33,6 +33,7 @@ import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.MapOutputFile;
 import org.apache.hadoop.mapred.SpillRecord;
 import org.apache.hadoop.mapred.TaskAttemptID;
+import org.apache.hadoop.mapred.Task.TaskReporter;
 import org.apache.hadoop.mapred.nativetask.NativeRuntime;
 import org.apache.hadoop.mapred.nativetask.handlers.NativeCollectorOnlyHandler;
 
@@ -71,7 +72,8 @@ public class TestNativeMapOutputCollector extends TestCase {
     MapOutputFile mapOutputFile = new MapOutputFile();
     mapOutputFile.setConf(conf);
     NativeCollectorOnlyHandler<Text, Text> collector = 
-        new NativeCollectorOnlyHandler<Text, Text>(conf);
+        new NativeCollectorOnlyHandler<Text, Text>(conf,
+            null, new TaskAttemptID());
     
     collector.init(conf);
     

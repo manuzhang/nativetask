@@ -65,18 +65,6 @@ public class NativeRuntime {
     }
   }
 
-  // All configs that native side needed
-  private static String[] usefulExternalConfigsKeys = { "mapred.map.tasks",
-      "mapred.reduce.tasks", "mapred.task.partition",
-      "mapred.mapoutput.key.class", "mapred.mapoutput.value.class",
-      "mapred.output.key.class", "mapred.output.value.class",
-      "mapred.input.format.class", "mapred.output.format.class",
-      "mapred.work.output.dir", "mapred.textoutputformat.separator",
-      "mapred.compress.map.output", "mapred.map.output.compression.codec",
-      "mapred.output.compress", "mapred.output.compression.codec",
-      "mapred.map.output.sort", "io.sort.mb", "io.file.buffer.size",
-      "fs.default.name", "fs.defaultFS" };
-
   private static void assertNativeLibraryLoaded() {
     if (!nativeLibraryLoaded) {
       throw new RuntimeException("Native runtime library not loaded");
@@ -91,26 +79,9 @@ public class NativeRuntime {
     assertNativeLibraryLoaded();
     conf = jobConf;
     List<byte[]> nativeConfigs = new ArrayList<byte[]>();
-    // add needed external configs
-    for (int i = 0; i < usefulExternalConfigsKeys.length; i++) {
-      String key = usefulExternalConfigsKeys[i];
-      String value = conf.get(key);
-      if (value != null) {
-        // String newValue = getCompatibleValue(key, value);
-        // if (newValue != null) {
-        // value = newValue;
-        // }
-        //
-        nativeConfigs.add(BytesUtil.toBytes(key));
-        nativeConfigs.add(BytesUtil.toBytes(value));
-      }
-    }
-    // add native.* configs
     for (Map.Entry<String, String> e : conf) {
-      if (e.getKey().startsWith("native.")) {
-        nativeConfigs.add(BytesUtil.toBytes(e.getKey()));
-        nativeConfigs.add(BytesUtil.toBytes(e.getValue()));
-      }
+      nativeConfigs.add(BytesUtil.toBytes(e.getKey()));
+      nativeConfigs.add(BytesUtil.toBytes(e.getValue()));
     }
     nativeConfigs.add(BytesUtil.toBytes("native.hadoop.version"));
     nativeConfigs.add(BytesUtil.toBytes(VersionInfo.getVersion()));

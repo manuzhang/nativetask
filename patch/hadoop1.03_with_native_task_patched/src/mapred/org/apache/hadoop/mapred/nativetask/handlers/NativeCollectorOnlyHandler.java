@@ -22,9 +22,12 @@ import java.io.IOException;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.mapred.JobConf;
+import org.apache.hadoop.mapred.Task.TaskReporter;
+import org.apache.hadoop.mapred.TaskAttemptID;
 import org.apache.hadoop.mapred.nativetask.Constants;
 import org.apache.hadoop.mapred.nativetask.NativeBatchProcessor;
 import org.apache.hadoop.mapred.nativetask.util.BytesUtil;
@@ -43,9 +46,23 @@ public class NativeCollectorOnlyHandler<K extends Writable, V extends Writable>
 
   private OutputPathUtil outputFileUtil = null;
   private int spillNumber = 0;
+  private ICombineHandler combinerHandler = null;
+
+  private Class<K> outputKeyClass;
+
+  private Class<V> outputValueClass;
+
+  private int bufferSize;
+
+  private JobConf jobConf;
+
+  private TaskReporter reporter;
+
+  private TaskAttemptID taskAttemptID;
 
   @SuppressWarnings("unchecked")
-  public NativeCollectorOnlyHandler(JobConf jobConf) throws IOException {
+  public NativeCollectorOnlyHandler(JobConf jobConf, 
+      TaskReporter reporter, TaskAttemptID taskAttemptID) throws IOException {
     super((Class<K>) jobConf.getMapOutputKeyClass(), (Class<V>) (jobConf
         .getMapOutputValueClass()), null, null,
         "NativeTask.MCollectorOutputHandler", jobConf.getInt(
@@ -53,8 +70,26 @@ public class NativeCollectorOnlyHandler<K extends Writable, V extends Writable>
 
     this.outputFileUtil = new OutputPathUtil();
     outputFileUtil.setConf(jobConf);
+    
+    this.outputKeyClass = (Class<K>) jobConf.getMapOutputKeyClass();
+    this.outputValueClass = (Class<V>) (jobConf.getMapOutputValueClass());
+    this.jobConf = jobConf;
+    
+    this.reporter = reporter;
+    this.taskAttemptID = taskAttemptID;
+    
+    this.bufferSize = jobConf.getInt(
+        Constants.NATIVE_PROCESSOR_BUFFER_KB, 1024) * 1024;
   }
 
+  @Override
+  public void init(Configuration conf) throws IOException {
+    
+    this.combinerHandler = CombinerHandler.create(conf, outputKeyClass, outputValueClass,
+        bufferSize, bufferSize, reporter, taskAttemptID);
+    super.init(conf);
+  }
+  
   public void collect(K key, V value, int partition) throws IOException,
       InterruptedException {
     serializer.serializeKV(nativeWriter, key, value);
@@ -80,6 +115,12 @@ public class NativeCollectorOnlyHandler<K extends Writable, V extends Writable>
       p = outputFileUtil.getOutputIndexFileForWrite(-1);
     } else if (cmd.equals("GetSpillPath")) {
       p = outputFileUtil.getSpillFileForWrite(spillNumber++, -1);
+    } else if (cmd.equals("getCombinerHandler")) {
+      if (null == combinerHandler) {
+        return null;
+      }
+      byte[] result = new byte[8];
+      return toBytes(combinerHandler.getId(), result);
     } else {
       LOG.warn("Illegal command: " + cmd);
     }
@@ -88,5 +129,21 @@ public class NativeCollectorOnlyHandler<K extends Writable, V extends Writable>
     } else {
       throw new IOException("MapOutputFile can't allocate spill/output file");
     }
+  }
+  
+  // same rule as DataOutputStream
+  private static byte[] toBytes(long v, byte[] b) {
+    int upper = (int)((v >>> 32) & 0x0FFFFFFFF);
+    int lower = (int)(v & 0x0FFFFFFFF);
+    b[7] = (byte) ((upper >>> 24) & 0xFF);
+    b[6] = (byte) ((upper >>> 16) & 0xFF);
+    b[5] = (byte) ((upper >>> 8) & 0xFF);
+    b[4] = (byte) ((upper >>> 0) & 0xFF);
+    
+    b[3] = (byte) ((lower >>> 24) & 0xFF);
+    b[2] = (byte) ((lower >>> 16) & 0xFF);
+    b[1] = (byte) ((lower >>> 8) & 0xFF);
+    b[0] = (byte) ((lower >>> 0) & 0xFF);
+    return b;
   }
 }

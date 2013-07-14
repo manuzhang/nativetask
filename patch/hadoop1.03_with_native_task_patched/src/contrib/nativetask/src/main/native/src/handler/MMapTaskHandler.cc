@@ -90,7 +90,7 @@ void MMapTaskHandler::configure(Config & config) {
   if (_numPartition > 0) {
 
     // collector
-    _moc = new MapOutputCollector(_numPartition);
+    _moc = new MapOutputCollector(_numPartition, NULL);
     _moc->configure(config);
 
     // partitioner

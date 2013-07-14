@@ -46,6 +46,7 @@ src/handler/MCollectorOutputHandler.cc \
 src/handler/MMapperHandler.cc \
 src/handler/MMapTaskHandler.cc \
 src/handler/RReducerHandler.cc \
+src/handler/CombineHandler.cc \
 src/lib/Buffers.cc \
 src/lib/BufferStream.cc \
 src/lib/Compressions.cc \
@@ -132,14 +133,14 @@ noinst_PROGRAMS = nttest
 noinst_SCRIPTS = test.sh
 
 libnativetask_la_SOURCES = $(COMMONSOURCES)
-libnativetask_la_CPPFLAGS = -g -O2 -DNDEBUG $(MACRO) -fPIC $(AM_CFLAGS)
+libnativetask_la_CPPFLAGS = -g -O0 -DNDEBUG $(MACRO) -fPIC $(AM_CFLAGS)
 libnativetask_la_LDFLAGS =  -version-info 0:1:0 $(AM_LDFLAGS)
 
 libstreaming_la_SOURCES = examples/Streaming.cc
-libstreaming_la_CPPFLAGS = -g -O2 -DNDEBUG $(MACRO) -fPIC $(AM_CFLAGS)
+libstreaming_la_CPPFLAGS = -g -O0 -DNDEBUG $(MACRO) -fPIC $(AM_CFLAGS)
 libstreaming_la_LDFLAGS = -version-info 0:1:0 $(AM_LDFLAGS)
 
 nttest_SOURCES = $(TESTSOURCES) gtest/gtest-all.cc
 nttest_LDADD = libnativetask.la
 nttest_LDFLAGS = $(AM_LDFLAGS)
-nttest_CPPFLAGS = -g -O2  $(MACRO) $(AM_CFLAGS) -I$(top_srcdir) -I$(top_srcdir)/test
+nttest_CPPFLAGS = -g -O0  $(MACRO) $(AM_CFLAGS) -I$(top_srcdir) -I$(top_srcdir)/test

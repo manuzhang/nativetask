@@ -60,7 +60,6 @@ public class KVSerializer<K, V> implements IKVSerializer {
   @Override
   public int serializeKV(NativeDataWriter out, int remain, Writable key,
       Writable value) throws IOException {
-
     int keylength = keySerializer.getLength(key);
     int valueLength = valueSerializer.getLength(value);
 

@@ -46,6 +46,7 @@ install() {
 
 
 build() {
+aclocal
 automake --foreign --copy --add-missing
 if hash icpc 2>/dev/null; then
 echo "We are going to use Intel compiler icpc"

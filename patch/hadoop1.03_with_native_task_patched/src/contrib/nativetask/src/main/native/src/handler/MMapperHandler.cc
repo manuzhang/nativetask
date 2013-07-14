@@ -75,7 +75,7 @@ void MMapperHandler::configure(Config & config) {
     _partitioner->configure(config);
 
     LOG("[MMapperHandler] Native MapOutputCollector enabled");
-    _moc = new MapOutputCollector(_numPartition);
+    _moc = new MapOutputCollector(_numPartition, NULL);
     _moc->configure(config);
   }
   else {

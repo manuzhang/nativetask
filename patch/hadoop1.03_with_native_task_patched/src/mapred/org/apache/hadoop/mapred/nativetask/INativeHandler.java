@@ -13,7 +13,7 @@ public interface INativeHandler {
   /**
    * init the native handler
    */
-  public void init(Configuration conf) throws Exception;
+  public void init(Configuration conf) throws IOException;
 
   /**
    * close the native handler

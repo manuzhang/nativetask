@@ -115,6 +115,7 @@ void PartitionBucket::spill(IFileWriter & writer, uint64_t & keyGroupCount)
     return;
   }
   if (_combineRunner == NULL) {
+    LOG("[PartitionBucket::spill] combiner is not enabled");
     for (size_t i = 0; i<_kv_offsets.size() ; i++) {
       KVBuffer * pkvbuffer = (KVBuffer*)MemoryBlockPool::get_position(_kv_offsets[i]);
       InplaceBuffer & bkey = pkvbuffer->get_key();
@@ -122,8 +123,10 @@ void PartitionBucket::spill(IFileWriter & writer, uint64_t & keyGroupCount)
       writer.write(bkey.content, bkey.length, bvalue.content, bvalue.length);
     }
   } else {
+    LOG("[PartitionBucket::spill] combiner is enabled");
     MemoryBufferKVIterator * kvIterator = new DirectMemoryBufferedKVIterator(MemoryBlockPool::get_position(0),
         _kv_offsets);
+
     _combineRunner->combine(CombineContext(CONTINUOUS_MEMORY_BUFFER), kvIterator, &writer);
     delete kvIterator;
   }
@@ -193,11 +196,11 @@ void PartitionBucket::dump(int fd, uint64_t offset, uint32_t & crc) {
 // MapOutputCollector
 /////////////////////////////////////////////////////////////////
 
-MapOutputCollector::MapOutputCollector(uint32_t num_partition) :
+MapOutputCollector::MapOutputCollector(uint32_t num_partition, ICombineRunner * combineHandler) :
   _config(NULL),
   _buckets(NULL),
   _keyComparator(NULL),
-  _combineRunner(NULL){
+  _combineRunner(combineHandler){
   _num_partition = num_partition;
   _buckets = new PartitionBucket*[num_partition];
   memset(_buckets, 0, sizeof(PartitionBucket*) * num_partition);

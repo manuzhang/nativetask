@@ -21,19 +21,14 @@ package org.apache.hadoop.mapred.nativetask.serde;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
-import java.lang.reflect.Method;
 
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapred.nativetask.INativeComparable;
 
 public class TextSerializer implements INativeSerializer<Text>,
     INativeComparable {
-  private Method setCapacity = null;
-
+  
   public TextSerializer() throws SecurityException, NoSuchMethodException {
-    setCapacity = Text.class.getDeclaredMethod("setCapacity", int.class,
-        boolean.class);
-    setCapacity.setAccessible(true);
   }
 
   @Override
@@ -50,7 +45,8 @@ public class TextSerializer implements INativeSerializer<Text>,
   public void deserialize(Text w, int length, DataInput in) throws IOException {
 
     try {
-      setCapacity.invoke(w, length, false);
+      w.setCapacity(length, true);
+      w.setLength(length);
     } catch (Exception e) {
       throw new IOException(e);
     }

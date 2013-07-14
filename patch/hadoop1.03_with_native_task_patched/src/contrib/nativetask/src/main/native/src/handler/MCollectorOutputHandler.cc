@@ -21,6 +21,7 @@
 #include "MCollectorOutputHandler.h"
 #include "NativeObjectFactory.h"
 #include "MapOutputCollector.h"
+#include "CombineHandler.h"
 
 namespace NativeTask {
 
@@ -44,7 +45,20 @@ void MCollectorOutputHandler::reset() {
 
 void MCollectorOutputHandler::configure(Config & config) {
   uint32_t partition = config.getInt("mapred.reduce.tasks", 1);
-  _collector = new MapOutputCollector(partition);
+
+  const char * combineName = config.get("mapred.combiner.class");
+  BatchHandler * combinerHandler = NULL;
+
+  if (NULL == combineName) {
+    combineName = config.get("mapreduce.combine.class");
+  }
+
+  if (NULL != combineName) {
+    LOG("[MapOutputCollector::configure] java combiner is configured");
+    uint64_t * combinerHandlerAddress = (uint64_t *)(this->sendCommand("getCombinerHandler").c_str());
+    combinerHandler = (BatchHandler * )((void*)(*combinerHandlerAddress));
+  }
+  _collector = new MapOutputCollector(partition, (CombineHandler *)combinerHandler);
   _collector->configure(config);
 }
 

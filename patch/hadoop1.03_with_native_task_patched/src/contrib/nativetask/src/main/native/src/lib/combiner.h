@@ -25,10 +25,23 @@ private:
 public:
   CombineContext(CombineContextType type) : _type(type) {
   }
+
+public:
+  CombineContextType getType() {
+    return _type;
+  }
+};
+
+class CombineInMemory : public CombineContext {
+  CombineInMemory() : CombineContext(CONTINUOUS_MEMORY_BUFFER) {
+  }
 };
 
 class ICombineRunner {
 public:
+  ICombineRunner() {
+  }
+
   virtual void combine(CombineContext type, KVIterator * kvIterator, IFileWriter * writer) = 0;
 
 protected:

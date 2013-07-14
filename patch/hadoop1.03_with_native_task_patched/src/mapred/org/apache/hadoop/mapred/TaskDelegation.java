@@ -96,6 +96,7 @@ public class TaskDelegation {
     }
     catch(Exception e) {
       LOG.error("MapTaskDelegator " + delegateMapClazz + " is not enabled", e);
+      return null;
     }
     return delegator;
   }
@@ -123,6 +124,7 @@ public class TaskDelegation {
     }
     catch(Exception e) {
       LOG.warn("ReduceTaskDelegator " + delegateReducerClazz + " is not enabled", e);
+      return null;
     }
     return delegator;
   }
@@ -151,6 +153,7 @@ public class TaskDelegation {
     }
     catch(Exception e) {
       LOG.error("MapOutputCollectorDelegator " + delegatorClazz + " is not enabled", e);
+      return null;
     }
     return delegator;
   }

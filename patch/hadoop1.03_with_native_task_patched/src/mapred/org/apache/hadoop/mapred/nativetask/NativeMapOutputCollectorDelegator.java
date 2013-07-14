@@ -53,11 +53,6 @@ public class NativeMapOutputCollectorDelegator<K, V> implements
       throw new InvalidJobConfException(
           "There is no reducer, no need to use native output collector");
     }
-    if (job.getCombinerClass() != null) {
-      throw new InvalidJobConfException(
-          "Native output collector don't support java combiner"
-              + job.getCombinerClass().getName());
-    }
     if (job.getClass("mapred.output.key.comparator.class", null,
         RawComparator.class) != null) {
       throw new InvalidJobConfException(
@@ -101,7 +96,7 @@ public class NativeMapOutputCollectorDelegator<K, V> implements
 
     this.handler = null;
     try {
-      handler = new NativeCollectorOnlyHandler(job);
+      handler = new NativeCollectorOnlyHandler(job, reporter, task.getTaskID());
       handler.init(job);
     } catch (IOException e) {
       throw new IOException("Native output collector cannot be loaded", e);

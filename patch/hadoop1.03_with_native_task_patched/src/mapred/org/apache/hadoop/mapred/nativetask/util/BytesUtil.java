@@ -44,6 +44,10 @@ public class BytesUtil {
     }
   }
 
+  public static int toInt(byte[] bytes) {
+    return toInt(bytes, 0, 4);
+  }
+  
   public static int toInt(byte[] bytes, int offset, final int length) {
     final int SIZEOF_INT = 4;
     if (length != SIZEOF_INT || offset + length > bytes.length) {
@@ -66,4 +70,14 @@ public class BytesUtil {
     b[3] = (byte) ((v >>> 0) & 0xFF);
     return b;
   }
+  
+  // same rule as DataOutputStream
+  public static byte[] toBytes(int v, byte[] b, int offset, int length) {
+    b[offset] = (byte) ((v >>> 24) & 0xFF);
+    b[offset + 1] = (byte) ((v >>> 16) & 0xFF);
+    b[offset + 2] = (byte) ((v >>> 8) & 0xFF);
+    b[offset + 3] = (byte) ((v >>> 0) & 0xFF);
+    return b;
+  }
+  
 }
