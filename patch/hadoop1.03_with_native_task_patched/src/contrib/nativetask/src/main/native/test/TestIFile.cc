@@ -30,7 +30,7 @@ SingleSpillInfo * writeIFile(int partition,
                              KeyValueType type,
                              const string & codec) {
   FileOutputStream * fout = (FileOutputStream*)FileSystem::getLocal().create(path);
-  IFileWriter * iw = new IFileWriter(fout, CHECKSUM_CRC32, type, type, codec);
+  IFileWriter * iw = new IFileWriter(fout, CHECKSUM_CRC32, type, type, codec, NULL);
   for (int i=0;i<partition;i++) {
     iw->startPartition();
     for (size_t i = 0;i<kvs.size();i++) {
@@ -107,7 +107,7 @@ void TestIFileWriteRead2(vector<pair<string, string> > & kvs, char * buff,
   int partition = TestConfig.getInt("ifile.partition", 50);
   Timer timer;
   OutputBuffer outputBuffer = OutputBuffer(buff, buffsize);
-  IFileWriter * iw = new IFileWriter(&outputBuffer, checksumType, type, type, codec);
+  IFileWriter * iw = new IFileWriter(&outputBuffer, checksumType, type, type, codec, NULL);
   timer.reset();
   for (int i=0;i<partition;i++) {
     iw->startPartition();

@@ -130,13 +130,15 @@ protected:
   string       _codec;
   AppendBuffer _appendBuffer;
   vector<IFileSegment> _spillFileSegments;
+  Counter * _recordCounter;
 
 private:
   IFileSegment * toArray(std::vector<IFileSegment> *segments);
 
 public:
   IFileWriter(OutputStream * stream, ChecksumType checksumType,
-               KeyValueType ktype, KeyValueType vtype, const string & codec);
+               KeyValueType ktype, KeyValueType vtype, const string & codec,
+               Counter * recordCounter);
 
   virtual ~IFileWriter();
 

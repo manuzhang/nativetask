@@ -1274,7 +1274,7 @@ abstract public class Task implements Writable, Configurable {
         if(comparator==null){
           hasNext = false;
         }else{
-        hasNext = key != null && (comparator.compare(key, nextKey) == 0);
+          hasNext = key != null && (comparator.compare(key, nextKey) == 0);
         }
       } else {
         hasNext = false;

@@ -27,6 +27,7 @@
 #include "WritableUtils.h"
 #include "util/DualPivotQuickSort.h"
 #include "combiner.h"
+#include "TaskCounters.h"
 
 namespace NativeTask {
 
@@ -200,7 +201,8 @@ MapOutputCollector::MapOutputCollector(uint32_t num_partition, ICombineRunner * 
   _config(NULL),
   _buckets(NULL),
   _keyComparator(NULL),
-  _combineRunner(combineHandler){
+  _combineRunner(combineHandler),
+  _spilledRecords(NULL){
   _num_partition = num_partition;
   _buckets = new PartitionBucket*[num_partition];
   memset(_buckets, 0, sizeof(PartitionBucket*) * num_partition);
@@ -233,6 +235,9 @@ void MapOutputCollector::init(uint32_t memory_capacity, ComparatorPtr keyCompara
     this->_keyComparator = keyComparator;
     MemoryBlockPool::init(memory_capacity, s);
   }
+  _spilledRecords = NativeObjectFactory::GetCounter(
+      TaskCounters::TASK_COUNTER_GROUP,
+      TaskCounters::SPILLED_RECORDS);
 }
 
 void MapOutputCollector::reset() {
@@ -307,21 +312,26 @@ void MapOutputCollector::sort_and_spill_partitions(uint32_t start_partition,
     THROW_EXCEPTION(UnsupportException, "GROUPBY not supported");
   }
 
+  uint64_t sortingTime = 0;
   Timer timer;
-  if (orderType == FULLORDER) {
-    sort_partitions(sortType, start_partition, start_partition + num_partition);
-  }
-  sortTime = timer.now() - timer.last();
+  uint64_t recordNum = 0;
 
   for (uint32_t i = 0; i < num_partition; i++) {
     writer.startPartition();
-
     PartitionBucket * pb = _buckets[start_partition + i];
     if (pb != NULL) {
+      recordNum += pb->recored_count();
+      if (orderType == FULLORDER) {
+        timer.reset();
+        pb->sort(sortType);
+        sortingTime += timer.now() - timer.last();
+      }
       pb->spill(writer, keyGroupCount);
     }
     writer.endPartition();
   }
+  sortTime = sortingTime;
+  recordCount = recordNum;
 }
 
 
@@ -338,7 +348,8 @@ void MapOutputCollector::middle_spill(std::vector<std::string> & spillOutputs,
     OutputStream * fout = FileSystem::getLocal().create(spillPath, true);
     IFileWriter * writer = new IFileWriter(fout, spec.checksumType,
                                              spec.keyType, spec.valueType,
-                                             spec.codec);
+                                             spec.codec,
+                                             _spilledRecords);
     Timer timer;
 
     const uint32_t beginPartition = 0;
@@ -410,7 +421,8 @@ void MapOutputCollector::final_merge_and_spill(std::vector<std::string> & filepa
   OutputStream * fout = FileSystem::getLocal().create(filepaths[0], true);
   IFileWriter * writer = new IFileWriter(fout, spec.checksumType,
                                            spec.keyType, spec.valueType,
-                                           spec.codec);
+                                           spec.codec,
+                                           _spilledRecords);
   Merger * merger = new Merger(writer, *_config, _keyComparator, _combineRunner);
   InputStream ** inputStreams = new InputStream*[_spillInfo.getSpillCount()];
   IFileReader ** readers = new IFileReader*[_spillInfo.getSpillCount()];

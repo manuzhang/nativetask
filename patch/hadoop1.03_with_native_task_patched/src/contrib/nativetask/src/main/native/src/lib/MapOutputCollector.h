@@ -168,6 +168,7 @@ private:
   MapOutputSpec _mapOutputSpec;
   Timer _collectTimer;
   ICombineRunner * _combineRunner;
+  Counter * _spilledRecords;
 
 private:
   void init(uint32_t memory_capacity, ComparatorPtr keyComparator);

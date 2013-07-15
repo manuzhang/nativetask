@@ -91,13 +91,14 @@ int IFileReader::nextPartition() {
 
 IFileWriter::IFileWriter(OutputStream * stream, ChecksumType checksumType,
                            KeyValueType ktype, KeyValueType vtype,
-                           const string & codec) :
+                           const string & codec, Counter * counter) :
     _stream(stream),
     _dest(NULL),
     _checksumType(checksumType),
     _kType(ktype),
     _vType(vtype),
-    _codec(codec) {
+    _codec(codec),
+    _recordCounter(counter){
   _dest = new ChecksumOutputStream(_stream, _checksumType);
   _appendBuffer.init(128*1024, _dest, _codec);
 }
@@ -155,6 +156,10 @@ void IFileWriter::writeKey(const char * key, uint32_t keyLen, uint32_t valueLen)
   }
   if (keyLen>0) {
     _appendBuffer.write(key, keyLen);
+  }
+
+  if (NULL != _recordCounter) {
+    _recordCounter->increase();
   }
 }
 
