@@ -1,4 +1,4 @@
-#**nativetask 测试报告**#
+#**nativetask Test Report**#
 
 ----------
 ## Abstract ##
@@ -102,10 +102,10 @@ As shown in the following table, the first column stand for key types, and the f
 	</tr>
 	<tr>
 		<td>BooleanWritable</td>
-		<td>√</td><td>√</td>
-		<td>√</td><td>√</td>
-		<td>√</td><td>√</td>
-		<td>√</td><td>√</td>
+		<td>ArrayIndexOutOfBoundsException</td><td>ArrayIndexOutOfBoundsException</td>
+		<td>ArrayIndexOutOfBoundsException</td><td>ArrayIndexOutOfBoundsException</td>
+		<td>ArrayIndexOutOfBoundsException</td><td>ArrayIndexOutOfBoundsException</td>
+		<td>ArrayIndexOutOfBoundsException</td><td>ArrayIndexOutOfBoundsException</td>
 	</tr>
 </table>
 
