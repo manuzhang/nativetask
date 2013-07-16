@@ -59,7 +59,7 @@ public class NativeReduceTaskDelegator<IK, IV, OK, OV> implements
   public void run(TaskAttemptID taskAttemptID, RawKeyValueIterator rIter,
       RawComparator comparator, Class keyClass, Class valueClass)
       throws IOException {
-    long updateInterval = job.getLong("native.update.interval", 1000);
+    long updateInterval = job.getLong("native.update.interval", Constants.NATIVE_STATUS_UPDATE_INTERVAL);
     StatusReportChecker updater = new StatusReportChecker(reporter,
         updateInterval);
     updater.startUpdater();

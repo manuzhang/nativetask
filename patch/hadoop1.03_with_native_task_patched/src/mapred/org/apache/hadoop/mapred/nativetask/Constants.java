@@ -36,5 +36,6 @@ public class Constants {
   public static String NATIVE_PROCESSOR_BUFFER_KB = "native.processor.buffer.kb";
   public static int NATIVE_PROCESSOR_BUFFER_KB_DEFAULT = 64;
   public static int NATIVE_ASYNC_PROCESSOR_BUFFER_KB_DEFAULT = 1024;
+  public static int NATIVE_STATUS_UPDATE_INTERVAL = 3000;
 
 }

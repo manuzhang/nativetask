@@ -60,6 +60,9 @@ public class StatusReportChecker implements Runnable {
     reporter.getCounter(Counter.REDUCE_INPUT_RECORDS);
     reporter.getCounter(Counter.REDUCE_OUTPUT_RECORDS);
     reporter.getCounter(Counter.REDUCE_INPUT_GROUPS);
+    reporter.getCounter(Counter.SPILLED_RECORDS);
+    reporter.getCounter(Counter.MAP_OUTPUT_BYTES);
+    reporter.getCounter(Counter.MAP_OUTPUT_RECORDS);
   }
 
   public synchronized void startUpdater() {

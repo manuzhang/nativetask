@@ -22,7 +22,7 @@ namespace NativeTask {
 
 #define DEFINE_COUNTER(name) const char * TaskCounters::name = #name;
 
-const char * TaskCounters::TASK_COUNTER_GROUP = "org.apache.hadoop.mapred.Task$Counter";
+const char * TaskCounters::TASK_COUNTER_GROUP = "Map-Reduce Framework";
 
 DEFINE_COUNTER(MAP_INPUT_RECORDS)
 DEFINE_COUNTER(MAP_OUTPUT_RECORDS)
