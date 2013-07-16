@@ -32,7 +32,6 @@ public class ResultVerifier {
 				samplein = fs.open(samplepath);
 			} else
 				return "0";
-
 			if (samplein.available() != sourcein.available()) {
 				return "0";
 			}
@@ -41,8 +40,9 @@ public class ResultVerifier {
 				sourceline = sourcein.readLine();
 				if (sampleline.equals(sourceline))
 					;
-				else
+				else{
 					return "0";
+				}
 			}
 			return "1";
 		} catch (IOException e) {

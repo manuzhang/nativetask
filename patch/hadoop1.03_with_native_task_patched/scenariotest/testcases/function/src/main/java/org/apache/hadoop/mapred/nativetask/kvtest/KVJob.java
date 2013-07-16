@@ -3,8 +3,8 @@ package org.apache.hadoop.mapred.nativetask.kvtest;
 import java.io.IOException;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.lib.input.SequenceFileInputFormat;
@@ -13,7 +13,7 @@ import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 public class KVJob {
 	Job job = null;
 
-	public static class ValueMapper<KTYPE,VTYPE> extends
+	public static class ValueMapper<KTYPE, VTYPE> extends
 			Mapper<KTYPE, VTYPE, KTYPE, VTYPE> {
 		public void map(KTYPE key, VTYPE value, Context context)
 				throws IOException, InterruptedException {
@@ -49,8 +49,18 @@ public class KVJob {
 					.get(KVTest.NATIVETASK_KVTEST_CONF_OUTPUTDIR)
 					+ "/"
 					+ conf.get(KVTest.NATIVETASK_KVTEST_CONF_VALUECLASS);
-
-			GenTestFile.createSequenceTestFile(InputFilePath, keyclass, valueclass, 10);
+			if (conf.get(KVTest.NATIVETASK_KVTEST_CONF_CREATEFILE, "false")
+					.equals("true")) {
+				FileSystem fs = FileSystem.get(conf);
+				fs.delete(new Path(InputFilePath));
+				GenTestFile
+						.createSequenceTestFile(
+								InputFilePath,
+								keyclass,
+								valueclass,
+								Integer.valueOf(conf
+										.get(KVTest.NATIVETASK_KVTEST_CONF_FILE_RECORDNUM)));
+			}
 			job.setInputFormatClass(SequenceFileInputFormat.class);
 			SequenceFileInputFormat.addInputPath(job, new Path(InputFilePath));
 			FileOutputFormat.setOutputPath(job, new Path(OutputFilePath));
