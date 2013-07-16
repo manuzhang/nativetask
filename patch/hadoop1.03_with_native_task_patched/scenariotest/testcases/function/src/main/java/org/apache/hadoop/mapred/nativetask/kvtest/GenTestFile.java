@@ -39,4 +39,7 @@ public class GenTestFile {
 		}
 		return null;
 	}
+	public static void createSourceFile(String inputpath,String outputpath){
+		
+	}
 }

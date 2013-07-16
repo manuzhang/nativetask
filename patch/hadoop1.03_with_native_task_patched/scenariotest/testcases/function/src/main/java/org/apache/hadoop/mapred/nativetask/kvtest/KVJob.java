@@ -13,9 +13,9 @@ import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 public class KVJob {
 	Job job = null;
 
-	public static class ValueMapper<VTYPE> extends
-			Mapper<IntWritable, VTYPE, IntWritable, VTYPE> {
-		public void map(IntWritable key, VTYPE value, Context context)
+	public static class ValueMapper<KTYPE,VTYPE> extends
+			Mapper<KTYPE, VTYPE, KTYPE, VTYPE> {
+		public void map(KTYPE key, VTYPE value, Context context)
 				throws IOException, InterruptedException {
 			context.write(key, value);
 		}
