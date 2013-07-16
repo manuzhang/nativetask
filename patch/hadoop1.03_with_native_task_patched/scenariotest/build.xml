@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project name="nativetask auto-test" default="compile">
-	<property name="hadoop.home" value="/home/hadoop/nativetask-download/patch/hadoop1.03_with_native_task_patched" />
+	<property name="hadoop.home" value="/home/hadoop/workspace/nativetask/patch/hadoop1.03_with_native_task_patched" />
 	<property name="hbase.home" value="/usr/lib/hbase" />
 
 	<property name="testsrc.dir" value="testcases" />
@@ -8,7 +8,6 @@
 	<property name="testclasses.dir" value="${testbuild.dir}/classes" />
 	<property name="hadoopbuild.dir" value="../build" />
 	<property name="report.dir" value="report" />
-	<property name="output.dir" value="/testfile/output" />
 	<path id="hadoop.lib.classpath">
 		<fileset dir="${hbase.home}/lib">
 			<include name="**/*.jar" />
@@ -31,11 +30,9 @@
 	<target name="init">
 		<delete dir="${testbuild.dir}" />
 		<delete dir="${report.dir}" />
-		<delete dir="${output.dir}" />
 		<mkdir dir="${testbuild.dir}" />
 		<mkdir dir="${testclasses.dir}" />
 		<mkdir dir="${report.dir}" />
-		<mkdir dir="${output.dir}" />
 	</target>
 	<target name="compile" depends="init">
 		<javac srcdir="${testsrc.dir}" destdir="${testclasses.dir}" classpathref="dependlib">

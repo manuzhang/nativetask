@@ -23,14 +23,23 @@ import org.junit.Test;
 public class KVTest extends TestCase {
 	public static final String NATIVETASK_KVTEST_CONF_KEYCLASS = "nativetask.kvtest.keyclass";
 	public static final String NATIVETASK_KVTEST_CONF_VALUECLASS = "nativetask.kvtest.valueclass";
-	private Class<?>[] valueclasses = { IntWritable.class, LongWritable.class,
-			DoubleWritable.class, FloatWritable.class, VIntWritable.class,
-			VLongWritable.class, BooleanWritable.class, Text.class,
-			ByteWritable.class, BytesWritable.class };
+	private Class<?>[] valueclasses = { IntWritable.class
+//			, LongWritable.class
+//			, DoubleWritable.class
+//			, FloatWritable.class
+//			, VIntWritable.class
+//			, VLongWritable.class
+//			, BooleanWritable.class
+//			, Text.class
+//			, ByteWritable.class
+//			, BytesWritable.class 
+			};
 	public static final String NATIVETASK_KVTEST_CONF_PATH = "test-kv-conf.xml";
 	public static final String NATIVETASK_KVTEST_CONF_INPUTDIR = "nativetask.kvtest.inputdir";
 	public static final String NATIVETASK_KVTEST_CONF_OUTPUTDIR = "nativetask.kvtest.outputdir";
 	public static final String NATIVETASK_KVTEST_CONF_NORMAL_OUTPUTDIR = "normal.kvtest.outputdir";
+	public static final String NATIVETASK_KVTEST_CONF_CREATEFILE="nativetask.kvtest.createfile";
+	public static final String NATIVETASK_KVTEST_CONF_FILE_RECORDNUM="nativetask.kvtest.file.recordnum";
 
 	@Test
 	public void testIntKey() throws InstantiationException,
@@ -55,7 +64,7 @@ public class KVTest extends TestCase {
 		String factual = "";
 		for (int i = 0; i < nativeOutputfile.length; i++) {
 			expected += "1,";
-			factual += ResultCertification.verify(nativeOutputfile[i],
+			factual += ResultVerifier.verify(nativeOutputfile[i],
 					normalOutputfile[i]) + ",";
 		}
 		assertEquals(expected, factual);
@@ -160,16 +169,16 @@ public class KVTest extends TestCase {
 		Configuration conf = new Configuration();
 		conf.addResource(NATIVETASK_KVTEST_CONF_PATH);
 		String inputdir = conf.get(NATIVETASK_KVTEST_CONF_INPUTDIR) + "/"
-				+ jobname;
+				+ keyclass.getName();
 		String outputdir = conf.get(NATIVETASK_KVTEST_CONF_OUTPUTDIR) + "/"
 				+ jobname;
 		FileSystem fs = FileSystem.get(conf);
-		fs.delete(new Path(inputdir));
 		fs.delete(new Path(outputdir));
 		fs.close();
+		conf.set(NATIVETASK_KVTEST_CONF_CREATEFILE, "true");
 		conf.set(NATIVETASK_KVTEST_CONF_INPUTDIR, inputdir);
 		conf.set(NATIVETASK_KVTEST_CONF_OUTPUTDIR, outputdir);
-		conf.set(NATIVETASK_KVTEST_CONF_KEYCLASS, IntWritable.class.getName());
+		conf.set(NATIVETASK_KVTEST_CONF_KEYCLASS, keyclass.getName());
 		for (int i = 0; i < valueclasses.length; i++) {
 			conf.set(NATIVETASK_KVTEST_CONF_VALUECLASS,
 					valueclasses[i].getName());
@@ -188,16 +197,16 @@ public class KVTest extends TestCase {
 		Configuration conf = new Configuration();
 		conf.addResource("test-kv-normal-conf.xml");
 		String inputdir = conf.get(NATIVETASK_KVTEST_CONF_INPUTDIR) + "/"
-				+ jobname;
+				+ keyclass.getName();
 		String outputdir = conf.get(NATIVETASK_KVTEST_CONF_NORMAL_OUTPUTDIR)
 				+ "/" + jobname;
 		FileSystem fs = FileSystem.get(conf);
-		fs.delete(new Path(inputdir));
+//		fs.delete(new Path(inputdir));
 		fs.delete(new Path(outputdir));
 		fs.close();
 		conf.set(NATIVETASK_KVTEST_CONF_INPUTDIR, inputdir);
 		conf.set(NATIVETASK_KVTEST_CONF_OUTPUTDIR, outputdir);
-		conf.set(NATIVETASK_KVTEST_CONF_KEYCLASS, IntWritable.class.getName());
+		conf.set(NATIVETASK_KVTEST_CONF_KEYCLASS, keyclass.getName());
 		for (int i = 0; i < valueclasses.length; i++) {
 			conf.set(NATIVETASK_KVTEST_CONF_VALUECLASS,
 					valueclasses[i].getName());
@@ -219,7 +228,7 @@ public class KVTest extends TestCase {
 		String factual = "";
 		for (int i = 0; i < nativefiles.length; i++) {
 			expected += "1,";
-			factual += ResultCertification.verify(nativefiles[i],
+			factual += ResultVerifier.verify(nativefiles[i],
 					normalfiles[i]) + ",";
 		}
 		assertEquals(expected, factual);
