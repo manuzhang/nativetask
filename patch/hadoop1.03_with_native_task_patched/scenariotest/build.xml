@@ -24,7 +24,7 @@
 	<path id="dependlib">
 
 		<fileset dir="${hadoopbuild.dir}" includes="*.jar" />
-		<!--		<fileset dir="lib" includes="*.jar"/> -->
+		<fileset dir="lib" includes="*.jar"/>
 		<fileset dir="../lib" includes="*.jar" />
 	</path>
 	<target name="init">

@@ -17,6 +17,7 @@ public class KVJob {
 			Mapper<KTYPE, VTYPE, KTYPE, VTYPE> {
 		public void map(KTYPE key, VTYPE value, Context context)
 				throws IOException, InterruptedException {
+			System.err.println(key+"\t"+value);
 			context.write(key, value);
 		}
 	}
@@ -42,13 +43,9 @@ public class KVJob {
 			job.setOutputKeyClass(keyclass);
 			job.setOutputValueClass(valueclass);
 			String InputFilePath = conf
-					.get(KVTest.NATIVETASK_KVTEST_CONF_INPUTDIR)
-					+ "/"
-					+ conf.get(KVTest.NATIVETASK_KVTEST_CONF_VALUECLASS);
+					.get(KVTest.NATIVETASK_KVTEST_CONF_INPUTDIR);
 			String OutputFilePath = conf
-					.get(KVTest.NATIVETASK_KVTEST_CONF_OUTPUTDIR)
-					+ "/"
-					+ conf.get(KVTest.NATIVETASK_KVTEST_CONF_VALUECLASS);
+					.get(KVTest.NATIVETASK_KVTEST_CONF_OUTPUTDIR);
 			if (conf.get(KVTest.NATIVETASK_KVTEST_CONF_CREATEFILE, "false")
 					.equals("true")) {
 				FileSystem fs = FileSystem.get(conf);
