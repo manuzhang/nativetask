@@ -39,6 +39,7 @@ uint32_t CombineHandler::refill(int serializationType) {
   uint32_t keyLen = _key.length();
   const char * value = _value.data();
   uint32_t valueLen = _value.length();
+  uint32_t vlen = 0;
 
   char vIntBuffer[8];
 
@@ -52,7 +53,6 @@ uint32_t CombineHandler::refill(int serializationType) {
       switch (_kType) {
         case TextType:
 
-          uint32_t vlen = 0;
           WritableUtils::WriteVInt(keyLen, vIntBuffer, vlen);
           putInt(bswap(keyLen + vlen));
           put(vIntBuffer, vlen);
@@ -72,7 +72,6 @@ uint32_t CombineHandler::refill(int serializationType) {
       switch (_vType) {
         case TextType:
 
-          uint32_t vlen = 0;
           WritableUtils::WriteVInt(valueLen, vIntBuffer, vlen);
           putInt(bswap(valueLen + vlen));
           put(vIntBuffer, vlen);
