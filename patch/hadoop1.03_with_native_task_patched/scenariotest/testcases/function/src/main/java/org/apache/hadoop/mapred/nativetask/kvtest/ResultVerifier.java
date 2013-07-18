@@ -31,7 +31,7 @@ public class ResultVerifier {
 				sourcein = fs.open(sourcepath);
 				samplein = fs.open(samplepath);
 			} else
-				return "0";
+				return "-1";
 			if (samplein.available() != sourcein.available()) {
 				return "0";
 			}
@@ -50,7 +50,7 @@ public class ResultVerifier {
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-			return "0";
+			return "-1";
 		} finally {
 			try {
 				if (samplein != null)

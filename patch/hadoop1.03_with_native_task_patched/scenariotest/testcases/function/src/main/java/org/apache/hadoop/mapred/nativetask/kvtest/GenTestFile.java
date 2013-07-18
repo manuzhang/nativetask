@@ -19,8 +19,9 @@ import org.apache.hadoop.io.VIntWritable;
 import org.apache.hadoop.io.VLongWritable;
 
 public class GenTestFile {
-	public static void createSequenceTestFile(String filepath, Class<?> keytype,
-			Class<?> valuetype, int linenum) {
+	public static final int BytesMinLen = 8;//match to generate Double and Long datatype
+	public static void createSequenceTestFile(String filepath,
+			Class<?> keytype, Class<?> valuetype, int linenum) {
 		SequenceFile.Writer writer = null;
 		try {
 			Configuration conf = new Configuration();
@@ -29,7 +30,8 @@ public class GenTestFile {
 			writer = new SequenceFile.Writer(hdfs, conf, outputfilepath,
 					keytype, valuetype);
 			for (int i = 0; i < linenum; i++) {
-				writer.append(generateData(keytype.getName()), generateData(valuetype.getName()));
+				writer.append(generateData(keytype.getName()),
+						generateData(valuetype.getName()));
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -39,7 +41,7 @@ public class GenTestFile {
 	}
 
 	private static Object generateData(String className) {
-		byte[] bytes = BytesToAllTypes.generateBytes(4);
+		byte[] bytes = BytesToAllTypes.generateBytes(BytesMinLen);
 		if (className.equals(IntWritable.class.getName())) {
 			return new IntWritable(Bytes.toInt(bytes));
 		} else if (className.equals(FloatWritable.class.getName())) {
@@ -53,7 +55,7 @@ public class GenTestFile {
 		} else if (className.equals(VLongWritable.class.getName())) {
 			return new VLongWritable(Bytes.toLong(bytes));
 		} else if (className.equals(BooleanWritable.class.getName())) {
-			return new BooleanWritable(bytes[0]%2==1?true:false);
+			return new BooleanWritable(bytes[0] % 2 == 1 ? true : false);
 		} else if (className.equals(Text.class.getName())) {
 			return new Text(Bytes.toString(bytes));
 		} else if (className.equals(ByteWritable.class.getName())) {

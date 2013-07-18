@@ -36,7 +36,7 @@ public class KVTest extends TestCase {
 
 	static {
 		Configuration conf = new Configuration();
-		conf.addResource("test-kv-conf.xml");
+		conf.addResource(NATIVETASK_KVTEST_CONF_PATH);
 		String valueclassesStr = conf.get(NATIVETASK_KVTEST_CONF_VALUECLASSES);
 		String[] valueclassNames = valueclassesStr.trim().split("\n");
 		valueclasses = new Class<?>[valueclassNames.length];
@@ -191,9 +191,13 @@ public class KVTest extends TestCase {
 					valueclasses[i].getName());
 			KVJob keyJob = new KVJob();
 			keyJob.setJob(conf, jobname);
-			keyJob.runJob();
-			ret[i] = outputdir + "/" + valueclasses[i].getName()
-					+ "/part-r-00000";
+			try {
+				keyJob.runJob();
+				ret[i] = outputdir + "/" + valueclasses[i].getName()
+						+ "/part-r-00000";
+			} catch (Exception e) {
+				ret[i] = "native testcase run time error.";
+			}
 		}
 		return ret;
 	}
@@ -202,7 +206,7 @@ public class KVTest extends TestCase {
 			throws IOException {
 		String[] ret = new String[valueclasses.length];
 		Configuration conf = new Configuration();
-		conf.addResource("test-kv-conf.xml");
+		conf.addResource(NATIVETASK_KVTEST_CONF_PATH);
 		String inputdir = conf.get(NATIVETASK_KVTEST_CONF_INPUTDIR) + "/"
 				+ keyclass.getName();
 		String outputdir = conf.get(NATIVETASK_KVTEST_CONF_NORMAL_OUTPUTDIR)
@@ -221,9 +225,13 @@ public class KVTest extends TestCase {
 					valueclasses[i].getName());
 			KVJob keyJob = new KVJob();
 			keyJob.setJob(conf, jobname);
-			keyJob.runJob();
-			ret[i] = outputdir + "/" + valueclasses[i].getName()
-					+ "/part-r-00000";
+			try {
+				keyJob.runJob();
+				ret[i] = outputdir + "/" + valueclasses[i].getName()
+						+ "/part-r-00000";
+			} catch (Exception e) {
+				ret[i] = "normal testcase run time error.";
+			}
 		}
 		return ret;
 	}

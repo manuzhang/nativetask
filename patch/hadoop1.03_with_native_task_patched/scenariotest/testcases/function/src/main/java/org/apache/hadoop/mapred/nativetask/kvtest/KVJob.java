@@ -17,18 +17,14 @@ public class KVJob {
 			Mapper<KTYPE, VTYPE, KTYPE, VTYPE> {
 		public void map(KTYPE key, VTYPE value, Context context)
 				throws IOException, InterruptedException {
-			System.err.println(key+"\t"+value);
-			context.write(key, value);
+			System.err.println(key.getClass().getName()+"\t"+key + "\t" + value);
+//			context.write(key, value);
 		}
 	}
 
-	public void runJob() {
-		try {
-			job.waitForCompletion(true);
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+	public void runJob() throws Exception{
+		System.out.println(job.getJobName()+"\trunning.......");
+		job.waitForCompletion(true);
 	}
 
 	public void setJob(Configuration conf, String jobname) {
