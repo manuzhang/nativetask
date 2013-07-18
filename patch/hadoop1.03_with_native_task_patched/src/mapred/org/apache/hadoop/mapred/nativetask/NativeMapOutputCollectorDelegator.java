@@ -67,7 +67,7 @@ public class NativeMapOutputCollectorDelegator<K, V> implements
                 + job.get("mapred.map.output.compression.codec"));
       }
     }
-
+    
     Class<?> keyCls = job.getMapOutputKeyClass();
     try {
       INativeSerializer serializer = NativeSerialization.getInstance()
@@ -89,6 +89,12 @@ public class NativeMapOutputCollectorDelegator<K, V> implements
     boolean ret = NativeRuntime.isNativeLibraryLoaded();
     if (ret) {
       NativeRuntime.configure(job);
+      
+      long updateInterval = job.getLong("native.update.interval", Constants.NATIVE_STATUS_UPDATE_INTERVAL);
+      StatusReportChecker updater = new StatusReportChecker(reporter,
+          updateInterval);
+      updater.startUpdater();
+      
     } else {
       throw new InvalidJobConfException(
           "Nativeruntime cannot be loaded, please check the libnativetask.so is in hadoop library dir");
