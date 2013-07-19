@@ -220,6 +220,44 @@ abstract class TaskRunner extends Thread {
       //  Build exec child JVM args.
       Vector<String> vargs = getVMArgs(taskid, workDir, classPaths, logSize);
       
+      boolean mapUseAffinity = conf.getBoolean("maptask.affinity.enable", false);
+      boolean reduceTaskUseAffinity = conf.getBoolean("reducetask.affinity.enable", false);
+      
+      if (mapUseAffinity || reduceTaskUseAffinity) {
+        int cpuCount = conf.getInt("cpu.count", 1);
+        int corePerCpu = conf.getInt("core.per.cpu", 1);
+        int id = t.getTaskID().getTaskID().getId();
+        LOG.info("cpu count: " + cpuCount + ", corePerCpu: " + corePerCpu + ", id: " + id);
+        int afinityCpu = id % cpuCount;
+        int affinityMinCore = afinityCpu * corePerCpu;
+        int affinityMaxCore = (afinityCpu + 1) * corePerCpu - 1;
+        String cpu_affinity = "";
+        if (affinityMinCore == affinityMaxCore) {
+          cpu_affinity = "" + affinityMinCore;
+        }
+        else {
+          cpu_affinity = "" + affinityMinCore + "-" + affinityMaxCore;
+        }
+        
+        if (t.isMapTask() && mapUseAffinity) {
+          String task_type = "map";
+          vargs.add(0, "taskset");
+          vargs.add(1, "-c");
+          vargs.add(2, cpu_affinity);
+          LOG.info("YS: Set Task(" + task_type + ")'s CPU Affinity to "
+              + cpu_affinity);
+        }
+        else if(reduceTaskUseAffinity) {
+          
+          String task_type = "reduce";
+          vargs.add(0, "taskset");
+          vargs.add(1, "-c");
+          vargs.add(2, cpu_affinity);
+          LOG.info("YS: Set Task(" + task_type + ")'s CPU Affinity to "
+              + cpu_affinity);
+        }
+      }
+      
       tracker.addToMemoryManager(t.getTaskID(), t.isMapTask(), conf);
 
       // set memory limit using ulimit if feasible and necessary ...
