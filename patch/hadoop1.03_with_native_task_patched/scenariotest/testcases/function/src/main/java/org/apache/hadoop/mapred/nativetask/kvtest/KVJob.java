@@ -17,17 +17,14 @@ public class KVJob {
 			Mapper<KTYPE, VTYPE, KTYPE, VTYPE> {
 		public void map(KTYPE key, VTYPE value, Context context)
 				throws IOException, InterruptedException {
-			context.write(key, value);
+			System.err.println(key.getClass().getName()+"\t"+key + "\t" + value);
+//			context.write(key, value);
 		}
 	}
 
-	public void runJob() {
-		try {
-			job.waitForCompletion(true);
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+	public void runJob() throws Exception{
+		System.out.println(job.getJobName()+"\trunning.......");
+		job.waitForCompletion(true);
 	}
 
 	public void setJob(Configuration conf, String jobname) {
@@ -42,13 +39,9 @@ public class KVJob {
 			job.setOutputKeyClass(keyclass);
 			job.setOutputValueClass(valueclass);
 			String InputFilePath = conf
-					.get(KVTest.NATIVETASK_KVTEST_CONF_INPUTDIR)
-					+ "/"
-					+ conf.get(KVTest.NATIVETASK_KVTEST_CONF_VALUECLASS);
+					.get(KVTest.NATIVETASK_KVTEST_CONF_INPUTDIR);
 			String OutputFilePath = conf
-					.get(KVTest.NATIVETASK_KVTEST_CONF_OUTPUTDIR)
-					+ "/"
-					+ conf.get(KVTest.NATIVETASK_KVTEST_CONF_VALUECLASS);
+					.get(KVTest.NATIVETASK_KVTEST_CONF_OUTPUTDIR);
 			if (conf.get(KVTest.NATIVETASK_KVTEST_CONF_CREATEFILE, "false")
 					.equals("true")) {
 				FileSystem fs = FileSystem.get(conf);

@@ -31,24 +31,26 @@ public class ResultVerifier {
 				sourcein = fs.open(sourcepath);
 				samplein = fs.open(samplepath);
 			} else
-				return "0";
+				return "-1";
 			if (samplein.available() != sourcein.available()) {
 				return "0";
 			}
 			while (samplein.available() > 0 && sourcein.available() > 0) {
 				sampleline = samplein.readLine();
 				sourceline = sourcein.readLine();
+				System.err.println(sampleline+"\t"+sourceline);
 				if (sampleline.equals(sourceline))
 					;
-				else{
+				else {
 					return "0";
 				}
 			}
+			System.err.println("----------------file matched-------------");
 			return "1";
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-			return "0";
+			return "-1";
 		} finally {
 			try {
 				if (samplein != null)
@@ -61,5 +63,8 @@ public class ResultVerifier {
 			}
 
 		}
+	}
+
+	public static void main(String[] args) {
 	}
 }

@@ -5,10 +5,6 @@
 
 <configuration>
 <property>
-<name>mapreduce.map.output.collector.delegator.class</name>
-<value>org.apache.hadoop.mapred.nativetask.NativeMapOutputCollectorDelegator</value>
-</property>
-<property>
 <name>nativetask.kvtest.inputdir</name>
 <value>./kvtest/input</value>
 </property>
@@ -23,5 +19,24 @@
 <property>
 <name>mapred.job.tracker</name>
 <value>local</value>
+</property>
+<property>
+<name>nativetask.kvtest.file.recordnum</name>
+<value>10</value>
+</property>
+<property>
+<name>nativetask.kvtest.valueclasses</name>
+<value>
+org.apache.hadoop.io.BooleanWritable
+org.apache.hadoop.io.ByteWritable
+org.apache.hadoop.io.BytesWritable
+org.apache.hadoop.io.DoubleWritable
+org.apache.hadoop.io.FloatWritable
+org.apache.hadoop.io.IntWritable
+org.apache.hadoop.io.LongWritable
+org.apache.hadoop.io.Text
+org.apache.hadoop.io.VIntWritable
+org.apache.hadoop.io.VLongWritable
+</value>
 </property>
 </configuration>
