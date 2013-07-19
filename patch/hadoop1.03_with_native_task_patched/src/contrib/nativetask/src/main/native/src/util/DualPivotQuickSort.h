@@ -27,6 +27,11 @@ namespace NativeTask {
 // TODO: definitely needs refactoring..
 template <typename _Compare>
 void DualPivotQuicksort(std::vector<uint32_t> & elements, int left, int right, int div, _Compare compare) {
+
+  if (left >= right) {
+    return;
+  }
+
   uint32_t * e = &(elements[0]);
   int len = right - left;
 
