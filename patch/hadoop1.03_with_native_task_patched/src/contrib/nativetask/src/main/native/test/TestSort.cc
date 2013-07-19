@@ -203,7 +203,7 @@ void printOffsets(string & dest, vector<uint32_t> & offsets) {
 
 TEST(Perf, sort) {
   vector<uint32_t> offsets;
-  makeInputWord(gBuffer, offsets, 800000000);
+  makeInputWord(gBuffer, offsets, 80000000);
   Timer timer;
   vector<uint32_t> offsetstemp1_0 = offsets;
   vector<uint32_t> offsetstemp1_1 = offsets;
@@ -272,7 +272,7 @@ TEST(Perf, sortCacheMiss) {
   LOG("Testing partition based sort, sort 4MB every time");
 
   vector<uint32_t> offsets;
-  makeInputWord(gBuffer, offsets, 800000000);
+  makeInputWord(gBuffer, offsets, 80000000);
   Timer timer;
   vector<uint32_t> offsetstemp1_0 = offsets;
   vector<uint32_t> offsetstemp1_1 = offsets;
