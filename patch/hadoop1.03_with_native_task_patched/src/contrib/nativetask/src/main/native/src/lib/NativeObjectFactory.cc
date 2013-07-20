@@ -365,8 +365,8 @@ inline int VIntComparator(const char * src, uint32_t srcLength, const char * des
 };
 
 inline int VLongComparator(const char * src, uint32_t srcLength, const char * dest, uint32_t destLength) {
-  int32_t from = WritableUtils::ReadVLong(src, srcLength);
-  int32_t to = WritableUtils::ReadVLong(dest, destLength);
+  int64_t from = WritableUtils::ReadVLong(src, srcLength);
+  int64_t to = WritableUtils::ReadVLong(dest, destLength);
   return from - to;
 };
 
