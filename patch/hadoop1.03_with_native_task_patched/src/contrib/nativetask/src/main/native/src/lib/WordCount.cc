@@ -19,6 +19,7 @@
 #include "commons.h"
 #include "util/StringUtil.h"
 #include "WordCount.h"
+#include "Log.h"
 
 namespace NativeTask {
 
@@ -73,6 +74,12 @@ void IntSumReducer::reduce(KeyGroupIterator & input) {
   uint32_t valueLen;
   uint32_t count = 0;
   key = input.getKey(keyLen);
+  char * output = new char[keyLen + 1];
+  ::memcpy(output, key, keyLen);
+  output[keyLen] = 0;
+  LOG("handling key: %s", output);
+  delete[] output;
+
   while (NULL != (value=input.nextValue(valueLen))) {
     uint32_t current =  bswap(*(uint32_t*)value);
     count += current;

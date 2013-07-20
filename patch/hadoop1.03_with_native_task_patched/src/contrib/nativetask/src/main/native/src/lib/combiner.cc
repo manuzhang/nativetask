@@ -75,14 +75,13 @@ bool KeyGroupIteratorImpl::next() {
   return result;
 }
 
-CombineRunner::CombineRunner(Configurable * combiner) :
-  _combiner(combiner),
-  _keyGroupCount(0),
-  _type(UnknownObjectType){
-  if (NULL == _combiner) {
+CombineRunner::CombineRunner(Config * config, ObjectCreatorFunc combinerCreator) :
+  _config(config),
+  _combinerCreator(combinerCreator),
+  _keyGroupCount(0){
+  if (NULL == _combinerCreator) {
     THROW_EXCEPTION_EX(UnsupportException, "Create combiner failed");
   }
-  _type = _combiner->type();
 }
 
 KeyGroupIterator * CombineRunner::createKeyGroupIterator(KVIterator * iter) {
@@ -90,9 +89,15 @@ KeyGroupIterator * CombineRunner::createKeyGroupIterator(KVIterator * iter) {
 }
 
 void CombineRunner::combine(CombineContext context, KVIterator * iterator, IFileWriter * writer) {
-   switch (_type) {
+  Configurable * combiner = (Configurable *)(_combinerCreator());
+  if (NULL != combiner) {
+    combiner->configure(*_config);
+  }
+
+  NativeObjectType type = combiner->type();
+	switch (type) {
    case MapperType: {
-       Mapper * mapper = (Mapper*)_combiner;
+       Mapper * mapper = (Mapper*)combiner;
        mapper->setCollector(writer);
 
        Buffer key;
@@ -106,7 +111,7 @@ void CombineRunner::combine(CombineContext context, KVIterator * iterator, IFile
      break;
    case ReducerType:
      {
-       Reducer * reducer = (Reducer*)_combiner;
+       Reducer * reducer = (Reducer*)combiner;
        reducer->setCollector(writer);
        KeyGroupIterator * kg = createKeyGroupIterator(iterator);
        while (kg->nextKey()) {

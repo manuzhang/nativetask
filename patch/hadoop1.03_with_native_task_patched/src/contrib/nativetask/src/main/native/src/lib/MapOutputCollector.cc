@@ -266,11 +266,7 @@ void MapOutputCollector::configure(Config & config) {
       LOG("[MapOutputCollector::configure] native combiner is enabled: %s", combinerClass);
     }
 
-    Configurable * combiner = (Configurable *)(objectCreater());
-    if (NULL != combiner) {
-      combiner->configure(config);
-      this->_combineRunner = new CombineRunner(combiner);
-    }
+  this->_combineRunner = new CombineRunner(&config, objectCreater);
   }
 
   _collectTimer.reset();
