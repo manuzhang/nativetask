@@ -72,12 +72,12 @@ protected:
 
 class CombineRunner : public ICombineRunner {
 private:
-  Configurable * _combiner;
+  Config * _config;
+  ObjectCreatorFunc _combinerCreator;
   uint32_t _keyGroupCount;
-  NativeObjectType _type;
 
 public:
-  CombineRunner(Configurable * combiner);
+  CombineRunner(Config * config, ObjectCreatorFunc objectCreator);
 
 public:
   void combine(CombineContext type, KVIterator * kvIterator, IFileWriter * writer);
