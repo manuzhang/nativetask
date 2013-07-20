@@ -8,7 +8,7 @@ Required software
 
 1. maven
 
-	need version later than 3.0.4. 
+  need version later than 3.0.4. 
 	If you need proxy, create settings.xml at ~/.m2/, and set it like
  
 		<settings>
