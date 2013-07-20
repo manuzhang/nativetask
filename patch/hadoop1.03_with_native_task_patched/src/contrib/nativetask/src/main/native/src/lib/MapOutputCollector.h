@@ -64,7 +64,6 @@ struct KVBuffer {
 };
 
 
-
 /**
  * Buffer for a single partition
  */
@@ -78,9 +77,11 @@ private:
   ComparatorPtr _keyComparator;
   ICombineRunner * _combineRunner;
   Config * _config;
+  MemoryBlockPool * _pool;
 
 public:
-  PartitionBucket(uint32_t partition, ComparatorPtr comparator, ICombineRunner * combineRunner, Config * config) :
+  PartitionBucket(MemoryBlockPool * pool, uint32_t partition, ComparatorPtr comparator, ICombineRunner * combineRunner, Config * config) :
+    _pool(pool),
     _sorted(false),
     _partition(partition),
     _current_block_idx(NULL_BLOCK_INDEX),
@@ -118,10 +119,10 @@ public:
    */
   char * get_buffer_to_put(uint32_t total_length) {
     uint32_t old_block_idx = _current_block_idx;
-    char * ret = MemoryBlockPool::allocate_buffer(_current_block_idx,
+    char * ret = _pool->allocate_buffer(_current_block_idx,
                                                   total_length);
     if (likely(NULL!=ret)) {
-      _kv_offsets.push_back(MemoryBlockPool::get_offset(ret));
+      _kv_offsets.push_back(_pool->get_offset(ret));
       if (unlikely(old_block_idx != _current_block_idx)) {
         _blk_ids.push_back(_current_block_idx);
       }
@@ -148,8 +149,10 @@ protected:
   protected:
     PartitionBucket & pb;
     size_t index;
+    MemoryBlockPool * _pool;
+
   public:
-    Iterator(PartitionBucket & pb):pb(pb),index(0){}
+    Iterator(MemoryBlockPool * pool, PartitionBucket & pb):_pool(pool),pb(pb),index(0){}
     virtual ~Iterator(){}
     virtual bool next(Buffer & key, Buffer & value);
   };
@@ -169,6 +172,7 @@ private:
   Timer _collectTimer;
   ICombineRunner * _combineRunner;
   Counter * _spilledRecords;
+  MemoryBlockPool * _pool;
 
 private:
   void init(uint32_t memory_capacity, ComparatorPtr keyComparator);
@@ -209,6 +213,10 @@ public:
 
   ~MapOutputCollector();
 
+  MemoryBlockPool * getPool() {
+    return _pool;
+  }
+
   void configure(Config & config);
 
   MapOutputSpec & get_mapoutput_spec() {
@@ -247,7 +255,7 @@ public:
     assert(partition<_num_partition);
     PartitionBucket * pb = _buckets[partition];
     if (unlikely(NULL==pb)) {
-      pb = new PartitionBucket(partition, _keyComparator, _combineRunner, _config);
+      pb = new PartitionBucket(_pool, partition, _keyComparator, _combineRunner, _config);
       _buckets[partition] = pb;
     }
     return pb->get_buffer_to_put(length);

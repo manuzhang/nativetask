@@ -90,52 +90,55 @@ const uint32_t DEFAULT_MIN_BLOCK_SIZE = 16 * 1024;
 const uint32_t DEFAULT_MAX_BLOCK_SIZE = 4 * 1024 * 1024;
 const uint32_t NULL_BLOCK_INDEX = 0xffffffffU;
 
-
-
-
 /**
  * Class for allocating and manage MemoryBlocks
  */
 class MemoryBlockPool {
 private:
-  static bool _inited;
-  static uint32_t _min_block_size;
-  static char * _base;
-  static uint32_t _capacity;
-  static uint32_t _used;
-  static std::vector<MemoryBlock> _blocks;
+  bool _inited;
+  uint32_t _min_block_size;
+  char * _base;
+  uint32_t _capacity;
+  uint32_t _used;
+  std::vector<MemoryBlock> _blocks;
 
 public:
-  static bool init(uint32_t capacity,
+  MemoryBlockPool();
+
+  ~MemoryBlockPool();
+
+  bool init(uint32_t capacity,
       uint32_t min_block_size)
       throw (OutOfMemoryException);
 
-  static void release();
-
-  static void clear() {
+  void reset() {
     _blocks.clear();
     _used = 0;
   }
 
-  static bool inited() {
+  bool inited() {
     return _inited;
   }
 
-  static MemoryBlock & get_block(uint32_t idx) {
+  MemoryBlock & get_block(uint32_t idx) {
     assert(_blocks.size() > idx);
     return _blocks[idx];
   }
 
-  static char * get_position(uint32_t offset) {
+  char * get_position(uint32_t offset) {
     return _base + offset;
   }
 
-  static uint32_t get_offset(void * pos) {
+  const char * get_base() {
+    return _base;
+  }
+
+  uint32_t get_offset(void * pos) {
     assert((char*)pos >= _base);
     return (uint32_t) ((char*) pos - _base);
   }
 
-  static char * alloc_block(uint32_t & current_block_idx, uint32_t size) {
+  char * alloc_block(uint32_t & current_block_idx, uint32_t size) {
     uint32_t newsize = GetCeil(size+8, _min_block_size);
     assert(newsize%_min_block_size==0);
     if (size > _capacity) {
@@ -159,7 +162,7 @@ public:
     return ret;
   }
 
-  static char * allocate_buffer(uint32_t & current_block_idx, uint32_t size) {
+  char * allocate_buffer(uint32_t & current_block_idx, uint32_t size) {
     if (likely(current_block_idx != NULL_BLOCK_INDEX)) {
       MemoryBlock & cur_blk = get_block(current_block_idx);
       if (likely(size <= cur_blk.rest())) {
@@ -171,7 +174,7 @@ public:
     return alloc_block(current_block_idx, size);
   }
 
-  static void dump(FILE * out);
+  void dump(FILE * out);
 };
 
 } // namespace NativeTask

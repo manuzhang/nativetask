@@ -21,17 +21,24 @@
 
 namespace NativeTask {
 
-bool MemoryBlockPool::_inited = false;
+MemoryBlockPool::MemoryBlockPool():
+    _inited(false),
+    _min_block_size(32 * 1024),
+    _base(NULL),
+    _capacity(0),
+    _used(0){
+}
 
-uint32_t MemoryBlockPool::_min_block_size = 32 * 1024;
-
-char * MemoryBlockPool::_base = NULL;
-
-uint32_t MemoryBlockPool::_capacity = 0;
-
-uint32_t MemoryBlockPool::_used = 0;
-
-std::vector<MemoryBlock> MemoryBlockPool::_blocks = std::vector<MemoryBlock>();
+MemoryBlockPool::~MemoryBlockPool() {
+  if (NULL != _base) {
+    free(_base);
+  }
+  _base = NULL;
+  _capacity = 0;
+  _used = 0;
+  _blocks.clear();
+  _inited = false;
+}
 
 bool MemoryBlockPool::init(uint32_t capacity, uint32_t min_block_size)
     throw (OutOfMemoryException) {
@@ -39,7 +46,6 @@ bool MemoryBlockPool::init(uint32_t capacity, uint32_t min_block_size)
   LOG("Native Total MemoryBlockPool: min_block_size %uK, capacity %uM",
       _min_block_size/1024,
       capacity/1024/1024);
-  release();
   // 3GB at most
   assert(capacity<=(3<<30));
   capacity = GetCeil(capacity, _min_block_size);
@@ -52,17 +58,6 @@ bool MemoryBlockPool::init(uint32_t capacity, uint32_t min_block_size)
   _used = 0;
   _inited = true;
   return true;
-}
-
-void MemoryBlockPool::release() {
-  if (NULL != _base) {
-    free(_base);
-  }
-  _base = NULL;
-  _capacity = 0;
-  _used = 0;
-  _blocks.clear();
-  _inited = false;
 }
 
 void MemoryBlockPool::dump(FILE *out)

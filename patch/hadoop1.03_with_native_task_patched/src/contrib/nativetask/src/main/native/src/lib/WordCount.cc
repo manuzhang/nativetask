@@ -74,11 +74,6 @@ void IntSumReducer::reduce(KeyGroupIterator & input) {
   uint32_t valueLen;
   uint32_t count = 0;
   key = input.getKey(keyLen);
-  char * output = new char[keyLen + 1];
-  ::memcpy(output, key, keyLen);
-  output[keyLen] = 0;
-  delete[] output;
-
   while (NULL != (value=input.nextValue(valueLen))) {
     uint32_t current =  bswap(*(uint32_t*)value);
     count += current;

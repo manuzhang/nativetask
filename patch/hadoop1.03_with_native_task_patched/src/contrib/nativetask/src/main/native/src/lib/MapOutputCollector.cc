@@ -40,7 +40,7 @@ uint64_t PartitionBucket::estimate_spill_size(OutputFileType output_type,
     KeyValueType ktype, KeyValueType vtype) {
   int64_t ret = 0;
   for (size_t i = 0; i<_blk_ids.size() ; i++) {
-    MemoryBlock & blk = MemoryBlockPool::get_block(_blk_ids[i]);
+    MemoryBlock & blk = _pool->get_block(_blk_ids[i]);
     ret += blk.used();
   }
   if (output_type == INTERMEDIATE) {
@@ -63,7 +63,7 @@ uint64_t PartitionBucket::estimate_spill_size(OutputFileType output_type,
 
 bool PartitionBucket::Iterator::next(Buffer & key, Buffer & value) {
   if (index<pb._kv_offsets.size()) {
-    KVBuffer * pkvbuffer = (KVBuffer*)MemoryBlockPool::get_position(pb._kv_offsets[index]);
+    KVBuffer * pkvbuffer = (KVBuffer*)_pool->get_position(pb._kv_offsets[index]);
     InplaceBuffer & bkey = pkvbuffer->get_key();
     InplaceBuffer & bvalue = pkvbuffer->get_value();
     key.reset(bkey.content, bkey.length);
@@ -96,7 +96,7 @@ public:
 
   bool next(Buffer & key, Buffer & value) {
     if (_index < _recordSize) {
-      KVBuffer * pkvbuffer = (KVBuffer*)MemoryBlockPool::get_position(_kvOffsets[_index]);
+      KVBuffer * pkvbuffer = (KVBuffer*)(_base + _kvOffsets[_index]);
       InplaceBuffer & bkey = pkvbuffer->get_key();
       InplaceBuffer & bvalue = pkvbuffer->get_value();
 
@@ -118,14 +118,14 @@ void PartitionBucket::spill(IFileWriter & writer, uint64_t & keyGroupCount)
   if (_combineRunner == NULL) {
     LOG("[PartitionBucket::spill] combiner is not enabled");
     for (size_t i = 0; i<_kv_offsets.size() ; i++) {
-      KVBuffer * pkvbuffer = (KVBuffer*)MemoryBlockPool::get_position(_kv_offsets[i]);
+      KVBuffer * pkvbuffer = (KVBuffer*)_pool->get_position(_kv_offsets[i]);
       InplaceBuffer & bkey = pkvbuffer->get_key();
       InplaceBuffer & bvalue = pkvbuffer->get_value();
       writer.write(bkey.content, bkey.length, bvalue.content, bvalue.length);
     }
   } else {
     LOG("[PartitionBucket::spill] combiner is enabled");
-    MemoryBufferKVIterator * kvIterator = new DirectMemoryBufferedKVIterator(MemoryBlockPool::get_position(0),
+    MemoryBufferKVIterator * kvIterator = new DirectMemoryBufferedKVIterator(_pool->get_base(),
         _kv_offsets);
 
     _combineRunner->combine(CombineContext(CONTINUOUS_MEMORY_BUFFER), kvIterator, &writer);
@@ -135,14 +135,16 @@ void PartitionBucket::spill(IFileWriter & writer, uint64_t & keyGroupCount)
 
 class ComparatorForDualPivotSort {
 private:
+  const char * _base;
   ComparatorPtr _keyComparator;
 public:
-  ComparatorForDualPivotSort(ComparatorPtr comparator) : _keyComparator(comparator){
+  ComparatorForDualPivotSort(const char * base, ComparatorPtr comparator) :
+    _base(base), _keyComparator(comparator){
   }
 
   inline int operator()(uint32_t lhs, uint32_t rhs) {
-      InplaceBuffer * lhb = (InplaceBuffer*) MemoryBlockPool::get_position(lhs);
-      InplaceBuffer * rhb = (InplaceBuffer*) MemoryBlockPool::get_position(rhs);
+      InplaceBuffer * lhb = (InplaceBuffer*)(_base + lhs);
+      InplaceBuffer * rhb = (InplaceBuffer*)(_base + rhs);
       return (*_keyComparator)(lhb->content, lhb->length, rhb->content, rhb->length);
   }
 };
@@ -150,14 +152,16 @@ public:
 class ComparatorForStdSort {
 private:
   ComparatorPtr _keyComparator;
+  const char * _base;
 public:
-  ComparatorForStdSort(ComparatorPtr comparator) : _keyComparator(comparator){
+  ComparatorForStdSort(const char * base, ComparatorPtr comparator) :
+    _base(base), _keyComparator(comparator){
   }
 
 public:
   inline bool operator()(uint32_t lhs, uint32_t rhs) {
-      InplaceBuffer * lhb = (InplaceBuffer*) MemoryBlockPool::get_position(lhs);
-      InplaceBuffer * rhb = (InplaceBuffer*) MemoryBlockPool::get_position(rhs);
+      InplaceBuffer * lhb = (InplaceBuffer*) (_base + lhs);
+      InplaceBuffer * rhb = (InplaceBuffer*) (_base + rhs);
       int ret =  (*_keyComparator)(lhb->content, lhb->length, rhb->content,  rhb->length);
       return ret < 0;
   }
@@ -167,10 +171,12 @@ void PartitionBucket::sort(SortAlgorithm type) {
   if ((!_sorted) && (_kv_offsets.size()>1)) {
     switch (type) {
     case CPPSORT:
-      std::sort(_kv_offsets.begin(), _kv_offsets.end(), ComparatorForStdSort(_keyComparator));
+      std::sort(_kv_offsets.begin(), _kv_offsets.end(),
+          ComparatorForStdSort(_pool->get_base(), _keyComparator));
       break;
     case DUALPIVOTSORT:
-      DualPivotQuicksort(_kv_offsets, ComparatorForDualPivotSort(_keyComparator));
+      DualPivotQuicksort(_kv_offsets,
+          ComparatorForDualPivotSort(_pool->get_base(), _keyComparator));
       break;
     default:
       THROW_EXCEPTION(UnsupportException, "Sort Algorithm not support");
@@ -184,7 +190,7 @@ void PartitionBucket::dump(int fd, uint64_t offset, uint32_t & crc) {
   fprintf(out, "Partition %d total %lu kv pairs, sorted: %s\n", _partition,
           _kv_offsets.size(), _sorted?"true":"false");
   for (size_t i = 0; i < _kv_offsets.size(); i++) {
-    KVBuffer * kv = (KVBuffer*) MemoryBlockPool::get_position(_kv_offsets[i]);
+    KVBuffer * kv = (KVBuffer*) _pool->get_position(_kv_offsets[i]);
     std::string info = kv->str();
     fwrite(info.c_str(), 1, info.length(), out);
     fputc('\n', out);
@@ -206,6 +212,7 @@ MapOutputCollector::MapOutputCollector(uint32_t num_partition, ICombineRunner * 
   _num_partition = num_partition;
   _buckets = new PartitionBucket*[num_partition];
   memset(_buckets, 0, sizeof(PartitionBucket*) * num_partition);
+  _pool = new MemoryBlockPool();
 }
 
 MapOutputCollector::~MapOutputCollector() {
@@ -215,7 +222,10 @@ MapOutputCollector::~MapOutputCollector() {
     }
   }
   delete[] _buckets;
-  MemoryBlockPool::release();
+  if (NULL != _pool) {
+    delete _pool;
+    _pool = NULL;
+  }
 }
 
 void MapOutputCollector::delete_temp_spill_files() {
@@ -223,7 +233,7 @@ void MapOutputCollector::delete_temp_spill_files() {
 }
 
 void MapOutputCollector::init(uint32_t memory_capacity, ComparatorPtr keyComparator) {
-  if (!MemoryBlockPool::inited()) {
+  if (!_pool->inited()) {
     // At least DEFAULT_MIN_BLOCK_SIZE
     // TODO: at most  DEFUALT_MAX_BLOCK_SIZE
     // and make every bucket have approximately 4 blocks
@@ -233,7 +243,7 @@ void MapOutputCollector::init(uint32_t memory_capacity, ComparatorPtr keyCompara
     s = std::min(s, DEFAULT_MAX_BLOCK_SIZE);
     //TODO: add support for customized comparator
     this->_keyComparator = keyComparator;
-    MemoryBlockPool::init(memory_capacity, s);
+    _pool->init(memory_capacity, s);
   }
   _spilledRecords = NativeObjectFactory::GetCounter(
       TaskCounters::TASK_COUNTER_GROUP,
@@ -246,7 +256,7 @@ void MapOutputCollector::reset() {
       _buckets[i]->clear();
     }
   }
-  MemoryBlockPool::clear();
+  _pool->reset();
 }
 
 void MapOutputCollector::configure(Config & config) {

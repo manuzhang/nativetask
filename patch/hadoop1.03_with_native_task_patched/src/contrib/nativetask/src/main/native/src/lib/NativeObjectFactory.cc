@@ -364,7 +364,6 @@ ComparatorPtr get_comparator(const KeyValueType keyType, const char * comparator
         keyType == BoolType ||
         keyType == IntType ||
         keyType == LongType) {
-	LOG("We are using BytesWritable as comparator");
       return &BytesComparator;
     }
     else if (keyType == FloatType) {

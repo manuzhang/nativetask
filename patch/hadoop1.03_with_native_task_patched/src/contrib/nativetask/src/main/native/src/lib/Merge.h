@@ -104,18 +104,25 @@ public:
  */
 class MemoryMergeEntry: public MergeEntry {
 protected:
-  char *               _value;
+  char *  _value;
   MapOutputCollector * _moc;
-  PartitionBucket *    _pb;
-  int64_t              _cur_partition;
-  int64_t              _cur_index;
+  PartitionBucket * _pb;
+  int64_t _cur_partition;
+  int64_t _cur_index;
+  const char *  _base;
+
 public:
   MemoryMergeEntry(MapOutputCollector * moc) :
       _moc(moc),
       _pb(NULL),
       _cur_partition(-1ULL),
       _cur_index(-1ULL),
-      _value(NULL){
+      _value(NULL),
+      _base(NULL){
+    MemoryBlockPool * pool = _moc->getPool();
+    if (NULL != pool) {
+      _base = pool->get_base();
+    }
   }
 
   virtual ~MemoryMergeEntry() {
@@ -145,7 +152,7 @@ public:
     ++_cur_index;
     if ((NULL != _pb) && (_cur_index < _pb->recored_count())) {
       uint32_t offset = _pb->recored_offset(_cur_index);
-      InplaceBuffer * kb = (InplaceBuffer*)(MemoryBlockPool::get_position(offset));
+      InplaceBuffer * kb = (InplaceBuffer*)(_base + offset);
       _key_len = kb->length;
       _key = kb->content;
       InplaceBuffer & vb = kb->next();
