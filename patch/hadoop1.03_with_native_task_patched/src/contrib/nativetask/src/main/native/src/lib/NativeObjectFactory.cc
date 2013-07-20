@@ -328,7 +328,7 @@ NativeObject * NativeObjectFactory::CreateDefaultObject(NativeObjectType type) {
 }
 
 
-int BytesComparator(const char * src, uint32_t srcLength, const char * dest, uint32_t destLength) {
+inline int BytesComparator(const char * src, uint32_t srcLength, const char * dest, uint32_t destLength) {
 
     uint32_t minlen = std::min(srcLength, destLength);
     int ret = fmemcmp(src, dest, minlen);
@@ -338,7 +338,27 @@ int BytesComparator(const char * src, uint32_t srcLength, const char * dest, uin
     return srcLength - destLength;
 };
 
-int FloatComparator(const char * src, uint32_t srcLength, const char * dest, uint32_t destLength) {
+inline int ByteComparator(const char * src, uint32_t srcLength, const char * dest, uint32_t destLength) {
+  return (*src) - (*dest);
+};
+
+inline int IntComparator(const char * src, uint32_t srcLength, const char * dest, uint32_t destLength) {
+  int result = (*src) - (*dest);
+  if (result == 0) {
+    result = bswap(*(uint32_t*)src) - bswap(*(uint32_t*)dest);
+  }
+  return result;
+};
+
+inline int LongComparator(const char * src, uint32_t srcLength, const char * dest, uint32_t destLength) {
+  int result = (*src) - (*dest);
+  if (result == 0) {
+    result = bswap64(*(uint64_t*)src) - bswap64(*(uint64_t*)dest);
+  }
+  return result;
+};
+
+inline int FloatComparator(const char * src, uint32_t srcLength, const char * dest, uint32_t destLength) {
   if (srcLength != 4 || destLength != 4) {
       THROW_EXCEPTION_EX(IOException, "float comparator, while src/dest lengt is not 4");
     }
@@ -347,7 +367,7 @@ int FloatComparator(const char * src, uint32_t srcLength, const char * dest, uin
     return ( (*srcValue) - (* destValue) >= 0) ? 1 : -1;
 };
 
-int DoubleComparator(const char * src, uint32_t srcLength, const char * dest, uint32_t destLength) {
+inline int DoubleComparator(const char * src, uint32_t srcLength, const char * dest, uint32_t destLength) {
   if (srcLength != 8 || destLength != 8) {
       THROW_EXCEPTION_EX(IOException, "double comparator, while src/dest lengt is not 4");
     }
@@ -358,18 +378,17 @@ int DoubleComparator(const char * src, uint32_t srcLength, const char * dest, ui
 
 ComparatorPtr get_comparator(const KeyValueType keyType, const char * comparatorName) {
   if (NULL == comparatorName) {
-    if (keyType == BytesType ||
-        keyType == TextType ||
-        keyType == ByteType ||
-        keyType == BoolType ||
-        keyType == IntType ||
-        keyType == LongType) {
+    if (keyType == BytesType || keyType == TextType) {
       return &BytesComparator;
-    }
-    else if (keyType == FloatType) {
+    } else if (keyType == ByteType || keyType == BoolType) {
+      return &ByteComparator;
+    } else if (keyType == IntType) {
+      return &IntComparator;
+    } else if (keyType == LongType) {
+      return &LongComparator;
+    } else if (keyType == FloatType) {
       return &FloatComparator;
-    }
-    else if (keyType == DoubleType) {
+    } else if (keyType == DoubleType) {
       return &DoubleComparator;
     }
   }
