@@ -41,12 +41,15 @@ public:
     for (int i=0;i<cnt;i++) {
       // make every 10 value a group
       snprintf(buff,128,"%010d", i);
-      uint32_t len = strlen(buff)-1;
-      _inputData.append((const char*)(&len), 4);
-      len+=1;
-      _inputData.append((const char*)(&len), 4);
-      _inputData.append(buff,len-1);
-      _inputData.append(buff,len);
+      uint32_t keyLength = strlen(buff)-1;
+      uint32_t keyLengthBigEndium = bswap(keyLength);
+      _inputData.append((const char*)(&keyLengthBigEndium), 4);
+      _inputData.append(buff, keyLength);
+
+      uint32_t valueLength = keyLength + 1;
+      uint32_t valueLengthBigEndium = bswap(valueLength);
+      _inputData.append((const char*)(&valueLengthBigEndium), 4);
+      _inputData.append(buff,valueLength);
     }
     _inputDataUsed = 0;
     _inputKeyGroup = (cnt+9)/10;
@@ -73,7 +76,7 @@ public:
     return cp;
   }
 
-  void varifyData() {
+  void verifyData() {
     ASSERT_EQ(_inputData.length(), _outputData.length());
     //ASSERT_EQ(_inputData, _outputData);
   }
@@ -92,6 +95,6 @@ TEST(RReducerHandler, ReducerOnly) {
   t.configure(jobconf);
   t.prepare();
   t.command("run");
-  t.varifyData();
+  t.verifyData();
 }
 
