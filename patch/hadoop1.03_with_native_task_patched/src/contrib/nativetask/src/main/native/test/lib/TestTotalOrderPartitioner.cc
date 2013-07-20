@@ -118,7 +118,7 @@ static void TestRandomTrieSearch(int64_t seed, int64_t size, int64_t partition,
 TEST(TotalOrderPartitioner, TrieRandomSearch) {
   int64_t seed = TestConfig.getInt("input.seed", -1);
   int64_t size = TestConfig.getInt("input.size", 100000);
-  for (uint32_t level = 1; level < 5; level++) {
+  for (uint32_t level = 1; level < 3; level++) {
     for (int64_t partition = 10; partition <= 1000; partition *= 10) {
       TestRandomTrieSearch(seed, size, partition, level);
     }
