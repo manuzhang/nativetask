@@ -27,7 +27,10 @@ Merger::Merger(IFileWriter * writer, Config & config, ComparatorPtr comparator, 
     _writer(writer),
     _config(config),
     _combineRunner(combineRunner),
-    _comparator(comparator){
+    _first(true),
+    _comparator(comparator)
+    {
+
 }
 
 Merger::~Merger() {
