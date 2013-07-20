@@ -109,7 +109,12 @@ void Condition::signalAll() {
 }
 
 void * Thread::ThreadRunner(void * pthis) {
+	try {
   ((Thread*)pthis)->run();
+	}
+  catch(std::exception & e) {
+	  LOG("err!!!! %s", e.what());
+  }
   return NULL;
 }
 
@@ -118,9 +123,9 @@ Thread::Thread() :
   _runable(NULL) {
 }
 
-Thread::Thread(const Runnable & runnable) :
+Thread::Thread(Runnable * runnable) :
   _thread((pthread_t)0),
-  _runable(const_cast<Runnable*>(&runnable)) {
+  _runable(runnable) {
 }
 
 void Thread::setTask(const Runnable & runnable) {
@@ -128,6 +133,7 @@ void Thread::setTask(const Runnable & runnable) {
 }
 
 Thread::~Thread() {
+
 }
 
 void Thread::start() {

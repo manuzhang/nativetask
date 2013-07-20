@@ -173,10 +173,12 @@ int Process::Run(const string & cmd, string * out, string * err) {
   } else {
     serr = new OutputStringStream(*err);
   }
-  Thread errThread = Thread(Bind(perr, &InputStream::readAllTo, *serr, 4096));
+  Runnable * bind = BindNew(perr, &InputStream::readAllTo, *serr, 4096);
+  Thread errThread = Thread(bind);
   errThread.start();
   pout.readAllTo(*sout, 4096);
   errThread.join();
+  delete bind;
   int retcode = 0;
   if (pid != waitpid(pid, &retcode, 0)) {
     retcode = -1;

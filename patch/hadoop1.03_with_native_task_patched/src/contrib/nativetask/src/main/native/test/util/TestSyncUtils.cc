@@ -40,6 +40,11 @@ TEST(SyncUtil, Thread) {
 
 class TestBind {
 public:
+
+  int get() {
+	  return 100;
+  }
+
   void foo() {
     for (int i=0;i<2;i++) {
       usleep(100);
@@ -57,12 +62,17 @@ public:
 
 TEST(SyncUtil, ThreadBind) {
   TestBind a = TestBind();
-  Thread t = Thread(Bind(a, &TestBind::foo));
-  Thread t2 = Thread(Bind(a, &TestBind::bar, "testmsg"));
+  Runnable * bind1 = BindNew(a, &TestBind::get);
+  Thread t = Thread(bind1);
+  Runnable * bind2 = BindNew(a, &TestBind::bar, "testmsg");
+  Thread t2 = Thread(bind2);
   t.start();
   t2.start();
   t.join();
   t2.join();
+
+  delete bind1;
+  delete bind2;
 }
 
 

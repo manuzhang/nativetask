@@ -109,7 +109,7 @@ protected:
   Runnable * _runable;
 public:
   Thread();
-  Thread(const Runnable & runnable);
+  Thread(Runnable * runnable);
   virtual ~Thread();
 
   void setTask(const Runnable & runnable);
@@ -187,28 +187,13 @@ public:
 };
 
 template<typename Subject, typename Method>
-inline FunctionRunner<Subject, Method> Bind(Subject & subject, Method method) {
-  return FunctionRunner<Subject, Method>(subject, method);
-}
-
-template<typename Subject, typename Method>
 inline FunctionRunner<Subject, Method> * BindNew(Subject & subject, Method method) {
   return new FunctionRunner<Subject, Method>(subject, method);
 }
 
 template<typename Subject, typename Method, typename Arg>
-inline FunctionRunner1<Subject, Method, Arg> Bind(Subject & subject, Method method, Arg arg) {
-  return FunctionRunner1<Subject, Method, Arg>(subject, method, arg);
-}
-
-template<typename Subject, typename Method, typename Arg>
 inline FunctionRunner1<Subject, Method, Arg> * BindNew(Subject & subject, Method method, Arg arg) {
   return new FunctionRunner1<Subject, Method, Arg>(subject, method, arg);
-}
-
-template<typename Subject, typename Method, typename Arg1, typename Arg2>
-inline FunctionRunner2<Subject, Method, Arg1, Arg2> Bind(Subject & subject, Method method, Arg1 arg1, Arg2 arg2) {
-  return FunctionRunner2<Subject, Method, Arg1, Arg2>(subject, method, arg1, arg2);
 }
 
 template<typename Subject, typename Method, typename Arg1, typename Arg2>
