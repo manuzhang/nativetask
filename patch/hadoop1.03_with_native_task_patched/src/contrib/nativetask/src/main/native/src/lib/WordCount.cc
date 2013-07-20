@@ -77,7 +77,6 @@ void IntSumReducer::reduce(KeyGroupIterator & input) {
   char * output = new char[keyLen + 1];
   ::memcpy(output, key, keyLen);
   output[keyLen] = 0;
-  LOG("handling key: %s", output);
   delete[] output;
 
   while (NULL != (value=input.nextValue(valueLen))) {

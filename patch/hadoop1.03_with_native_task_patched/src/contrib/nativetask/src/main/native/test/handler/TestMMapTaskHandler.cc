@@ -114,6 +114,7 @@ TEST(Perf, MMapTaskTeraSort) {
   mapRunner->configure(jobconf);
   mapRunner->command("run");
   LOG("%s", timer.getInterval("Map Task").c_str());
+  delete mapRunner;
 }
 
 
@@ -184,6 +185,7 @@ TEST(Perf, MMapTaskWordCount) {
   mapRunner->configure(jobconf);
   mapRunner->command("run");
   LOG("%s", timer.getInterval("Map Task").c_str());
+  delete mapRunner;
 }
 
 } // namespace Hadoop
