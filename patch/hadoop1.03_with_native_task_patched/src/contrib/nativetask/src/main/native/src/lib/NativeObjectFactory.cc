@@ -358,6 +358,18 @@ inline int LongComparator(const char * src, uint32_t srcLength, const char * des
   return result;
 };
 
+inline int VIntComparator(const char * src, uint32_t srcLength, const char * dest, uint32_t destLength) {
+  int32_t from = WritableUtils::ReadVInt(src, srcLength);
+  int32_t to = WritableUtils::ReadVInt(dest, destLength);
+  return from - to;
+};
+
+inline int VLongComparator(const char * src, uint32_t srcLength, const char * dest, uint32_t destLength) {
+  int32_t from = WritableUtils::ReadVLong(src, srcLength);
+  int32_t to = WritableUtils::ReadVLong(dest, destLength);
+  return from - to;
+};
+
 inline int FloatComparator(const char * src, uint32_t srcLength, const char * dest, uint32_t destLength) {
   if (srcLength != 4 || destLength != 4) {
       THROW_EXCEPTION_EX(IOException, "float comparator, while src/dest lengt is not 4");
@@ -390,6 +402,10 @@ ComparatorPtr get_comparator(const KeyValueType keyType, const char * comparator
       return &FloatComparator;
     } else if (keyType == DoubleType) {
       return &DoubleComparator;
+    } else if (keyType == VIntType) {
+      return &VIntComparator;
+    } else if (keyType == VLongType) {
+      return &VLongComparator;
     }
   }
   else {

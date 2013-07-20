@@ -58,6 +58,12 @@ KeyValueType JavaClassToKeyValueType(const std::string & clazz) {
   if (clazz == "org.apache.hadoop.io.MD5Hash") {
     return MD5HashType;
   }
+  if (clazz == "org.apache.hadoop.io.VIntWritable") {
+    return VIntType;
+  }
+  if (clazz == "org.apache.hadoop.io.VLongWritable") {
+    return VLongType;
+  }
   return UnknownType;
 }
 

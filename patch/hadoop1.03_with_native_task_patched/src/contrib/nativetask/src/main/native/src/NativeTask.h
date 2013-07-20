@@ -545,7 +545,9 @@ enum KeyValueType {
   FloatType = 6,
   DoubleType = 7,
   MD5HashType = 8,
-  UnknownType = 9
+  VIntType = 9,
+  VLongType = 10,
+  UnknownType = -1
 };
 
 
