@@ -30,6 +30,8 @@ import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Text;
+import org.apache.hadoop.io.VIntWritable;
+import org.apache.hadoop.io.VLongWritable;
 import org.apache.hadoop.io.Writable;
 
 public class NativeSerialization {
@@ -112,6 +114,8 @@ public class NativeSerialization {
     me.register(ByteWritable.class.getName(), ByteWritableSerializer.class);
     me.register(FloatWritable.class.getName(), FloatWritableSerializer.class);
     me.register(DoubleWritable.class.getName(), DoubleWritableSerializer.class);
+    me.register(VIntWritable.class.getName(), VIntWritableSerializer.class);
+    me.register(VLongWritable.class.getName(), VLongWritableSerializer.class);
 
   }
 }
