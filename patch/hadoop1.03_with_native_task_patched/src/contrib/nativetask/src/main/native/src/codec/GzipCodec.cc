@@ -150,7 +150,6 @@ GzipDecompressStream::~GzipDecompressStream() {
 
 int32_t GzipDecompressStream::read(void * buff, uint32_t length) {
   z_stream * zstream = (z_stream*)_zstream;
-  z_stream & stream = *zstream;
   zstream->next_out = (Bytef*)buff;
   zstream->avail_out = length;
   while (true) {
@@ -166,13 +165,7 @@ int32_t GzipDecompressStream::read(void * buff, uint32_t length) {
         zstream->avail_in = rd;
       }
     }
-//    printf("before in: %p/%u out: %p/%u total: %lu/%lu\n", stream.next_in,
-//           stream.avail_in, stream.next_out, stream.avail_out, stream.total_in,
-//           stream.total_out);
     int ret = inflate(zstream, Z_NO_FLUSH);
-//    printf(" after in: %p/%u out: %p/%u total: %lu/%lu\n", stream.next_in,
-//           stream.avail_in, stream.next_out, stream.avail_out, stream.total_in,
-//           stream.total_out);
     if (ret == Z_OK || ret == Z_STREAM_END) {
       if (zstream->avail_out == 0) {
 //        printf("return %d\n", length);

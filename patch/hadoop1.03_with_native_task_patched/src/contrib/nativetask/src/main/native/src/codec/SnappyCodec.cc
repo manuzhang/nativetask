@@ -70,7 +70,7 @@ uint32_t SnappyDecompressStream::decompressOneBlock(uint32_t compressedSize,
     _tempBuffer = newBuffer;
     _tempBufferSize = compressedSize;
   }
-  int32_t rd = _stream->readFully(_tempBuffer, compressedSize);
+  uint32_t rd = _stream->readFully(_tempBuffer, compressedSize);
   if (rd != compressedSize) {
     THROW_EXCEPTION(IOException, "readFully reach EOF");
   }
