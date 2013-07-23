@@ -1,30 +1,31 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project name="nativetask auto-test" default="compile">
 	<property name="hadoop.home" value="/home/hadoop/workspace/nativetask/patch/hadoop1.03_with_native_task_patched" />
-	<property name="hbase.home" value="/usr/lib/hbase" />
-
 	<property name="testsrc.dir" value="testcases" />
 	<property name="testbuild.dir" value="build" />
 	<property name="testclasses.dir" value="${testbuild.dir}/classes" />
 	<property name="hadoopbuild.dir" value="../build" />
 	<property name="report.dir" value="report" />
+	<property name="java.library.path" value="../lib"/>
 	<path id="hadoop.lib.classpath">
-		<fileset dir="${hbase.home}/lib">
+		<!--fileset dir="${hbase.home}/lib">
 			<include name="**/*.jar" />
-		</fileset>
-		<fileset dir="${hbase.home}/">
+		</fileset-->
+		<!--fileset dir="${hbase.home}/">
 			<include name="*.jar" />
-		</fileset>
+		</fileset-->
 	</path>
 
 	<path id="hadoop.conf.classpath">
 		<pathelement path="${hadoop.home}/conf" />
 	</path>
-
+	<path id="nativetask.test.conf.classpath">
+			<pathelement path="./conf" />
+		</path>
 	<path id="dependlib">
 
 		<fileset dir="${hadoopbuild.dir}" includes="*.jar" />
-		<fileset dir="lib" includes="*.jar"/>
+		<fileset dir="lib" includes="*.jar" />
 		<fileset dir="../lib" includes="*.jar" />
 	</path>
 	<target name="init">
@@ -44,14 +45,15 @@
 
 	</target>
 	<target name="testKV" depends="compile">
-		<property name="a" refid="hadoop.conf.classpath" />
+		<property name="a" refid="nativetask.test.conf.classpath" />
 		<echo>${a}</echo>
-		<junit printsummary="yes">
+		<junit printsummary="yes"  showoutput="true" fork="yes">
 			<classpath>
 				<pathelement location="${testbuild.dir}/nativetest.jar" />
 				<path refid="dependlib" />
 				<path refid="hadoop.lib.classpath" />
 				<path refid="hadoop.conf.classpath" />
+				<path refid="nativetask.test.conf.classpath" />
 				<pathelement location="lib/junit.jar" />
 				<pathelement location="lib/org.hamcrest.core_1.1.0.v20090501071000.jar" />
 			</classpath>
@@ -63,31 +65,54 @@
 		<echo message="For detail report, check folder ${report.dir}" />
 	</target>
 	<target name="testCompress" depends="compile">
-			<property name="a" refid="hadoop.conf.classpath" />
-			<echo>${a}</echo>
-			<junit printsummary="yes">
-				<classpath>
-					<pathelement location="${testbuild.dir}/nativetest.jar" />
-					<path refid="dependlib" />
-					<path refid="hadoop.lib.classpath" />
-					<path refid="hadoop.conf.classpath" />
-					<pathelement location="lib/junit.jar" />
-					<pathelement location="lib/org.hamcrest.core_1.1.0.v20090501071000.jar" />
-				</classpath>
-				<formatter type="xml" />
-				<batchtest fork="yes" todir="${report.dir}">
-					<fileset dir="${testclasses.dir}" includes="**/compresstest/*Test.class" />
-				</batchtest>
-			</junit>
-			<echo message="For detail report, check folder ${report.dir}" />
-		</target>
-	<target name="testStress">
-		<junit printsummary="yes">
+		<property name="a" refid="hadoop.conf.classpath" />
+		<echo>${a}</echo>
+		<junit printsummary="yes" showoutput="true" fork="yes">
 			<classpath>
 				<pathelement location="${testbuild.dir}/nativetest.jar" />
 				<path refid="dependlib" />
 				<path refid="hadoop.lib.classpath" />
 				<path refid="hadoop.conf.classpath" />
+				<path refid="nativetask.test.conf.classpath" />
+				<pathelement location="lib/junit.jar" />
+				<pathelement location="lib/org.hamcrest.core_1.1.0.v20090501071000.jar" />
+			</classpath>
+			<formatter type="xml" />
+			<batchtest fork="yes" todir="${report.dir}">
+				<fileset dir="${testclasses.dir}" includes="**/compresstest/*Test.class" />
+			</batchtest>
+		</junit>
+		<echo message="For detail report, check folder ${report.dir}" />
+	</target>
+	<target name="testCombiner" depends="compile">
+		<property name="a" refid="hadoop.conf.classpath" />
+		<echo>${a}</echo>
+		<junit printsummary="yes"  showoutput="true" fork="yes">
+			<classpath>
+				<pathelement location="${testbuild.dir}/nativetest.jar" />
+				<path refid="dependlib" />
+				<path refid="hadoop.lib.classpath" />
+				<path refid="hadoop.conf.classpath" />
+				<path refid="nativetask.test.conf.classpath" />
+				<pathelement location="lib/junit.jar" />
+				<pathelement location="lib/org.hamcrest.core_1.1.0.v20090501071000.jar" />
+			</classpath>
+			<sysproperty key="java.library.path" value="../lib"/>
+			<formatter type="xml" />
+			<batchtest fork="yes" todir="${report.dir}">
+				<fileset dir="${testclasses.dir}" includes="**/combinertest/*Test.class" />
+			</batchtest>
+		</junit>
+		<echo message="For detail report, check folder ${report.dir}" />
+	</target>
+	<target name="testStress" >
+		<junit printsummary="yes"  showoutput="true" fork="yes">
+			<classpath>
+				<pathelement location="${testbuild.dir}/nativetest.jar" />
+				<path refid="dependlib" />
+				<path refid="hadoop.lib.classpath" />
+				<path refid="hadoop.conf.classpath" />
+				<path refid="nativetask.test.conf.classpath" />
 				<pathelement location="lib/junit.jar" />
 				<pathelement location="lib/org.hamcrest.core_1.1.0.v20090501071000.jar" />
 			</classpath>
