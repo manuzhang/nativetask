@@ -24,7 +24,7 @@
 	<!-- path -->
 	<path id="compilelib">
 		<fileset dir="${hadoop.build.dir}" includes="*.jar" />
-		<fileset dir="${hadoop.lib.dir}" includes="*.jar" exclude ="junit-4.5.jar"/>
+		<fileset dir="${hadoop.lib.dir}" includes="*.jar" excludes ="junit-4.5.jar"/>
 		<fileset dir="${scenariotest.lib.dir}" includes="*.jar" />
 	</path>
 	<path id="hadoop.conf.path">
