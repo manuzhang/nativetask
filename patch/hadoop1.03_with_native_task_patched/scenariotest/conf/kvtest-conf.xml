@@ -17,15 +17,11 @@
 <value>./kvtest/output/normal</value>
 </property>
 <property>
-<name>mapred.job.tracker</name>
-<value>local</value>
-</property>
-<property>
 <name>kvtest.file.size</name>
 <value>1000</value>
 </property>
 <property>
-<name>nativetask.kvtest.valueclasses</name>
+<name>nativetask.kvtest.keyclasses</name>
 <value>
 org.apache.hadoop.io.BooleanWritable
 org.apache.hadoop.io.ByteWritable
@@ -40,7 +36,7 @@ org.apache.hadoop.io.VLongWritable
 </value>
 </property>
 <property>
-<name>nativetask.kvtest.keyclasses</name>
+<name>nativetask.kvtest.valueclasses</name>
 <value>
 org.apache.hadoop.io.BooleanWritable
 org.apache.hadoop.io.ByteWritable

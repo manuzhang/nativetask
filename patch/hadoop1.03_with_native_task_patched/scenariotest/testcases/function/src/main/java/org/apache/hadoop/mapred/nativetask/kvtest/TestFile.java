@@ -6,6 +6,7 @@ import java.util.Random;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.io.BooleanWritable;
 import org.apache.hadoop.io.ByteWritable;
@@ -17,6 +18,7 @@ import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.SequenceFile;
 import org.apache.hadoop.io.Text;
+import org.apache.hadoop.io.UTF8;
 import org.apache.hadoop.io.VIntWritable;
 import org.apache.hadoop.io.VLongWritable;
 
@@ -30,6 +32,7 @@ public class TestFile {
 	private int keyMaxBytesNum, keyMinBytesNum;
 	private int valueMaxBytesNum, valueMinBytesNum;
 	private SequenceFile.Writer writer = null;
+	Random r = new Random();
 	public static final int DATABUFSIZE = 1 << 22; // 4M
 
 	private enum State {
@@ -79,6 +82,12 @@ public class TestFile {
 		} else if (keytype.equals(Text.class.getName())) {
 			keyMaxBytesNum = 64;
 			keyMinBytesNum = 1;
+		} else if (keytype.equals(UTF8.class.getName())) {
+			keyMaxBytesNum = 64;
+			keyMinBytesNum = 1;
+		} else if (keytype.equals(ImmutableBytesWritable.class.getName())) {
+			keyMaxBytesNum = 64;
+			keyMinBytesNum = 1;
 		} else {
 			keyMaxBytesNum = 4;
 			keyMinBytesNum = 4;
@@ -98,6 +107,12 @@ public class TestFile {
 		} else if (valuetype.equals(Text.class.getName())) {
 			valueMaxBytesNum = 64;
 			valueMinBytesNum = 1;
+		} else if (valuetype.equals(UTF8.class.getName())) {
+			valueMaxBytesNum = 64;
+			valueMinBytesNum = 1;
+		} else if (valuetype.equals(ImmutableBytesWritable.class.getName())) {
+			valueMaxBytesNum = 64;
+			valueMinBytesNum = 1;
 		} else {
 			valueMaxBytesNum = 4;
 			valueMinBytesNum = 4;
@@ -105,7 +120,6 @@ public class TestFile {
 	}
 
 	public void createSequenceTestFile() throws Exception {
-		Random r = new Random();
 		int tmpfilesize = this.filesize - DATABUFSIZE;
 		while (tmpfilesize > 0) {
 			r.nextBytes(databuf);
@@ -118,7 +132,7 @@ public class TestFile {
 		flushBuf(tmpfilesize + DATABUFSIZE);
 		System.out.println("last buf flushed");
 		if (writer != null)
-			 IOUtils.closeStream(writer);
+			IOUtils.closeStream(writer);
 		else
 			throw new Exception("no writer to create sequenceTestFile!");
 	}
@@ -131,14 +145,13 @@ public class TestFile {
 		keybytesnum = keyMaxBytesNum == keyMinBytesNum ? keyMaxBytesNum : (r
 				.nextInt() % keyMaxBytesNum);
 		keybytesnum = keybytesnum >= keyMinBytesNum ? keybytesnum
-				: (keybytesnum%(keyMaxBytesNum-keyMinBytesNum)  + keyMinBytesNum);
+				: (keybytesnum % (keyMaxBytesNum - keyMinBytesNum) + keyMinBytesNum);
 		valuebytesnum = valueMaxBytesNum == valueMinBytesNum ? valueMaxBytesNum
 				: (r.nextInt() % valueMaxBytesNum);
 		valuebytesnum = keybytesnum >= valueMinBytesNum ? valuebytesnum
-				: (valuebytesnum%(valueMaxBytesNum-valueMinBytesNum) + valueMinBytesNum);
-		System.out
-		.println("begin to write keybytesnum,valuebytesnum,buflen"
-				+ keybytesnum + ":" + valuebytesnum+" "+buflen);
+				: (valuebytesnum % (valueMaxBytesNum - valueMinBytesNum) + valueMinBytesNum);
+		System.out.println("begin to write keybytesnum,valuebytesnum,buflen"
+				+ keybytesnum + ":" + valuebytesnum + " " + buflen);
 		byte[] key = new byte[keybytesnum];
 		byte[] value = new byte[valuebytesnum];
 		for (int offset = 0; offset < buflen;) {
@@ -163,15 +176,15 @@ public class TestFile {
 		}
 	}
 
-	private static Object generateData(byte[] bytes, String className) {
-//		System.out.println("generate data " + bytes + " byte size: "
-//				+ bytes.length + " " + className);
+	private Object generateData(byte[] bytes, String className) {
+		// System.out.println("generate data " + bytes + " byte size: "
+		// + bytes.length + " " + className);
 		if (className.equals(IntWritable.class.getName())) {
 			return new IntWritable(Bytes.toInt(bytes));
 		} else if (className.equals(FloatWritable.class.getName())) {
-			return new FloatWritable(Bytes.toFloat(bytes));
+			return new FloatWritable(r.nextFloat());
 		} else if (className.equals(DoubleWritable.class.getName())) {
-			return new DoubleWritable(Bytes.toDouble(bytes));
+			return new DoubleWritable(r.nextDouble());
 		} else if (className.equals(LongWritable.class.getName())) {
 			return new LongWritable(Bytes.toLong(bytes));
 		} else if (className.equals(VIntWritable.class.getName())) {
@@ -186,6 +199,10 @@ public class TestFile {
 			return new ByteWritable(bytes.length > 0 ? bytes[0] : 0);
 		} else if (className.equals(BytesWritable.class.getName())) {
 			return new BytesWritable(bytes);
+		} else if (className.equals(ImmutableBytesWritable.class.getName())) {
+			return new ImmutableBytesWritable(bytes);
+		} else if (className.equals(UTF8.class.getName())) {
+			return new UTF8(Bytes.toString(bytes));
 		} else
 			return null;
 	}

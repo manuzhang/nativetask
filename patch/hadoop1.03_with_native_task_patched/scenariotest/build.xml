@@ -1,33 +1,57 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project name="nativetask auto-test" default="compile">
+	<!-- home -->
 	<property name="hadoop.home" value="/home/hadoop/workspace/nativetask/patch/hadoop1.03_with_native_task_patched" />
+	<property name="hbase.home" value="" />
+	<property name="hive.home" value="" />
+	<property name="scenariotest.home" value="./" />
+
+	<!-- build property -->
 	<property name="testsrc.dir" value="testcases" />
 	<property name="testbuild.dir" value="build" />
 	<property name="testclasses.dir" value="${testbuild.dir}/classes" />
-	<property name="hadoopbuild.dir" value="../build" />
-	<property name="report.dir" value="report" />
-	<property name="java.library.path" value="../lib"/>
-	<path id="hadoop.lib.classpath">
-		<!--fileset dir="${hbase.home}/lib">
-			<include name="**/*.jar" />
-		</fileset-->
-		<!--fileset dir="${hbase.home}/">
-			<include name="*.jar" />
-		</fileset-->
-	</path>
 
-	<path id="hadoop.conf.classpath">
+	<!-- lib property -->
+	<property name="hadoop.lib.dir" value="${hadoop.home}/lib" />
+	<property name="hadoop.build.dir" value="${hadoop.home}/build" />
+	<property name="scenariotest.lib.dir" value="${scenariotest.home}/lib" />
+
+	<!-- report property -->
+	<property name="report.dir" value="report" />
+
+	<!-- rumtime configure -->
+	<property name="scenariotest.conf.dir" value="${scenariotest.home}/conf" />
+	<!-- path -->
+	<path id="compilelib">
+		<fileset dir="${hadoop.build.dir}" includes="*.jar" />
+		<fileset dir="${hadoop.lib.dir}" includes="*.jar" exclude ="junit-4.5.jar"/>
+		<fileset dir="${scenariotest.lib.dir}" includes="*.jar" />
+	</path>
+	<path id="hadoop.conf.path">
 		<pathelement path="${hadoop.home}/conf" />
 	</path>
-	<path id="nativetask.test.conf.classpath">
-			<pathelement path="./conf" />
-		</path>
-	<path id="dependlib">
-
-		<fileset dir="${hadoopbuild.dir}" includes="*.jar" />
-		<fileset dir="lib" includes="*.jar" />
-		<fileset dir="../lib" includes="*.jar" />
+	<path id="scenariotest.conf.path">
+		<pathelement path="${scenariotest.conf.dir}" />
 	</path>
+	<path id="scenariotest.compress.conf.path">
+		<pathelement path="${scenariotest.conf.dir}/compress_conf" />
+	</path>
+	<path id="test.run.path">
+		<pathelement path="${testbuild.dir}/nativetest.jar" />
+		<path refid="compilelib" />
+	</path>
+
+	<!-- condition -->
+	<condition property="kvtest.mode.local">
+		<istrue value="false" />
+	</condition>
+	<condition property="kvtest.mode.compress">
+		<istrue value="false" />
+	</condition>
+
+	<!-- target : init ,compile -->
+	<!-- testkv -->
+	<!-- testAll ,report-->
 	<target name="init">
 		<delete dir="${testbuild.dir}" />
 		<delete dir="${report.dir}" />
@@ -36,26 +60,18 @@
 		<mkdir dir="${report.dir}" />
 	</target>
 	<target name="compile" depends="init">
-		<javac srcdir="${testsrc.dir}" destdir="${testclasses.dir}" classpathref="dependlib">
-
-		</javac>
+		<javac srcdir="${testsrc.dir}" destdir="${testclasses.dir}" classpathref="compilelib" />
 		<jar destfile="${testbuild.dir}/nativetest.jar">
 			<fileset dir="${testclasses.dir}" />
 		</jar>
-
 	</target>
-	<target name="testKV" depends="compile">
-		<property name="a" refid="nativetask.test.conf.classpath" />
-		<echo>${a}</echo>
-		<junit printsummary="yes"  showoutput="true" fork="yes">
+	<target name="testKVwithCompress" depends="compile" if="kvtest.mode.compress">
+		<junit printsummary="yes" showoutput="true" fork="yes">
 			<classpath>
-				<pathelement location="${testbuild.dir}/nativetest.jar" />
-				<path refid="dependlib" />
-				<path refid="hadoop.lib.classpath" />
-				<path refid="hadoop.conf.classpath" />
-				<path refid="nativetask.test.conf.classpath" />
-				<pathelement location="lib/junit.jar" />
-				<pathelement location="lib/org.hamcrest.core_1.1.0.v20090501071000.jar" />
+				<path refid="scenariotest.conf.path" />
+				<!--path refid="hadoop.conf.path"/-->
+				<path refid="scenariotest.compress.conf.path" />
+				<path refid="test.run.path" />
 			</classpath>
 			<formatter type="xml" />
 			<batchtest fork="yes" todir="${report.dir}">
@@ -64,79 +80,23 @@
 		</junit>
 		<echo message="For detail report, check folder ${report.dir}" />
 	</target>
-	<target name="testCompress" depends="compile">
-		<property name="a" refid="hadoop.conf.classpath" />
-		<echo>${a}</echo>
+	<target name="testKVwithoutCompress" depends="compile" unless="kvtest.mode.compress">
 		<junit printsummary="yes" showoutput="true" fork="yes">
 			<classpath>
-				<pathelement location="${testbuild.dir}/nativetest.jar" />
-				<path refid="dependlib" />
-				<path refid="hadoop.lib.classpath" />
-				<path refid="hadoop.conf.classpath" />
-				<path refid="nativetask.test.conf.classpath" />
-				<pathelement location="lib/junit.jar" />
-				<pathelement location="lib/org.hamcrest.core_1.1.0.v20090501071000.jar" />
+				<path refid="scenariotest.conf.path" />
+				<!--path refid="hadoop.conf.path"/-->
+				<path refid="test.run.path" />
 			</classpath>
 			<formatter type="xml" />
 			<batchtest fork="yes" todir="${report.dir}">
-				<fileset dir="${testclasses.dir}" includes="**/compresstest/*Test.class" />
+				<fileset dir="${testclasses.dir}" includes="**/kvtest/*Test.class" />
 			</batchtest>
 		</junit>
 		<echo message="For detail report, check folder ${report.dir}" />
 	</target>
-	<target name="testCombiner" depends="compile">
-		<property name="a" refid="hadoop.conf.classpath" />
-		<echo>${a}</echo>
-		<junit printsummary="yes"  showoutput="true" fork="yes">
-			<classpath>
-				<pathelement location="${testbuild.dir}/nativetest.jar" />
-				<path refid="dependlib" />
-				<path refid="hadoop.lib.classpath" />
-				<path refid="hadoop.conf.classpath" />
-				<path refid="nativetask.test.conf.classpath" />
-				<pathelement location="lib/junit.jar" />
-				<pathelement location="lib/org.hamcrest.core_1.1.0.v20090501071000.jar" />
-			</classpath>
-			<sysproperty key="java.library.path" value="../lib"/>
-			<formatter type="xml" />
-			<batchtest fork="yes" todir="${report.dir}">
-				<fileset dir="${testclasses.dir}" includes="**/combinertest/*Test.class" />
-			</batchtest>
-		</junit>
-		<echo message="For detail report, check folder ${report.dir}" />
-	</target>
-	<target name="testStress" >
-		<junit printsummary="yes"  showoutput="true" fork="yes">
-			<classpath>
-				<pathelement location="${testbuild.dir}/nativetest.jar" />
-				<path refid="dependlib" />
-				<path refid="hadoop.lib.classpath" />
-				<path refid="hadoop.conf.classpath" />
-				<path refid="nativetask.test.conf.classpath" />
-				<pathelement location="lib/junit.jar" />
-				<pathelement location="lib/org.hamcrest.core_1.1.0.v20090501071000.jar" />
-			</classpath>
-			<formatter type="xml" />
-			<batchtest fork="yes" todir="${report.dir}">
-				<fileset dir="${testclasses.dir}" includes="**/mem/*Test.class" />
-				<fileset dir="${testclasses.dir}" includes="**/cpu/*Test.class" />
-			</batchtest>
-		</junit>
-		<echo message="For detail report, check folder ${report.dir}" />
-	</target>
-	<target name="testAll" depends="testKV,testStress,testCompress">
-	</target>
-	<target name="report">
-		<delete dir="${report.dir}/html" />
-		<mkdir dir="${report.dir}/html" />
-		<junitreport todir="${report.dir}/html">
-			<fileset dir="${report.dir}">
-				<include name="*.xml" />
-			</fileset>
-			<report format="frames" todir="${report.dir}/html" />
-		</junitreport>
-	</target>
-	<target name="reportAfterTest" depends="testAll">
+	<target name="testKV" depends="testKVwithoutCompress,testKVwithCompress" />
+	<target name="testAll" depends="testKV" />
+	<target name="report" depends="testAll">
 		<delete dir="${report.dir}/html" />
 		<mkdir dir="${report.dir}/html" />
 		<junitreport todir="${report.dir}/html">

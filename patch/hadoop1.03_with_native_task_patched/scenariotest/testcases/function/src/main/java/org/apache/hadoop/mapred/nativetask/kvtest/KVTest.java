@@ -1,26 +1,14 @@
 package org.apache.hadoop.mapred.nativetask.kvtest;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Arrays;
-
-import junit.framework.TestCase;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.io.BooleanWritable;
-import org.apache.hadoop.io.ByteWritable;
-import org.apache.hadoop.io.BytesWritable;
-import org.apache.hadoop.io.DoubleWritable;
-import org.apache.hadoop.io.FloatWritable;
-import org.apache.hadoop.io.IntWritable;
-import org.apache.hadoop.io.LongWritable;
-import org.apache.hadoop.io.Text;
-import org.apache.hadoop.io.VIntWritable;
-import org.apache.hadoop.io.VLongWritable;
+import org.apache.hadoop.mapred.nativetask.compresstest.CompressTest;
 import org.apache.hadoop.mapred.nativetask.testframe.util.ResultVerifier;
 import org.junit.Before;
 import org.junit.Test;
@@ -36,7 +24,7 @@ public class KVTest {
 	private static Class<?>[] valueclasses = null;
 	private static String[] keyclassNames = null;
 	private static String[] valueclassNames = null;
-	public static final String NATIVETASK_KVTEST_CONF_PATH = "kvtest-conf.xml";
+	public static final String NATIVETASK_KVTEST_CONF_PATH = "test-kv-conf.xml";
 	public static final String NATIVETASK_KVTEST_CONF_INPUTDIR = "nativetask.kvtest.inputdir";
 	public static final String NATIVETASK_KVTEST_CONF_OUTPUTDIR = "nativetask.kvtest.outputdir";
 	public static final String NATIVETASK_KVTEST_CONF_NORMAL_OUTPUTDIR = "normal.kvtest.outputdir";
@@ -65,7 +53,7 @@ public class KVTest {
 		String keyclassesStr = conf.get(NATIVETASK_KVTEST_CONF_KEYCLASSES);
 		keyclassNames = keyclassesStr.trim().split("\n");
 		keyclasses = new Class<?>[keyclassNames.length];
-		for (int i = 0; i < valueclassNames.length; i++) {
+		for (int i = 0; i < keyclassNames.length; i++) {
 			try {
 				keyclasses[i] = Class.forName(keyclassNames[i]);
 			} catch (ClassNotFoundException e) {
@@ -109,122 +97,12 @@ public class KVTest {
 					true, compareRet);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
-			e.printStackTrace();
+			assertEquals("test run exception:",null,e);
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
-			e.printStackTrace();
+			assertEquals("test run exception:",null,e);
 		}
 	}
-
-	// @Test
-	// public void testIntKey() throws InstantiationException,
-	// IllegalAccessException, ClassNotFoundException, IOException,
-	// InterruptedException {
-	// String[] nativeOutputfiles = runNativeTest("NativeIntKeyTest",
-	// IntWritable.class);
-	// String[] normalOutputfiles = runNormalTest("NormalIntKeyTest",
-	// IntWritable.class);
-	// compareResult(normalOutputfiles, nativeOutputfiles);
-	// }
-	//
-	// @Test
-	// public void testFloatKey() throws InstantiationException,
-	// IllegalAccessException, ClassNotFoundException, IOException,
-	// InterruptedException {
-	// String[] nativeOutputfiles = runNativeTest("NativeFloatKeyTest",
-	// FloatWritable.class);
-	// String[] normalOutputfiles = runNormalTest("NormalFloatKeyTest",
-	// FloatWritable.class);
-	// compareResult(normalOutputfiles, nativeOutputfiles);
-	// }
-	//
-	// @Test
-	// public void testDoubleKey() throws InstantiationException,
-	// IllegalAccessException, ClassNotFoundException, IOException,
-	// InterruptedException {
-	// String[] nativeOutputfiles = runNativeTest("NativeDoubleKeyTest",
-	// DoubleWritable.class);
-	// String[] normalOutputfiles = runNormalTest("NormalDoubleKeyTest",
-	// DoubleWritable.class);
-	// compareResult(normalOutputfiles, nativeOutputfiles);
-	// }
-	//
-	// @Test
-	// public void testLongKey() throws InstantiationException,
-	// IllegalAccessException, ClassNotFoundException, IOException,
-	// InterruptedException {
-	// String[] nativeOutputfiles = runNativeTest("NativeLongKeyTest",
-	// LongWritable.class);
-	// String[] normalOutputfiles = runNormalTest("NormalLongKeyTest",
-	// LongWritable.class);
-	// compareResult(normalOutputfiles, nativeOutputfiles);
-	// }
-	//
-	// @Test
-	// public void testVIntKey() throws InstantiationException,
-	// IllegalAccessException, ClassNotFoundException, IOException,
-	// InterruptedException {
-	// String[] nativeOutputfiles = runNativeTest("NativeVIntKeyTest",
-	// VIntWritable.class);
-	// String[] normalOutputfiles = runNormalTest("NormalVIntKeyTest",
-	// VIntWritable.class);
-	// compareResult(normalOutputfiles, nativeOutputfiles);
-	// }
-	//
-	// @Test
-	// public void testVLongKey() throws InstantiationException,
-	// IllegalAccessException, ClassNotFoundException, IOException,
-	// InterruptedException {
-	// String[] nativeOutputfiles = runNativeTest("NativeVLongKeyTest",
-	// VLongWritable.class);
-	// String[] normalOutputfiles = runNormalTest("NormalVLongKeyTest",
-	// VLongWritable.class);
-	// compareResult(normalOutputfiles, nativeOutputfiles);
-	// }
-	//
-	// @Test
-	// public void testBooleanKey() throws InstantiationException,
-	// IllegalAccessException, ClassNotFoundException, IOException,
-	// InterruptedException {
-	// String[] nativeOutputfiles = runNativeTest("NativeBooleanKeyTest",
-	// BooleanWritable.class);
-	// String[] normalOutputfiles = runNormalTest("NormalBooleanKeyTest",
-	// BooleanWritable.class);
-	// compareResult(normalOutputfiles, nativeOutputfiles);
-	// }
-	//
-	// @Test
-	// public void testTextKey() throws InstantiationException,
-	// IllegalAccessException, ClassNotFoundException, IOException,
-	// InterruptedException {
-	// String[] nativeOutputfiles = runNativeTest("NativeTextKeyTest",
-	// Text.class);
-	// String[] normalOutputfiles = runNormalTest("NormalTextKeyTest",
-	// Text.class);
-	// compareResult(normalOutputfiles, nativeOutputfiles);
-	// }
-	//
-	// @Test
-	// public void testByteKey() throws InstantiationException,
-	// IllegalAccessException, ClassNotFoundException, IOException,
-	// InterruptedException {
-	// String[] nativeOutputfiles = runNativeTest("NativeByteKeyTest",
-	// ByteWritable.class);
-	// String[] normalOutputfiles = runNormalTest("NormalByteKeyTest",
-	// ByteWritable.class);
-	// compareResult(normalOutputfiles, nativeOutputfiles);
-	// }
-	//
-	// @Test
-	// public void testBytesKey() throws InstantiationException,
-	// IllegalAccessException, ClassNotFoundException, IOException,
-	// InterruptedException {
-	// String[] nativeOutputfiles = runNativeTest("NativeBytesKeyTest",
-	// BytesWritable.class);
-	// String[] normalOutputfiles = runNormalTest("NormalBytesKeyTest",
-	// BytesWritable.class);
-	// compareResult(normalOutputfiles, nativeOutputfiles);
-	// }
 
 	@Before
 	public void startUp() {
@@ -235,6 +113,8 @@ public class KVTest {
 			Class<?> valueclass) throws IOException {
 		Configuration conf = new Configuration();
 		conf.addResource(NATIVETASK_KVTEST_CONF_PATH);
+		conf.addResource(CompressTest.NATIVETASK_COMPRESS_CONF_PATH);
+		conf.addResource("local_job.xml");
 		conf.set(NATIVETASK_COLLECTOR_DELEGATOR,
 				NATIVETASK_COLLECTOR_DELEGATOR_CLASS);
 		String inputpath = conf.get(NATIVETASK_KVTEST_CONF_INPUTDIR) + "/"
@@ -260,6 +140,7 @@ public class KVTest {
 			Class<?> valueclass) throws IOException {
 		Configuration conf = new Configuration();
 		conf.addResource(NATIVETASK_KVTEST_CONF_PATH);
+		conf.addResource("local_job.xml");
 		String inputpath = conf.get(NATIVETASK_KVTEST_CONF_INPUTDIR) + "/"
 				+ keyclass.getName() + "/" + valueclass.getName();
 		String outputpath = conf.get(NATIVETASK_KVTEST_CONF_NORMAL_OUTPUTDIR)
@@ -274,39 +155,8 @@ public class KVTest {
 			KVJob keyJob = new KVJob(jobname, conf, keyclass, valueclass);
 			keyJob.runJob();
 		} catch (Exception e) {
-			return "native testcase run time error.";
+			return "normal testcase run time error.";
 		}
 		return outputpath;
-	}
-
-	// private void compareResult(String[] normalfiles, String[] nativefiles) {
-	// if (normalfiles.length != nativefiles.length) {
-	// assertEquals("normal file num equals native file num",
-	// "normal file num do not equals native file num");
-	// }
-	// String expected = "";
-	// String factual = "";
-	// System.err.println("run result - file num:" + nativefiles.length + " "
-	// + normalfiles.length);
-	// for (int i = 0; i < nativefiles.length; i++) {
-	// System.err.println("run result - file name:" + nativefiles[i] + " "
-	// + normalfiles[i]);
-	// expected += "1,";
-	// factual += ResultVerifier.verify(nativefiles[i], normalfiles[i])
-	// + ",";
-	// }
-	// System.err.println("run result:" + expected + " " + factual);
-	// assertEquals(expected, factual);
-	// }
-	private void compareResult(String normalfile, String nativefile) {
-		try {
-			boolean compareRet = ResultVerifier.verify(normalfile, nativefile);
-			// assertEquals(
-			// "file compare result: if they are the same ,then return true",
-			// true, compareRet);
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
 	}
 }
