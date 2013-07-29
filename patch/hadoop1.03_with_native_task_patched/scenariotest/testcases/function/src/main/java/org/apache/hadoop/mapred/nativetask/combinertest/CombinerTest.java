@@ -16,7 +16,7 @@ public class CombinerTest {
 					.getWordCountNormalJob("normalwordcount");
 			nativejob.waitForCompletion(true);
 			normaljob.waitForCompletion(true);
-			assertEquals("1", ResultVerifier.verify(
+			assertEquals(true, ResultVerifier.verify(
 					nativejob.getConfiguration().get("fileoutputpath")+"/part-r-00000", 
 					normaljob.getConfiguration().get("fileoutputpath")+"/part-r-00000")
 					);

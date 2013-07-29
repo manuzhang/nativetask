@@ -10,6 +10,7 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.mapred.nativetask.compresstest.CompressTest;
 import org.apache.hadoop.mapred.nativetask.testframe.util.ResultVerifier;
+import org.apache.hadoop.mapred.nativetask.testframe.util.ScenarioConfiguration;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -24,7 +25,7 @@ public class KVTest {
 	private static Class<?>[] valueclasses = null;
 	private static String[] keyclassNames = null;
 	private static String[] valueclassNames = null;
-	public static final String NATIVETASK_KVTEST_CONF_PATH = "test-kv-conf.xml";
+	public static final String NATIVETASK_KVTEST_CONF_PATH = "kvtest-conf.xml";
 	public static final String NATIVETASK_KVTEST_CONF_INPUTDIR = "nativetask.kvtest.inputdir";
 	public static final String NATIVETASK_KVTEST_CONF_OUTPUTDIR = "nativetask.kvtest.outputdir";
 	public static final String NATIVETASK_KVTEST_CONF_NORMAL_OUTPUTDIR = "normal.kvtest.outputdir";
@@ -34,12 +35,16 @@ public class KVTest {
 	public static final String NATIVETASK_KVTEST_CONF_VALUECLASSES = "nativetask.kvtest.valueclasses";
 	public static final String NATIVETASK_COLLECTOR_DELEGATOR = "mapreduce.map.output.collector.delegator.class";
 	public static final String NATIVETASK_COLLECTOR_DELEGATOR_CLASS = "org.apache.hadoop.mapred.nativetask.NativeMapOutputCollectorDelegator";
-
-	@Parameters
+	private static Configuration kvtestcommonconf = new Configuration(ScenarioConfiguration.commonconf);
+	static{
+		kvtestcommonconf.addResource(NATIVETASK_KVTEST_CONF_PATH);
+		kvtestcommonconf.addResource(CompressTest.NATIVETASK_COMPRESS_CONF_PATH);
+	}
+	@Parameters(name = "key:{0}\nvalue:{1}")
 	public static Iterable<Class<?>[]> data() {
-		Configuration conf = new Configuration();
-		conf.addResource(NATIVETASK_KVTEST_CONF_PATH);
-		String valueclassesStr = conf.get(NATIVETASK_KVTEST_CONF_VALUECLASSES);
+		
+		String valueclassesStr = kvtestcommonconf.get(NATIVETASK_KVTEST_CONF_VALUECLASSES);
+		
 		valueclassNames = valueclassesStr.trim().split("\n");
 		valueclasses = new Class<?>[valueclassNames.length];
 		for (int i = 0; i < valueclassNames.length; i++) {
@@ -50,7 +55,8 @@ public class KVTest {
 				e.printStackTrace();
 			}
 		}
-		String keyclassesStr = conf.get(NATIVETASK_KVTEST_CONF_KEYCLASSES);
+		String keyclassesStr = kvtestcommonconf.get(NATIVETASK_KVTEST_CONF_KEYCLASSES);
+		
 		keyclassNames = keyclassesStr.trim().split("\n");
 		keyclasses = new Class<?>[keyclassNames.length];
 		for (int i = 0; i < keyclassNames.length; i++) {
@@ -61,7 +67,7 @@ public class KVTest {
 				e.printStackTrace();
 			}
 		}
-		System.out.println(keyclassNames.length + ":" + valueclassNames.length);
+		
 		Class<?>[][] kvgroup = new Class<?>[keyclassNames.length
 				* valueclassNames.length][2];
 		for (int i = 0; i < keyclassNames.length; i++) {
@@ -84,11 +90,11 @@ public class KVTest {
 
 	@Test
 	public void test() {
-		System.out.println(keyclass + ":" + valueclass);
+		
 		try {
-			String nativeoutput = this.runNativeTest(keyclass.getSimpleName()
+			String nativeoutput = this.runNativeTest("Test:"+keyclass.getSimpleName()
 					+ "--" + valueclass.getSimpleName(), keyclass, valueclass);
-			String normaloutput = this.runNormalTest(keyclass.getSimpleName()
+			String normaloutput = this.runNormalTest("Test:"+keyclass.getSimpleName()
 					+ "--" + valueclass.getSimpleName(), keyclass, valueclass);
 			boolean compareRet = ResultVerifier.verify(normaloutput,
 					nativeoutput);
@@ -111,10 +117,7 @@ public class KVTest {
 
 	private String runNativeTest(String jobname, Class<?> keyclass,
 			Class<?> valueclass) throws IOException {
-		Configuration conf = new Configuration();
-		conf.addResource(NATIVETASK_KVTEST_CONF_PATH);
-		conf.addResource(CompressTest.NATIVETASK_COMPRESS_CONF_PATH);
-		conf.addResource("local_job.xml");
+		Configuration conf = new Configuration(kvtestcommonconf);
 		conf.set(NATIVETASK_COLLECTOR_DELEGATOR,
 				NATIVETASK_COLLECTOR_DELEGATOR_CLASS);
 		String inputpath = conf.get(NATIVETASK_KVTEST_CONF_INPUTDIR) + "/"
@@ -138,9 +141,7 @@ public class KVTest {
 
 	private String runNormalTest(String jobname, Class<?> keyclass,
 			Class<?> valueclass) throws IOException {
-		Configuration conf = new Configuration();
-		conf.addResource(NATIVETASK_KVTEST_CONF_PATH);
-		conf.addResource("local_job.xml");
+		Configuration conf = new Configuration(kvtestcommonconf);
 		String inputpath = conf.get(NATIVETASK_KVTEST_CONF_INPUTDIR) + "/"
 				+ keyclass.getName() + "/" + valueclass.getName();
 		String outputpath = conf.get(NATIVETASK_KVTEST_CONF_NORMAL_OUTPUTDIR)

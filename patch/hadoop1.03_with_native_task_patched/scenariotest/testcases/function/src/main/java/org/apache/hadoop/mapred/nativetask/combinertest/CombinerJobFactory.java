@@ -1,11 +1,13 @@
 package org.apache.hadoop.mapred.nativetask.combinertest;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapred.nativetask.combinertest.WordCount.IntSumReducer;
 import org.apache.hadoop.mapred.nativetask.combinertest.WordCount.TokenizerMapper;
+import org.apache.hadoop.mapred.nativetask.kvtest.TestFile;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
@@ -26,12 +28,22 @@ public class CombinerJobFactory {
 		conf.addResource(COMBINER_CONF_SOURCE);
 		conf.set(NATIVETASK_COLLECTOR_DELEGATOR,
 				NATIVETASK_COLLECTOR_DELEGATOR_CLASS);
-		conf.set(
-				"fileoutputpath",
-				conf.get(NATIVETASK_TEST_COMBINER_OUTPUTPATH_KEY,
-						NATIVETASK_TEST_COMBINER_OUTPUTPATH_DEFAULTV)
-						+ "/"
-						+ jobname);
+		String inputpath = conf.get(
+				NATIVETASK_TEST_COMBINER_INPUTPATH_KEY,
+				NATIVETASK_TEST_COMBINER_INPUTPATH_DEFAULTV)
+				+ "/wordcount";
+		String outputpath = conf.get(
+				NATIVETASK_TEST_COMBINER_OUTPUTPATH_KEY,
+				NATIVETASK_TEST_COMBINER_OUTPUTPATH_DEFAULTV)
+				+ "/" + jobname;
+		FileSystem fs = FileSystem.get(conf);
+		// no such file ,then create it
+		if (!fs.exists(new Path(inputpath))) {
+			new TestFile(conf.getInt("nativetask.combiner.wordcount.filesize",
+					10000), inputpath, Text.class.getName(),
+					Text.class.getName()).createSequenceTestFile();
+
+		}
 		Job job = new Job(conf, jobname);
 		job.setJarByClass(WordCount.class);
 		job.setMapperClass(TokenizerMapper.class);
@@ -39,24 +51,14 @@ public class CombinerJobFactory {
 		job.setReducerClass(IntSumReducer.class);
 		job.setOutputKeyClass(Text.class);
 		job.setOutputValueClass(IntWritable.class);
-		FileInputFormat.addInputPath(
-				job,
-				new Path(conf.get(NATIVETASK_TEST_COMBINER_INPUTPATH_KEY,
-						NATIVETASK_TEST_COMBINER_INPUTPATH_DEFAULTV)+"/wordcount"));
-		FileOutputFormat.setOutputPath(job,
-				new Path(conf.get("fileoutputpath")));
+		FileInputFormat.addInputPath(job, new Path(inputpath));
+		FileOutputFormat.setOutputPath(job, new Path(outputpath));
 		return job;
 	}
 
 	public static Job getWordCountNormalJob(String jobname) throws Exception {
 		Configuration conf = new Configuration();
 		conf.addResource(COMBINER_CONF_SOURCE);
-		conf.set(
-				"fileoutputpath",
-				conf.get(NORMAL_TEST_COMBINER_OUTPUTPATH_KEY,
-						NORMAL_TEST_COMBINER_OUTPUTPATH_DEFAULTV)
-						+ "/"
-						+ jobname);
 		Job job = new Job(conf, jobname);
 		job.setJarByClass(WordCount.class);
 		job.setMapperClass(TokenizerMapper.class);
@@ -67,9 +69,14 @@ public class CombinerJobFactory {
 		FileInputFormat.addInputPath(
 				job,
 				new Path(conf.get(NATIVETASK_TEST_COMBINER_INPUTPATH_KEY,
-						NATIVETASK_TEST_COMBINER_INPUTPATH_DEFAULTV)+"/wordcount"));
-		FileOutputFormat.setOutputPath(job,
-				new Path(conf.get("fileoutputpath")));
+						NATIVETASK_TEST_COMBINER_INPUTPATH_DEFAULTV)
+						+ "/wordcount"));
+		FileOutputFormat.setOutputPath(
+				job,
+				new Path(conf.get(NORMAL_TEST_COMBINER_OUTPUTPATH_KEY,
+						NORMAL_TEST_COMBINER_OUTPUTPATH_DEFAULTV)
+						+ "/"
+						+ jobname));
 		return job;
 	}
 

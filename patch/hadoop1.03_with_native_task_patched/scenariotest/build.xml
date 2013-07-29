@@ -4,7 +4,7 @@
 	<property name="hadoop.home" value="/home/hadoop/workspace/nativetask/patch/hadoop1.03_with_native_task_patched" />
 	<property name="hbase.home" value="" />
 	<property name="hive.home" value="" />
-	<property name="scenariotest.home" value="./" />
+	<property name="scenariotest.home" value="${hadoop.home}/scenariotest" />
 
 	<!-- build property -->
 	<property name="testsrc.dir" value="testcases" />
@@ -19,22 +19,20 @@
 	<!-- report property -->
 	<property name="report.dir" value="report" />
 
-	<!-- rumtime configure -->
-	<property name="scenariotest.conf.dir" value="${scenariotest.home}/conf" />
 	<!-- path -->
 	<path id="compilelib">
 		<fileset dir="${hadoop.build.dir}" includes="*.jar" />
-		<fileset dir="${hadoop.lib.dir}" includes="*.jar" excludes ="junit-4.5.jar"/>
+		<fileset dir="${hadoop.lib.dir}" includes="*.jar" excludes="junit-4.5.jar" />
 		<fileset dir="${scenariotest.lib.dir}" includes="*.jar" />
 	</path>
 	<path id="hadoop.conf.path">
 		<pathelement path="${hadoop.home}/conf" />
 	</path>
-	<path id="scenariotest.conf.path">
-		<pathelement path="${scenariotest.conf.dir}" />
+	<path id="scenariotest.kvtest.conf.path">
+		<pathelement path="${scenariotest.home}/conf/kvtest_conf" />
 	</path>
 	<path id="scenariotest.compress.conf.path">
-		<pathelement path="${scenariotest.conf.dir}/compress_conf" />
+		<pathelement path="${scenariotest.home}/conf/compress_conf" />
 	</path>
 	<path id="test.run.path">
 		<pathelement path="${testbuild.dir}/nativetest.jar" />
@@ -42,11 +40,25 @@
 	</path>
 
 	<!-- condition -->
+	<!-- kvtest.mode.local, setted as scenariotest.conf.path
 	<condition property="kvtest.mode.local">
 		<istrue value="false" />
 	</condition>
+	-->
+	<!-- local or cluster conf , it should be set, before running-->
+	<!-- you should choose one as bellow two choices -->
+
+	<path id="env.conf.path">
+		<pathelement location="${scenariotest.home}/conf" />
+	</path>
+
+	<!--
+	<path id="env.conf.path">
+		<pathelement location="${hadoop.home}/conf" />
+	</path>
+	-->
 	<condition property="kvtest.mode.compress">
-		<istrue value="false" />
+		<istrue value="true" />
 	</condition>
 
 	<!-- target : init ,compile -->
@@ -64,12 +76,13 @@
 		<jar destfile="${testbuild.dir}/nativetest.jar">
 			<fileset dir="${testclasses.dir}" />
 		</jar>
+		<echo message="${java.library.path}" />
 	</target>
 	<target name="testKVwithCompress" depends="compile" if="kvtest.mode.compress">
 		<junit printsummary="yes" showoutput="true" fork="yes">
 			<classpath>
-				<path refid="scenariotest.conf.path" />
-				<!--path refid="hadoop.conf.path"/-->
+				<path refid="scenariotest.kvtest.conf.path" />
+				<path refid="env.conf.path" />
 				<path refid="scenariotest.compress.conf.path" />
 				<path refid="test.run.path" />
 			</classpath>
@@ -83,8 +96,8 @@
 	<target name="testKVwithoutCompress" depends="compile" unless="kvtest.mode.compress">
 		<junit printsummary="yes" showoutput="true" fork="yes">
 			<classpath>
-				<path refid="scenariotest.conf.path" />
-				<!--path refid="hadoop.conf.path"/-->
+				<path refid="scenariotest.kvtest.conf.path" />
+				<path refid="env.conf.path" />
 				<path refid="test.run.path" />
 			</classpath>
 			<formatter type="xml" />
@@ -94,9 +107,32 @@
 		</junit>
 		<echo message="For detail report, check folder ${report.dir}" />
 	</target>
+	<target name="testWordCountWithCombiner" depends="compile">
+		<junit printsummary="yes" showoutput="true" fork="yes">
+			<classpath>
+				<path refid="env.conf.path" />
+				<path refid="test.run.path" />
+			</classpath>
+			<formatter type="xml" />
+			<batchtest fork="yes" todir="${report.dir}">
+				<fileset dir="${testclasses.dir}" includes="**/combinertest/*Test.class" />
+			</batchtest>
+		</junit>
+		<echo message="For detail report, check folder ${report.dir}" />
+	</target>
 	<target name="testKV" depends="testKVwithoutCompress,testKVwithCompress" />
-	<target name="testAll" depends="testKV" />
-	<target name="report" depends="testAll">
+	<target name="testAll" depends="testKV,testWordCountWithCombiner" />
+	<target name="reportAll" depends="testAll">
+		<delete dir="${report.dir}/html" />
+		<mkdir dir="${report.dir}/html" />
+		<junitreport todir="${report.dir}/html">
+			<fileset dir="${report.dir}">
+				<include name="*.xml" />
+			</fileset>
+			<report format="frames" todir="${report.dir}/html" />
+		</junitreport>
+	</target>
+	<target name="report">
 		<delete dir="${report.dir}/html" />
 		<mkdir dir="${report.dir}/html" />
 		<junitreport todir="${report.dir}/html">

@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+
+<!-- Put site-specific property overrides in this file. -->
+
+<configuration>
+<property>
+<name>mapreduce.combine.class</name>
+<value>org.apache.hadoop.mapred.nativetask.kvtest.KVJob$ValueMReducer</value>
+</property>
+<property>
+<name>mapreduce.reduce.class</name>
+<value>org.apache.hadoop.mapred.nativetask.kvtest.KVJob$ValueMReducer</value>
+</property>
+<property>
+<name>mapreduce.reduce.class</name>
+<value>org.apache.hadoop.mapred.nativetask.kvtest.KVJob$ValueReducer</value>
+</property>
+</Configuration>

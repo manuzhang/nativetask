@@ -32,7 +32,7 @@ public class ResultVerifier {
 		FileSystem fs = FileSystem.get(conf);
 		Path hdfssource = new Path(source);
 		Path[] sourcepaths = FileUtil.stat2Paths(fs.listStatus(hdfssource));
-		System.out.println("begin to verify, conf seted sourcepaths:"+sourcepaths);
+		
 		// Path hdfssample = new Path(sample);
 		// FileStatus[] samplepaths = fs.listStatus(hdfssample);
 		if(sourcepaths==null)
@@ -40,11 +40,11 @@ public class ResultVerifier {
 		for (int i = 0; i < sourcepaths.length; i++) {
 			Path sourcepath = sourcepaths[i];
 			// op result file start with "part-r" like part-r-00000
-			System.out.println("sourcepath name:"+sourcepath.getName());
+			
 			if (!sourcepath.getName().startsWith("part-r"))
 				continue;
 			Path samplepath = new Path(sample + "/" + sourcepath.getName());
-			System.out.println("samplepath:"+samplepath);
+			
 			// compare
 			try {
 				if (fs.exists(sourcepath) && fs.exists(samplepath)) {
@@ -55,7 +55,7 @@ public class ResultVerifier {
 							+ " or " + samplepath);
 					return false;
 				}
-				System.out.println(" begin to create crc32");
+				
 				CRC32 sourcecrc, samplecrc;
 				samplecrc = new CRC32();
 				sourcecrc = new CRC32();
@@ -69,7 +69,7 @@ public class ResultVerifier {
 					readnum = sourcein.read(bufin);
 					sourcecrc.update(bufin,0,readnum);
 				}
-				System.out.println("crc result:\t"+samplecrc+" "+sourcecrc);
+				
 				if (samplecrc.getValue() == sourcecrc.getValue())
 					;
 				else {
@@ -79,7 +79,7 @@ public class ResultVerifier {
 				// TODO Auto-generated catch block
 				throw new Exception("verify exception :", e);
 			} finally {
-				System.out.println("begin to close samplein and sourcein");
+				
 				try {
 					if (samplein != null)
 						samplein.close();
