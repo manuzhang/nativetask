@@ -122,6 +122,7 @@ For questions and support, please contact
 * Cheng Lian
 * [Jiang Weihua](https://github.com/whjiang) 
 * Gansha Wu
+* Avik Dey
 
 ## Further information
 For further documents, please check the [Wiki](https://github.com/intel-hadoop/nativetask/wiki) Page.
