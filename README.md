@@ -101,15 +101,26 @@ Here is the steps to enable NativeTask in transparent collector mode:
 
 Please check wiki for how to run MRv1 over NativeTask and HBase, Hive, Pig and Mahout support
 
+
+## Contacts
+For questions and support, please contact 
+* [Sean Zhong](https://github.com/clockfly) (xiang.zhong@intel.com)
+* [Manu Zhang](https://github.com/manuzhang) (tianlun.zhang@intel.com)
+* [Jiang Weihua](https://github.com/whjiang) (weihua.jiang@intel.com)
+
 ## Contributors
-* Binglin Chang ([@decster](https://github.com/decster))     
-* Yang Dong ([@GarfiedYang](https://github.com/GarfiedYang))    
-* Sean Zhong ([@clockfly](https://github.com/clockfly))    
-* Manu Zhang ([@manuzhang](https://github.com/manuzhang))    
-* Zhongliang Zhu ([@zoken](https://github.com/zoken))    
-* Vincent Wang ([@huafengw](https://github.com/huafengw))     
-* Yan Dong (dong.yan@intel.com)
-* Jiang Weihua ([@whjiang](https://github.com/whjiang))
+* [Binglin Chang](https://github.com/decster)     
+* [Yang Dong](https://github.com/GarfiedYang)    
+* [Sean Zhong](https://github.com/clockfly)    
+* [Manu Zhang](https://github.com/manuzhang)    
+* [Zhongliang Zhu](https://github.com/zoken)    
+* [Vincent Wang](https://github.com/huafengw)     
+* [Yan Dong](https://github.com/sproblvem)
+* Fangqin Dai
+* Xusen Yin
+* Cheng Lian
+* [Jiang Weihua](https://github.com/whjiang) 
+* Gansha Wu
 
 ## Further information
 For further documents, please check the Wiki Page.
