@@ -26,39 +26,33 @@
 
 namespace NativeTask {
 
-inline char * memchr(char * p, char ch, size_t len) {
+inline const char * memchr(const char * p, char ch, size_t len) {
   size_t i = 0;
-  for (;i+4<len;i+=4) {
-    if (p[i]==ch) {
-      return p+i;
+  for (; i + 4 < len; i += 4) {
+    if (p[i] == ch) {
+      return p + i;
     }
-    if (p[i+1]==ch) {
-      return p+i+1;
+    if (p[i + 1] == ch) {
+      return p + i + 1;
     }
-    if (p[i+2]==ch) {
-      return p+i+2;
+    if (p[i + 2] == ch) {
+      return p + i + 2;
     }
-    if (p[i+3]==ch) {
-      return p+i+3;
+    if (p[i + 3] == ch) {
+      return p + i + 3;
     }
   }
-  for (;i<len;i++) {
-    if (p[i]==ch) {
-      return p+i;
+  for (; i < len; i++) {
+    if (p[i] == ch) {
+      return p + i;
     }
   }
   return NULL;
 }
 
-LineRecordReader::LineRecordReader() :
-  _orig(NULL),
-  _source(NULL),
-  _start(0),
-  _pos(0),
-  _end(0),
-  _bufferHint(128*1024),
-  _hasOrig(true),
-  _inputLength(0) {
+LineRecordReader::LineRecordReader()
+    : _orig(NULL), _source(NULL), _start(0), _pos(0), _end(0), _bufferHint(128 * 1024),
+        _hasOrig(true), _inputLength(0) {
 }
 
 LineRecordReader::~LineRecordReader() {
@@ -71,15 +65,14 @@ LineRecordReader::~LineRecordReader() {
  * memchr in some os/platform is not optimized,
  * add memchr_sse4.2 primitive
  */
-uint32_t LineRecordReader::ReadLine(InputStream * source, DynamicBuffer & buffer,
-                                    Buffer & line, uint32_t bufferHint,
-                                    bool withEOL) {
+uint32_t LineRecordReader::ReadLine(InputStream * source, DynamicBuffer & buffer, Buffer & line,
+    uint32_t bufferHint, bool withEOL) {
   if (buffer.remain() > 0) {
     char * pos = (char*)memchr(buffer.current(), '\n', buffer.remain());
-    if (pos>0) {
+    if (pos > 0) {
       uint32_t length = pos - buffer.current();
-      int32_t hasBR = ((length>0) && (*(pos-1) == '\r')) ? 1 : 0;
-      line.reset(buffer.current(), length + (withEOL?1:-hasBR));
+      int32_t hasBR = ((length > 0) && (*(pos - 1) == '\r')) ? 1 : 0;
+      line.reset(buffer.current(), length + (withEOL ? 1 : -hasBR));
       buffer.use(length + 1);
       return length + 1;
     }
@@ -88,21 +81,21 @@ uint32_t LineRecordReader::ReadLine(InputStream * source, DynamicBuffer & buffer
   uint32_t findStart = 0;
   while (true) {
     if (buffer.freeSpace() < bufferHint) {
-      buffer.reserve(buffer.capacity()*2);
+      buffer.reserve(buffer.capacity() * 2);
     }
     int32_t rd = buffer.refill(source);
-    if (rd<=0) {
+    if (rd <= 0) {
       // reach EOF
       uint32_t ret = buffer.size();
       line.reset(buffer.data(), ret);
       buffer.use(ret);
       return ret;
     }
-    char * pos = (char*)memchr(buffer.data()+findStart, '\n', buffer.size()-findStart);
-    if (pos>0) {
+    char * pos = (char*)memchr(buffer.data() + findStart, '\n', buffer.size() - findStart);
+    if (pos > 0) {
       uint32_t length = pos - buffer.data();
-      int32_t hasBR = ((length>0) && (*(pos-1) == '\r')) ? 1 : 0;
-      line.reset(buffer.data(), length + (withEOL?1:-hasBR));
+      int32_t hasBR = ((length > 0) && (*(pos - 1) == '\r')) ? 1 : 0;
+      line.reset(buffer.data(), length + (withEOL ? 1 : -hasBR));
       buffer.use(length + 1);
       return length + 1;
     }
@@ -113,7 +106,7 @@ uint32_t LineRecordReader::ReadLine(InputStream * source, DynamicBuffer & buffer
 
 void LineRecordReader::init(InputStream * stream, const string & codec) {
   close();
-  _bufferHint = 128*1024;
+  _bufferHint = 128 * 1024;
   _orig = stream;
   _hasOrig = false;
   _start = 0;
@@ -122,7 +115,7 @@ void LineRecordReader::init(InputStream * stream, const string & codec) {
   _inputLength = (uint64_t)-1;
   if (codec.length() > 0) {
     // more buffer to prevent decompression stream using extra temp buffer
-    _buffer.reserve(_bufferHint*2);
+    _buffer.reserve(_bufferHint * 2);
     _source = Compressions::getDecompressionStream(codec, _orig, _bufferHint);
   } else {
     _buffer.reserve(_bufferHint);
@@ -138,10 +131,9 @@ void LineRecordReader::init(InputStream * stream, const string & codec) {
   }
 }
 
-void LineRecordReader::init(const string & file, uint64_t start,
-                            uint64_t length, Config & config) {
+void LineRecordReader::init(const string & file, uint64_t start, uint64_t length, Config * config) {
   close();
-  _bufferHint = 128*1024;
+  _bufferHint = 128 * 1024;
   _orig = FileSystem::get(config).open(file);
   _hasOrig = true;
   _start = start;
@@ -151,7 +143,7 @@ void LineRecordReader::init(const string & file, uint64_t start,
   const string & codec = Compressions::getCodecByFile(file);
   if (codec != "") {
     // more buffer to prevent decompression stream using extra cache buffer
-    _buffer.reserve(_bufferHint*2);
+    _buffer.reserve(_bufferHint * 2);
     _source = Compressions::getDecompressionStream(codec, _orig, _bufferHint);
     // dcompression stream don't have effective _pos & _end
     _end = (uint64_t)-1;
@@ -169,14 +161,13 @@ void LineRecordReader::init(const string & file, uint64_t start,
   }
 }
 
-void LineRecordReader::configure(Config & config) {
-  string splitData = config.get(NATIVE_INPUT_SPLIT, "");
+void LineRecordReader::configure(Config * config) {
+  string splitData = config->get(NATIVE_INPUT_SPLIT, "");
   if (splitData == "") {
     THROW_EXCEPTION(IOException, "Input split info not found in config");
   }
   FileSplit split;
   split.readFields(splitData);
-  LOG("Input FileSplit: %s", split.toString().c_str());
   init(split.file(), split.start(), split.length(), config);
 }
 
@@ -193,14 +184,13 @@ float LineRecordReader::getProgress() {
   if (_source == _orig) {
     // direct stream
     if (_end > _start) {
-      float ret = (_pos - _start)/(double)(_end - _start);
+      float ret = (_pos - _start) / (double)(_end - _start);
       return std::min(ret, 1.0f);
     }
   } else {
     // compressed stream
-    uint64_t compressedRead =
-        ((DecompressStream*) _source)->compressedBytesRead();
-    float ret =  compressedRead / (double) _inputLength;
+    uint64_t compressedRead = ((DecompressStream*)_source)->compressedBytesRead();
+    float ret = compressedRead / (double)_inputLength;
     return std::min(ret, 1.0f);
   }
   return 0.0f;
@@ -217,13 +207,12 @@ void LineRecordReader::close() {
   _orig = NULL;
 }
 
-void KeyValueLineRecordReader::configure(Config & config) {
+void KeyValueLineRecordReader::configure(Config * config) {
   LineRecordReader::configure(config);
-  string sep = config.get(INPUT_LINE_KV_SEPERATOR, "\t");
+  string sep = config->get(INPUT_LINE_KV_SEPERATOR, "\t");
   if (sep.length() > 0) {
     _kvSeparator = sep[0];
-  }
-  else {
+  } else {
     _kvSeparator = '\t';
   }
 }
@@ -238,13 +227,12 @@ bool KeyValueLineRecordReader::next(Buffer & key, Buffer & value) {
   if (pos != NULL) {
     uint32_t keyLen = pos - line.data();
     key.reset(line.data(), keyLen);
-    value.reset(pos+1, line.length() - keyLen - 1);
+    value.reset(pos + 1, line.length() - keyLen - 1);
   } else {
     key.reset(line.data(), line.length());
     value.reset(NULL, 0);
   }
   return true;
 }
-
 
 } // namespace NativeTask

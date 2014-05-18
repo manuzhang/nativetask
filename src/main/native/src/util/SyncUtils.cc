@@ -52,44 +52,42 @@ void Lock::unlock() {
   PthreadCall("unlock", pthread_mutex_unlock(&_mutex));
 }
 
-
 #ifdef __MACH__
-  SpinLock::SpinLock() : _spin(0) {
-  }
+SpinLock::SpinLock() : _spin(0) {
+}
 
-  SpinLock::~SpinLock() {
+SpinLock::~SpinLock() {
 
-  }
+}
 
-  void SpinLock::lock() {
-    OSSpinLockLock(&_spin);
-  }
+void SpinLock::lock() {
+  OSSpinLockLock(&_spin);
+}
 
-  void SpinLock::unlock() {
-    OSSpinLockUnlock(&_spin);
-  }
+void SpinLock::unlock() {
+  OSSpinLockUnlock(&_spin);
+}
 #else
-  SpinLock::SpinLock() {
-    PthreadCall("init mutex", pthread_spin_init(&_spin, 0));
-  }
+SpinLock::SpinLock() {
+  PthreadCall("init mutex", pthread_spin_init(&_spin, 0));
+}
 
-  SpinLock::~SpinLock() {
-    PthreadCall("destroy mutex", pthread_spin_destroy(&_spin));
-  }
+SpinLock::~SpinLock() {
+  PthreadCall("destroy mutex", pthread_spin_destroy(&_spin));
+}
 
-  void SpinLock::lock() {
-    PthreadCall("lock", pthread_spin_lock(&_spin));
-  }
+void SpinLock::lock() {
+  PthreadCall("lock", pthread_spin_lock(&_spin));
+}
 
-  void SpinLock::unlock() {
-    PthreadCall("unlock", pthread_spin_unlock(&_spin));
-  }
+void SpinLock::unlock() {
+  PthreadCall("unlock", pthread_spin_unlock(&_spin));
+}
 #endif
-
 
 Condition::Condition(Lock* mu)
     : _lock(mu) {
-    PthreadCall("init cv", pthread_cond_init(&_condition, NULL));
+  PthreadCall("init cv", pthread_cond_init(&_condition, NULL));
 }
 
 Condition::~Condition() {
@@ -109,18 +107,21 @@ void Condition::signalAll() {
 }
 
 void * Thread::ThreadRunner(void * pthis) {
-  ((Thread*)pthis)->run();
+  try {
+    ((Thread*)pthis)->run();
+  } catch (std::exception & e) {
+    LOG("err!!!! %s", e.what());
+  }
   return NULL;
 }
 
-Thread::Thread() :
-  _thread((pthread_t)0), // safe for linux & macos
-  _runable(NULL) {
+Thread::Thread()
+    : _thread((pthread_t)0), // safe for linux & macos
+    _runable(NULL) {
 }
 
-Thread::Thread(const Runnable & runnable) :
-  _thread((pthread_t)0),
-  _runable(const_cast<Runnable*>(&runnable)) {
+Thread::Thread(Runnable * runnable)
+    : _thread((pthread_t)0), _runable(runnable) {
 }
 
 void Thread::setTask(const Runnable & runnable) {
@@ -128,6 +129,7 @@ void Thread::setTask(const Runnable & runnable) {
 }
 
 Thread::~Thread() {
+
 }
 
 void Thread::start() {
@@ -143,7 +145,7 @@ void Thread::stop() {
 }
 
 void Thread::run() {
-  if (_runable!=NULL) {
+  if (_runable != NULL) {
     _runable->run();
   }
 }

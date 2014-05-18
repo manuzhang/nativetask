@@ -53,5 +53,4 @@ public:
 
 } // namespace NativeTask
 
-
 #endif /* TIMER_H_ */

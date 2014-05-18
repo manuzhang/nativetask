@@ -20,23 +20,20 @@
 #include <zlib.h>
 #include "commons.h"
 #include "GzipCodec.h"
+#include <iostream>
 
 namespace NativeTask {
 
-GzipCompressStream::GzipCompressStream(
-    OutputStream * stream,
-    uint32_t bufferSizeHint) :
-    CompressStream(stream),
-    _compressedBytesWritten(0),
-    _zstream(NULL),
-    _finished(false) {
+GzipCompressStream::GzipCompressStream(OutputStream * stream, uint32_t bufferSizeHint)
+    : CompressStream(stream), _compressedBytesWritten(0), _zstream(NULL), _finished(false) {
   _buffer = new char[bufferSizeHint];
   _capacity = bufferSizeHint;
+  std::cout << "gzip capacity " << _capacity << std::endl;
   _zstream = malloc(sizeof(z_stream));
   z_stream * zstream = (z_stream*)_zstream;
   memset(zstream, 0, sizeof(z_stream));
   if (Z_OK != deflateInit2(zstream, Z_DEFAULT_COMPRESSION, Z_DEFLATED, 31, 8,
-                           Z_DEFAULT_STRATEGY)) {
+      Z_DEFAULT_STRATEGY)) {
     free(_zstream);
     _zstream = NULL;
     THROW_EXCEPTION(IOException, "deflateInit2 failed");
@@ -50,18 +47,22 @@ GzipCompressStream::~GzipCompressStream() {
     free(_zstream);
     _zstream = NULL;
   }
-  delete [] _buffer;
+  delete[] _buffer;
   _buffer = NULL;
 }
 
 void GzipCompressStream::write(const void * buff, uint32_t length) {
+  std::cout << "gzip " << length << std::endl;
   z_stream * zstream = (z_stream*)_zstream;
   zstream->next_in = (Bytef*)buff;
   zstream->avail_in = length;
   while (true) {
     int ret = deflate(zstream, Z_NO_FLUSH);
+    std::cout << "gzip ret status " << ret << std::endl;
     if (ret == Z_OK) {
+      std::cout << "gzip avail_out " << zstream->avail_out << std::endl;
       if (zstream->avail_out == 0) {
+        std::cout << "gzip write capacity " << _capacity << std::endl;
         _stream->write(_buffer, _capacity);
         _compressedBytesWritten += _capacity;
         zstream->next_out = (Bytef *)_buffer;
@@ -78,6 +79,7 @@ void GzipCompressStream::write(const void * buff, uint32_t length) {
 }
 
 void GzipCompressStream::flush() {
+  std::cout << "gzip flush called";
   z_stream * zstream = (z_stream*)_zstream;
   while (true) {
     int ret = deflate(zstream, Z_FINISH);
@@ -90,8 +92,8 @@ void GzipCompressStream::flush() {
       } else {
         THROW_EXCEPTION(IOException, "flush state error");
       }
-    } else if (ret == Z_STREAM_END){
-      size_t wt = zstream->next_out-(Bytef*)_buffer;
+    } else if (ret == Z_STREAM_END) {
+      size_t wt = zstream->next_out - (Bytef*)_buffer;
       _stream->write(_buffer, wt);
       _compressedBytesWritten += wt;
       zstream->next_out = (Bytef *)_buffer;
@@ -100,9 +102,16 @@ void GzipCompressStream::flush() {
     }
   }
   _finished = true;
+  _stream->flush();
+}
+
+void GzipCompressStream::resetState() {
+  z_stream * zstream = (z_stream*)_zstream;
+  deflateReset(zstream);
 }
 
 void GzipCompressStream::close() {
+  std::cout << "gzip close called";
   if (!_finished) {
     flush();
   }
@@ -118,12 +127,8 @@ void GzipCompressStream::writeDirect(const void * buff, uint32_t length) {
 
 //////////////////////////////////////////////////////////////
 
-GzipDecompressStream::GzipDecompressStream(
-    InputStream * stream,
-    uint32_t bufferSizeHint) :
-    DecompressStream(stream),
-    _compressedBytesRead(0),
-    _zstream(NULL) {
+GzipDecompressStream::GzipDecompressStream(InputStream * stream, uint32_t bufferSizeHint)
+    : DecompressStream(stream), _compressedBytesRead(0), _zstream(NULL) {
   _buffer = new char[bufferSizeHint];
   _capacity = bufferSizeHint;
   _zstream = malloc(sizeof(z_stream));
@@ -144,13 +149,12 @@ GzipDecompressStream::~GzipDecompressStream() {
     free(_zstream);
     _zstream = NULL;
   }
-  delete [] _buffer;
+  delete[] _buffer;
   _buffer = NULL;
 }
 
 int32_t GzipDecompressStream::read(void * buff, uint32_t length) {
   z_stream * zstream = (z_stream*)_zstream;
-  z_stream & stream = *zstream;
   zstream->next_out = (Bytef*)buff;
   zstream->avail_out = length;
   while (true) {
@@ -162,17 +166,11 @@ int32_t GzipDecompressStream::read(void * buff, uint32_t length) {
         return wt > 0 ? wt : -1;
       } else {
         _compressedBytesRead += rd;
-        zstream->next_in = (Bytef*) _buffer;
+        zstream->next_in = (Bytef*)_buffer;
         zstream->avail_in = rd;
       }
     }
-//    printf("before in: %p/%u out: %p/%u total: %lu/%lu\n", stream.next_in,
-//           stream.avail_in, stream.next_out, stream.avail_out, stream.total_in,
-//           stream.total_out);
     int ret = inflate(zstream, Z_NO_FLUSH);
-//    printf(" after in: %p/%u out: %p/%u total: %lu/%lu\n", stream.next_in,
-//           stream.avail_in, stream.next_out, stream.avail_out, stream.total_in,
-//           stream.total_out);
     if (ret == Z_OK || ret == Z_STREAM_END) {
       if (zstream->avail_out == 0) {
 //        printf("return %d\n", length);
@@ -183,6 +181,7 @@ int32_t GzipDecompressStream::read(void * buff, uint32_t length) {
       return -1;
     }
   }
+  return -1;
 }
 
 void GzipDecompressStream::close() {
@@ -190,7 +189,7 @@ void GzipDecompressStream::close() {
 
 int32_t GzipDecompressStream::readDirect(void * buff, uint32_t length) {
   int32_t ret = _stream->readFully(buff, length);
-  if (ret>0) {
+  if (ret > 0) {
     _compressedBytesRead += ret;
   }
   return ret;

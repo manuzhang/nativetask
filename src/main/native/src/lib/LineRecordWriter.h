@@ -37,19 +37,17 @@ public:
 
   void init(OutputStream * stream, const string & codec);
 
-  void init(const string & file, Config & config);
+  void init(const string & file, Config * config);
 
   virtual ~LineRecordWriter();
 
-  virtual void configure(Config & config);
+  virtual void configure(Config * config);
 
-  virtual void collect(const void * key, uint32_t keyLen,
-                     const void * value, uint32_t valueLen);
+  virtual void collect(const void * key, uint32_t keyLen, const void * value, uint32_t valueLen);
 
   virtual void close();
 };
 
 } // namespace NativeTask
-
 
 #endif /* LINERECORDWRITER_H_ */

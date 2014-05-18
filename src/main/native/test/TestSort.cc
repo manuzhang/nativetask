@@ -35,7 +35,7 @@ inline const char * get_position(uint32_t offset) {
 inline int fmemcmporig(const char * src, const char * dest, uint32_t len) {
   const uint64_t * src8 = (const uint64_t*)src;
   const uint64_t * dest8 = (const uint64_t*)dest;
-  while (len>=8) {
+  while (len >= 8) {
     uint64_t l = *src8;
     uint64_t r = *dest8;
     if (l != r) {
@@ -47,7 +47,7 @@ inline int fmemcmporig(const char * src, const char * dest, uint32_t len) {
     ++dest8;
     len -= 8;
   }
-  if (len==0)
+  if (len == 0)
     return 0;
   if (len == 1) {
     int l = (int)(*(uint8_t*)src8);
@@ -69,14 +69,14 @@ inline int fmemcmporig(const char * src, const char * dest, uint32_t len) {
  * c qsort compare function
  */
 static int compare_offset(const void * plh, const void * prh) {
-  InplaceBuffer * lhb = (InplaceBuffer*) get_position(*(uint32_t*) plh);
-  InplaceBuffer * rhb = (InplaceBuffer*) get_position(*(uint32_t*) prh);
-  uint32_t minlen = std::min(lhb->length, rhb->length);
-  int ret = memcmp(lhb->content, rhb->content, minlen);
+  KVBuffer * lhb = (KVBuffer*)get_position(*(uint32_t*)plh);
+  KVBuffer * rhb = (KVBuffer*)get_position(*(uint32_t*)prh);
+  uint32_t minlen = std::min(lhb->keyLength, rhb->keyLength);
+  int ret = memcmp(lhb->getKey(), rhb->getKey(), minlen);
   if (ret) {
     return ret;
   }
-  return lhb->length - rhb->length;
+  return lhb->keyLength - rhb->keyLength;
 }
 
 /**
@@ -85,17 +85,18 @@ static int compare_offset(const void * plh, const void * prh) {
 class CompareOffset {
 public:
   int64_t operator()(uint32_t lhs, uint32_t rhs) {
-    InplaceBuffer * lhb = (InplaceBuffer*) get_position(lhs);
-    InplaceBuffer * rhb = (InplaceBuffer*) get_position(rhs);
-    uint32_t minlen = std::min(lhb->length, rhb->length);
-    int64_t ret = memcmp(lhb->content, rhb->content, minlen);
+
+    KVBuffer * lhb = (KVBuffer*)get_position(lhs);
+    KVBuffer * rhb = (KVBuffer*)get_position(rhs);
+
+    uint32_t minlen = std::min(lhb->keyLength, rhb->keyLength);
+    int64_t ret = memcmp(lhb->getKey(), rhb->getKey(), minlen);
     if (ret) {
       return ret;
     }
-    return lhb->length - rhb->length;
+    return lhb->keyLength - rhb->keyLength;
   }
 };
-
 
 /**
  * quicksort compare function
@@ -103,11 +104,12 @@ public:
 class OffsetLessThan {
 public:
   bool operator()(uint32_t lhs, uint32_t rhs) {
-    InplaceBuffer * lhb = (InplaceBuffer*) get_position(lhs);
-    InplaceBuffer * rhb = (InplaceBuffer*) get_position(rhs);
-    uint32_t minlen = std::min(lhb->length, rhb->length);
+    KVBuffer * lhb = (KVBuffer*)get_position(lhs);
+    KVBuffer * rhb = (KVBuffer*)get_position(rhs);
+
+    uint32_t minlen = std::min(lhb->keyLength, rhb->keyLength);
     int64_t ret = memcmp(lhb->content, rhb->content, minlen);
-    return ret < 0 || (ret == 0 && (lhb->length < rhb->length));
+    return ret < 0 || (ret == 0 && (lhb->keyLength < rhb->keyLength));
   }
 };
 
@@ -115,14 +117,16 @@ public:
  * c qsort compare function
  */
 static int compare_offset2(const void * plh, const void * prh) {
-  InplaceBuffer * lhb = (InplaceBuffer*) get_position(*(uint32_t*) plh);
-  InplaceBuffer * rhb = (InplaceBuffer*) get_position(*(uint32_t*) prh);
-  uint32_t minlen = std::min(lhb->length, rhb->length);
+
+  KVBuffer * lhb = (KVBuffer*)get_position(*(uint32_t*)plh);
+  KVBuffer * rhb = (KVBuffer*)get_position(*(uint32_t*)prh);
+
+  uint32_t minlen = std::min(lhb->keyLength, rhb->keyLength);
   int64_t ret = fmemcmp(lhb->content, rhb->content, minlen);
   if (ret) {
     return ret;
   }
-  return lhb->length - rhb->length;
+  return lhb->keyLength - rhb->keyLength;
 }
 
 /**
@@ -131,17 +135,18 @@ static int compare_offset2(const void * plh, const void * prh) {
 class CompareOffset2 {
 public:
   int64_t operator()(uint32_t lhs, uint32_t rhs) {
-    InplaceBuffer * lhb = (InplaceBuffer*) get_position(lhs);
-    InplaceBuffer * rhb = (InplaceBuffer*) get_position(rhs);
-    uint32_t minlen = std::min(lhb->length, rhb->length);
+
+    KVBuffer * lhb = (KVBuffer*)get_position(lhs);
+    KVBuffer * rhb = (KVBuffer*)get_position(rhs);
+
+    uint32_t minlen = std::min(lhb->keyLength, rhb->keyLength);
     int64_t ret = fmemcmp(lhb->content, rhb->content, minlen);
     if (ret) {
       return ret;
     }
-    return lhb->length - rhb->length;
+    return lhb->keyLength - rhb->keyLength;
   }
 };
-
 
 /**
  * quicksort compare function
@@ -149,18 +154,20 @@ public:
 class OffsetLessThan2 {
 public:
   bool operator()(uint32_t lhs, uint32_t rhs) {
-    InplaceBuffer * lhb = (InplaceBuffer*) get_position(lhs);
-    InplaceBuffer * rhb = (InplaceBuffer*) get_position(rhs);
-    uint32_t minlen = std::min(lhb->length, rhb->length);
+
+    KVBuffer * lhb = (KVBuffer*)get_position(lhs);
+    KVBuffer * rhb = (KVBuffer*)get_position(rhs);
+
+    uint32_t minlen = std::min(lhb->keyLength, rhb->keyLength);
     int64_t ret = fmemcmp(lhb->content, rhb->content, minlen);
-    return ret < 0 || (ret == 0 && (lhb->length < rhb->length));
+    return ret < 0 || (ret == 0 && (lhb->keyLength < rhb->keyLength));
   }
 };
 
 void makeInput(string & dest, vector<uint32_t> & offsets, uint64_t length) {
-  TeraGen tera = TeraGen(length/100,1,0);
-  dest.reserve(length+1024);
-  string k,v;
+  TeraGen tera = TeraGen(length / 100, 1, 0);
+  dest.reserve(length + 1024);
+  string k, v;
   while (tera.next(k, v)) {
     offsets.push_back(dest.length());
     uint32_t tempLen = k.length();
@@ -174,8 +181,8 @@ void makeInput(string & dest, vector<uint32_t> & offsets, uint64_t length) {
 
 void makeInputWord(string & dest, vector<uint32_t> & offsets, uint64_t length) {
   Random r;
-  dest.reserve(length+1024);
-  string k,v;
+  dest.reserve(length + 1024);
+  string k, v;
   while (true) {
     k = r.nextWord();
     v = r.nextWord();
@@ -192,18 +199,9 @@ void makeInputWord(string & dest, vector<uint32_t> & offsets, uint64_t length) {
   }
 }
 
-
-void printOffsets(string & dest, vector<uint32_t> & offsets) {
-  for (size_t i=0;i<offsets.size();i++) {
-    InplaceBuffer * buf = (InplaceBuffer*)get_position(offsets[i]);
-    printf("%s ", buf->str().c_str());
-  }
-  printf("\n");
-}
-
 TEST(Perf, sort) {
   vector<uint32_t> offsets;
-  makeInputWord(gBuffer, offsets, 6000000);
+  makeInputWord(gBuffer, offsets, 80000000);
   Timer timer;
   vector<uint32_t> offsetstemp1_0 = offsets;
   vector<uint32_t> offsetstemp1_1 = offsets;
@@ -265,4 +263,60 @@ TEST(Perf, sort) {
   DualPivotQuicksort(offsetstemp1_2, CompareOffset2());
   DualPivotQuicksort(offsetstemp1_3, CompareOffset2());
   LOG("%s", timer.getInterval("DualPivotQuicksort 2").c_str());
+}
+
+TEST(Perf, sortCacheMiss) {
+
+  LOG("Testing partition based sort, sort 4MB every time");
+
+  vector<uint32_t> offsets;
+  makeInputWord(gBuffer, offsets, 80000000);
+  Timer timer;
+  vector<uint32_t> offsetstemp1_0 = offsets;
+  vector<uint32_t> offsetstemp1_1 = offsets;
+  vector<uint32_t> offsetstemp1_2 = offsets;
+  vector<uint32_t> offsetstemp1_3 = offsets;
+
+  timer.reset();
+  DualPivotQuicksort(offsetstemp1_0, CompareOffset2());
+  DualPivotQuicksort(offsetstemp1_1, CompareOffset2());
+  DualPivotQuicksort(offsetstemp1_2, CompareOffset2());
+  DualPivotQuicksort(offsetstemp1_3, CompareOffset2());
+  LOG("%s", timer.getInterval("DualPivotQuicksort 2 full sort").c_str());
+
+  uint32_t MOD = 128000;
+  uint32_t END = offsets.size();
+
+  for (MOD = 1024; MOD < END; MOD <<= 1) {
+    offsetstemp1_0 = offsets;
+    offsetstemp1_1 = offsets;
+    offsetstemp1_2 = offsets;
+    offsetstemp1_3 = offsets;
+    timer.reset();
+
+    for (uint32_t i = 0; i <= END / MOD; i++) {
+      int base = i * MOD;
+      int max = (base + MOD) > END ? END : (base + MOD);
+      DualPivotQuicksort(offsetstemp1_0, base, max - 1, 3, CompareOffset2());
+    }
+
+    for (uint32_t i = 0; i <= END / MOD; i++) {
+      int base = i * MOD;
+      int max = (base + MOD) > END ? END : (base + MOD);
+      DualPivotQuicksort(offsetstemp1_1, base, max - 1, 3, CompareOffset2());
+    }
+
+    for (uint32_t i = 0; i <= END / MOD; i++) {
+      int base = i * MOD;
+      int max = (base + MOD) > END ? END : (base + MOD);
+      DualPivotQuicksort(offsetstemp1_2, base, max - 1, 3, CompareOffset2());
+    }
+
+    for (uint32_t i = 0; i <= END / MOD; i++) {
+      int base = i * MOD;
+      int max = (base + MOD) > END ? END : (base + MOD);
+      DualPivotQuicksort(offsetstemp1_3, base, max - 1, 3, CompareOffset2());
+    }
+    LOG("%s, MOD: %d", timer.getInterval("DualPivotQuicksort 2 partition sort").c_str(), MOD);
+  }
 }

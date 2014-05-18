@@ -46,8 +46,6 @@ static uint64_t clock_get() {
 
 #endif
 
-
-
 Timer::Timer() {
   _last = clock_get();
 }
@@ -70,10 +68,9 @@ void Timer::reset() {
 
 string Timer::getInterval(const char * msg) {
   uint64_t now = clock_get();
-  uint64_t interval = now-_last;
+  uint64_t interval = now - _last;
   _last = now;
-  return StringUtil::Format("%s time: %.5lfs", msg,
-                            (double) interval / 1000000000.0);
+  return StringUtil::Format("%s time: %.5lfs", msg, (double)interval / 1000000000.0);
 }
 
 string Timer::getSpeed(const char * msg, uint64_t size) {
@@ -81,9 +78,8 @@ string Timer::getSpeed(const char * msg, uint64_t size) {
   double interval = (now - _last) / 1000000000.0;
   _last = now;
   double speed = size / interval;
-  return StringUtil::Format(
-      "%s time:\t %3.5lfs size: %10llu speed: %12.0lf/s",
-      msg, interval, size, speed);
+  return StringUtil::Format("%s time:\t %3.5lfs size: %10llu speed: %12.0lf/s", msg, interval, size,
+      speed);
 }
 
 string Timer::getSpeedM(const char * msg, uint64_t size) {
@@ -92,9 +88,8 @@ string Timer::getSpeedM(const char * msg, uint64_t size) {
   _last = now;
   double msize = size / (1024.0 * 1024.0);
   double speed = msize / interval;
-  return StringUtil::Format(
-      "%s time: %3.5lfs size: %.3lfM speed: %.2lfM/s",
-      msg, interval, msize, speed);
+  return StringUtil::Format("%s time: %3.5lfs size: %.3lfM speed: %.2lfM/s", msg, interval, msize,
+      speed);
 }
 
 string Timer::getSpeed2(const char * msg, uint64_t size1, uint64_t size2) {
@@ -103,9 +98,8 @@ string Timer::getSpeed2(const char * msg, uint64_t size1, uint64_t size2) {
   _last = now;
   double speed1 = size1 / interval;
   double speed2 = size2 / interval;
-  return StringUtil::Format(
-      "%s time: %3.5lfs size: %llu/%llu speed: %.0lf/%.0lf",
-      msg, interval, size1, size2, speed1, speed2);
+  return StringUtil::Format("%s time: %3.5lfs size: %llu/%llu speed: %.0lf/%.0lf", msg, interval,
+      size1, size2, speed1, speed2);
 }
 
 string Timer::getSpeedM2(const char * msg, uint64_t size1, uint64_t size2) {
@@ -116,11 +110,8 @@ string Timer::getSpeedM2(const char * msg, uint64_t size1, uint64_t size2) {
   double speed1 = msize1 / interval;
   double msize2 = size2 / (1024.0 * 1024.0);
   double speed2 = msize2 / interval;
-  return StringUtil::Format(
-      "%s time: %3.5lfs size: %.3lfM/%.3lfM speed: %.2lfM/%.2lfM",
-      msg, interval, msize1, msize2, speed1, speed2);
+  return StringUtil::Format("%s time: %3.5lfs size: %.3lfM/%.3lfM speed: %.2lfM/%.2lfM", msg,
+      interval, msize1, msize2, speed1, speed2);
 }
-
-
 
 } // namespace NativeTask

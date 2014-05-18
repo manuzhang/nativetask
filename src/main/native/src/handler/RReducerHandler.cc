@@ -25,175 +25,149 @@
 
 namespace NativeTask {
 
-RReducerHandler::RReducerHandler() :
-  _mapper(NULL),
-  _reducer(NULL),
-  _folder(NULL),
-  _writer(NULL),
-  _current(NULL),
-  _remain(0),
-  _keyOffset(0),
-  _valueOffset(0),
-  _klength(0),
-  _vlength(0),
-  _keyGroupIterState(NEW_KEY),
-  _nextKeyValuePair(NULL),
-  _KVBuffer(NULL),
-  _KVBufferCapacity(0) {
+const Command RReducerHandler::RUN(3, "RUN");
+const Command RReducerHandler::LOAD(1, "Load");
+
+RReducerHandler::RReducerHandler()
+    : _processor(NULL), _writer(NULL), _collector(NULL), _inputGroupCounter(NULL),
+        _inputRecordCounter(NULL), _outputRecordCounter(NULL), _reducerType(UnknownObjectType),
+        _inputStart(NULL), _inputLength(0), _endium(LARGE_ENDIUM) {
 }
 
 RReducerHandler::~RReducerHandler() {
-  reset();
-}
+  if (NULL != _processor) {
+    delete _processor;
+    _processor = NULL;
+  }
 
-void RReducerHandler::reset() {
-  delete _mapper;
-  _mapper = NULL;
-  delete _reducer;
-  _reducer = NULL;
-  delete _folder;
-  _folder = NULL;
-  delete _collector;
-  _collector = NULL;
-  delete _writer;
-  _writer = NULL;
-  delete _KVBuffer;
-  _KVBuffer = NULL;
+  if (NULL != _collector) {
+    delete _collector;
+    _collector = NULL;
+  }
+
+  if (NULL != _writer) {
+    delete _writer;
+    _writer = NULL;
+  }
 }
 
 void RReducerHandler::initCounters() {
-   _reduceInputRecords = NativeObjectFactory::GetCounter(
-       TaskCounters::TASK_COUNTER_GROUP,
-       TaskCounters::REDUCE_INPUT_RECORDS);
-   _reduceOutputRecords = NativeObjectFactory::GetCounter(
-       TaskCounters::TASK_COUNTER_GROUP,
-       TaskCounters::REDUCE_OUTPUT_RECORDS);
-   _reduceInputGroups = NativeObjectFactory::GetCounter(
-       TaskCounters::TASK_COUNTER_GROUP,
-       TaskCounters::REDUCE_INPUT_GROUPS);
+  _inputRecordCounter = NativeObjectFactory::GetCounter(TaskCounters::TASK_COUNTER_GROUP,
+      TaskCounters::REDUCE_INPUT_RECORDS);
+  _outputRecordCounter = NativeObjectFactory::GetCounter(TaskCounters::TASK_COUNTER_GROUP,
+      TaskCounters::REDUCE_OUTPUT_RECORDS);
+  _inputGroupCounter = NativeObjectFactory::GetCounter(TaskCounters::TASK_COUNTER_GROUP,
+      TaskCounters::REDUCE_INPUT_GROUPS);
 }
 
-class TrackingCollector : public Collector {
-protected:
-  Collector * _collector;
-  Counter * _counter;
-public:
-  TrackingCollector(Collector * collector, Counter * counter) :
-    _collector(collector),
-    _counter(counter) {
+void RReducerHandler::handleInput(ByteBuffer & in) {
+  if (_asideBuffer.size() > 0) {
+    if (_asideBuffer.remain() > 0) {
+      uint32_t filledLength = _asideBuffer.fill(in.current(), in.remain());
+      in.advance(filledLength);
+    }
+
+    if (_asideBuffer.remain() == 0) {
+      _asideBuffer.position(0);
+      return;
+    }
   }
 
-  virtual void collect(const void * key, uint32_t keyLen,
-                       const void * value, uint32_t valueLen) {
-    _counter->increase();
-    _collector->collect(key, keyLen, value, valueLen);
+  if (in.remain() <= 0) {
+    return;
   }
-};
 
-void RReducerHandler::configure(Config & config) {
-  initCounters();
+  KVBuffer * kvBuffer = (KVBuffer *)(in.current());
+  uint32_t kvLength = kvBuffer->lengthConvertEndium();
 
-  // writer
-  const char * writerClass = config.get(NATIVE_RECORDWRITER);
+  if (kvLength > in.remain()) {
+    _asideBytes.resize(kvLength);
+    _asideBuffer.wrap(_asideBytes.buff(), _asideBytes.size());
+    uint32_t filledLength = _asideBuffer.fill(in.current(), in.remain());
+    in.advance(filledLength);
+    return;
+  }
+}
+
+RecordWriter * RReducerHandler::getWriter(Config * config) {
+  RecordWriter * writer = NULL;
+  const char * writerClass = config->get(NATIVE_RECORDWRITER);
   if (NULL != writerClass) {
-    _writer = (RecordWriter*) NativeObjectFactory::CreateObject(writerClass);
-    if (NULL == _writer) {
+    writer = (RecordWriter*)NativeObjectFactory::CreateObject(writerClass);
+    if (NULL == writer) {
       THROW_EXCEPTION_EX(IOException, "native.recordwriter.class %s not found", writerClass);
     }
-    _writer->configure(config);
+    writer->configure(config);
+  }
+  return writer;
+}
+
+void RReducerHandler::configure(Config * config) {
+  initCounters();
+
+  _writer = getWriter(config);
+  if (NULL == _writer) {
+    //Use Java Collector,
+    _collector = new TrackingCollector(this, _outputRecordCounter);
+  } else {
+    _collector = new TrackingCollector(_writer, _outputRecordCounter);
   }
 
-  _collector = new TrackingCollector(_writer != NULL
-                                         ? (Collector*) _writer
-                                         : (Collector*) this,
-                                     _reduceOutputRecords);
-  // reducer
-  const char * reducerClass = config.get(NATIVE_REDUCER);
+  const char * reducerClass = config->get(NATIVE_REDUCER);
   if (NULL != reducerClass) {
     NativeObject * obj = NativeObjectFactory::CreateObject(reducerClass);
     if (NULL == obj) {
       THROW_EXCEPTION_EX(IOException, "native.reducer.class %s not found", reducerClass);
     }
     _reducerType = obj->type();
-    switch (_reducerType) {
-    case ReducerType:
-      _reducer = (Reducer*)obj;
-      _reducer->setCollector(_collector);
-      break;
-    case MapperType:
-      _mapper = (Mapper*)obj;
-      _mapper->setCollector(_collector);
-      break;
-    case FolderType:
-      _folder = (Folder*)obj;
-      _folder->setCollector(_collector);
-      break;
-    default:
-        THROW_EXCEPTION(UnsupportException, "Reducer type not supported");
-    }
-  }
-  else {
-    // default use IdenticalMapper
+  } else {
     _reducerType = MapperType;
-    _mapper = (Mapper *) NativeObjectFactory::CreateDefaultObject(
-        MapperType);
-    _mapper->setCollector(_collector);
-  }
-  if (NULL == _reducer && _mapper == NULL && _folder == NULL) {
-    THROW_EXCEPTION(UnsupportException, "Reducer class not found");
+    _processor = (ProcessorBase *)NativeObjectFactory::CreateDefaultObject(MapperType);
   }
 
   switch (_reducerType) {
   case ReducerType:
-    LOG("Native Reducer with Reducer API, RecordWriter: %s", writerClass?writerClass:"Java RecordWriter");
-    _reducer->configure(config);
-    break;
   case MapperType:
-    LOG("Native Reducer with Mapper API, RecordWriter: %s", writerClass?writerClass:"Java RecordWriter");
-    _mapper->configure(config);
-    break;
   case FolderType:
-    LOG("Native Reducer with Folder API, RecordWriter: %s", writerClass?writerClass:"Java RecordWriter");
-    _folder->configure(config);
-    // TODO: implement
-    THROW_EXCEPTION(UnsupportException, "Folder API not supported");
+    _processor->setCollector(_collector);
+    _processor->configure(config);
     break;
   default:
-    // should not be here
     THROW_EXCEPTION(UnsupportException, "Reducer type not supported");
   }
 }
 
-std::string RReducerHandler::command(const std::string & cmd) {
-  if (cmd == "run") {
-    run();
-    return string();
+ResultBuffer * RReducerHandler::onCall(const Command & cmd, ParameterBuffer * param) {
+  if (!RUN.equals(cmd)) {
+    THROW_EXCEPTION_EX(UnsupportException, "Command Not supported, %d", cmd.id());
   }
-  THROW_EXCEPTION(UnsupportException, "Command not supported by RReducerHandler");
+  run();
+  return NULL;
 }
 
 void RReducerHandler::run() {
   switch (_reducerType) {
-  case ReducerType:
-    {
-      while (nextKey()) {
-        _reduceInputGroups->increase();
-        _reducer->reduce(*this);
-      }
-      _reducer->close();
+  case ReducerType: {
+    Reducer * reducer = (Reducer *)_processor;
+    KeyGroupIterator * iter = createKeyGroupIterator();
+    while (iter->nextKey()) {
+      _inputGroupCounter->increase();
+      reducer->reduce(*iter);
     }
+    reducer->close();
+    delete iter;
+  }
     break;
-  case MapperType:
-    {
-      char * kvpair;
-      while(NULL != (kvpair = nextKeyValuePair())) {
-        _mapper->map(kvpair + _keyOffset, _klength, kvpair + _valueOffset, _vlength);
-      }
-      _mapper->close();
+  case MapperType: {
+    Mapper * mapper = (Mapper *)_processor;
+    KVBuffer * buffer = NULL;
+    while (NULL != (buffer = nextKeyValue())) {
+      mapper->map(buffer->getKey(), buffer->keyLength, buffer->getValue(), buffer->valueLength);
     }
+    mapper->close();
+  }
     break;
   case FolderType:
-    // TODO: implement
     THROW_EXCEPTION(UnsupportException, "Folder API not supported");
     break;
   default:
@@ -209,121 +183,77 @@ void RReducerHandler::run() {
 /**
  * Java record writer
  */
-void RReducerHandler::collect(const void * key, uint32_t keyLen,
-    const void * value, uint32_t valueLen) {
-  // flush the output so that we have enough room to hold the KV
-  // The KV is flushed atomically.
-  if (_ob.position + keyLen + valueLen + 2 * sizeof(uint32_t) > _ob.capacity) {
-    flushOutput(_ob.position);
-    _ob.position = 0;
+void RReducerHandler::collect(const void * key, uint32_t keyLen, const void * value,
+    uint32_t valueLen) {
+  writeToJavaRecordWriter(key, keyLen, value, valueLen);
+}
+
+void RReducerHandler::writeToJavaRecordWriter(const void * key, uint32_t keyLen, const void * value,
+    uint32_t valueLen) {
+  // pre-mature flush so that we can avoid the cross-block Key-Value.
+  // Cross-block Key-Value will need extra memory copy.
+  uint32_t kvLength = keyLen + valueLen + 2 * sizeof(uint32_t);
+  if (kvLength > _out.remain()) {
+    flushOutput();
   }
 
-  putInt(bswap(keyLen));
-  put((char *)key, keyLen);
-  putInt(bswap(valueLen));
-  put((char *)value, valueLen);
+  outputInt(bswap(keyLen));
+  outputInt(bswap(valueLen));
+  output((char *)key, keyLen);
+  output((char *)value, valueLen);
 }
 
 int32_t RReducerHandler::refill() {
-  char command[1 + sizeof(int32_t)] = {0};
-  command[0] = 'r';
 
-  //change to big endium
-  int32_t expectedLength = bswap(_ib.capacity);
+  int32_t expectedLength = _in.capacity();
 
-  int32_t * expectLength = (int32_t *)(command + 1);
-  *expectLength = expectedLength;
+  ParameterBuffer * param = new ParameterBuffer(4);
+  param->writeInt(expectedLength);
+  ResultBuffer * result = call(LOAD, param);
+  uint32_t retvalue = result->readInt();
 
-  string ret = sendCommand(command, 1 + sizeof(int32_t));
+  delete param;
+  delete result;
 
-  //change to little endium
-  int32_t retvalue = bswap(*((const int32_t*)ret.data()));
-
-  _current = _ib.buff;
-  _remain = retvalue;
   return retvalue;
 }
 
-char * RReducerHandler::nextKeyValuePair() {
-  if (unlikely(_remain==0)) {
-    if (refill() <= 0) {
-      return NULL;
-    }
-  }
-  if (_remain<8) {
-    THROW_EXCEPTION(IOException, "not enough meta to read kv pair");
-  }
-  _reduceInputRecords->increase();
-  _klength = bswap(((uint32_t*)_current)[0]);
-
-  _keyOffset = sizeof(uint32_t);
-
-  _vlength = bswap(*((uint32_t*)(_current + _klength + sizeof(uint32_t))));
-  _valueOffset = sizeof(uint32_t) + _klength + sizeof(uint32_t);
-  uint32_t _kvlength = _klength + _vlength + 2 * sizeof(uint32_t);
-  
-  if (_kvlength  <= _remain) {
-    _nextKeyValuePair = _current;
-    _current += _kvlength;
-    _remain -= _kvlength;
-    return _nextKeyValuePair;
-  }
-  else {
-      THROW_EXCEPTION(IOException, "not complete kv data");
-  }
-}
-
-bool RReducerHandler::nextKey() {
-  uint32_t temp;
-  while (_keyGroupIterState==SAME_KEY) {
-    nextValue(temp);
-  }
-  if (_keyGroupIterState ==  NEW_KEY) {
-    if (unlikely(_nextKeyValuePair == NULL)) {
-      if (NULL == nextKeyValuePair()) {
-        _keyGroupIterState = NO_MORE;
-        return false;
-      }
-    }
-    _currentGroupKey.assign(_nextKeyValuePair + _keyOffset, _klength);
-    return true;
-  }
-  return false;
-}
-
-const char * RReducerHandler::getKey(uint32_t & len) {
-  len = (uint32_t)_currentGroupKey.length();
-  return _currentGroupKey.c_str();
-}
-
-const char * RReducerHandler::nextValue(uint32_t & len) {
-  char * pos;
-  switch (_keyGroupIterState) {
-  case SAME_KEY: {
-    pos = nextKeyValuePair();
-    if (pos != NULL) {
-      if (_klength == _currentGroupKey.length()) {
-        if (fmemeq(pos + _keyOffset, _currentGroupKey.c_str(), _klength)) {
-          len = _vlength;
-          return pos + _valueOffset;
-        }
-      }
-      _keyGroupIterState = NEW_KEY;
-      return NULL;
-    }
-    _keyGroupIterState = NO_MORE;
-    return NULL;
-  }
-  case NEW_KEY: {
-    len = _vlength;
-    _keyGroupIterState = SAME_KEY;
-    return _nextKeyValuePair + _valueOffset;
-  }
-  case NO_MORE:
+bool RReducerHandler::next(Buffer & key, Buffer & value) {
+  KVBuffer * kv = nextKeyValue();
+  if (NULL == kv) {
     return false;
   }
+  key.reset(kv->getKey(), kv->keyLength);
+  value.reset(kv->getValue(), kv->valueLength);
+  return true;
 }
 
+KVBuffer * RReducerHandler::nextKeyValue() {
+
+  if (_asideBuffer.remain() == 0 && _in.remain() == 0) {
+    refill();
+  }
+
+  if (_asideBuffer.remain() > 0) {
+    KVBuffer * kv = (KVBuffer *)(_asideBuffer.current());
+    kv->keyLength = bswap(kv->keyLength);
+    kv->valueLength = bswap(kv->valueLength);
+    _asideBuffer.position(_asideBuffer.size());
+    return kv;
+  } else if (_in.remain() > 0) {
+    KVBuffer * kv = (KVBuffer *)(_in.current());
+    kv->keyLength = bswap(kv->keyLength);
+    kv->valueLength = bswap(kv->valueLength);
+    _in.advance(kv->length());
+    return kv;
+  } else {
+    return NULL;
+  }
+}
+
+KeyGroupIterator * RReducerHandler::createKeyGroupIterator() {
+  return new KeyGroupIteratorImpl(this);
+}
 
 } // namespace NativeTask
 

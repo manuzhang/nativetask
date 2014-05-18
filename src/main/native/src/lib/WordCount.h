@@ -32,13 +32,12 @@ public:
 
   void wordCount(const char * buff, uint32_t len);
 
-  virtual void map(const char * key, uint32_t keyLen,
-                   const char * value, uint32_t valueLen);
+  virtual void map(const char * key, uint32_t keyLen, const char * value, uint32_t valueLen);
 };
 
 class IntSumReducer : public Reducer {
 public:
-  virtual void reduce(KeyGroup & input);
+  virtual void reduce(KeyGroupIterator & input);
 };
 
 class IntSumMapper : public Mapper {
@@ -46,19 +45,18 @@ public:
   string _key;
   uint32_t _count;
 public:
-  IntSumMapper() : _count(0) {}
-  virtual void map(const char * key, uint32_t keyLen,
-                   const char * value, uint32_t valueLen);
+  IntSumMapper()
+      : _count(0) {
+  }
+  virtual void map(const char * key, uint32_t keyLen, const char * value, uint32_t valueLen);
   virtual void close();
 };
 
 class TextIntRecordWriter : public LineRecordWriter {
 public:
-  virtual void collect(const void * key, uint32_t keyLen,
-                       const void * value, uint32_t valueLen);
+  virtual void collect(const void * key, uint32_t keyLen, const void * value, uint32_t valueLen);
 };
 
 } // namespace NativeTask
-
 
 #endif /* WORDCOUNT_H_ */

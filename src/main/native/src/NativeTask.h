@@ -19,6 +19,7 @@
 #ifndef NATIVETASK_H_
 #define NATIVETASK_H_
 
+#include "lib/jniutils.h"
 #include <stdint.h>
 #include <string>
 #include <vector>
@@ -46,6 +47,15 @@ enum NativeObjectType {
   RecordWriterType = 8
 };
 
+/**
+ * Enduim setting
+ *
+ */
+enum Endium {
+  LITTLE_ENDIUM = 0,
+  LARGE_ENDIUM = 1
+};
+
 #define NATIVE_COMBINER "native.combiner.class"
 #define NATIVE_PARTITIONER "native.partitioner.class"
 #define NATIVE_MAPPER "native.mapper.class"
@@ -56,30 +66,42 @@ enum NativeObjectType {
 #define NATIVE_HADOOP_VERSION "native.hadoop.version"
 
 #define NATIVE_INPUT_SPLIT "native.input.split"
-#define INPUT_LINE_KV_SEPERATOR "key.value.separator.in.input.line"
-#define MAPRED_TEXTOUTPUT_FORMAT_SEPERATOR "mapred.textoutputformat.separator"
-#define MAPRED_WORK_OUT_DIR "mapred.work.output.dir"
+#define INPUT_LINE_KV_SEPERATOR "mapreduce.input.keyvaluelinerecordreader.key.value.separator"
+#define MAPRED_TEXTOUTPUT_FORMAT_SEPERATOR "mapreduce.output.textoutputformat.separator"
+#define MAPRED_WORK_OUT_DIR "mapreduce.task.output.dir"
 #define NATIVE_OUTPUT_FILE_NAME "native.output.file.name"
-#define MAPRED_OUTPUT_COMPRESSION_CODEC "mapred.output.compression.codec"
+#define MAPRED_COMPRESS_OUTPUT "mapreduce.output.fileoutputformat.compress"
+#define MAPRED_OUTPUT_COMPRESSION_CODEC "mapreduce.output.fileoutputformat.compress.codec"
 #define TOTAL_ORDER_PARTITIONER_PATH "total.order.partitioner.path"
+#define TOTAL_ORDER_PARTITIONER_MAX_TRIE_DEPTH "total.order.partitioner.max.trie.depth"
 #define FS_DEFAULT_NAME "fs.default.name"
 #define FS_DEFAULT_FS "fs.defaultFS"
 
 #define NATIVE_SORT_TYPE "native.sort.type"
-#define MAPRED_COMPRESS_MAP_OUTPUT "mapred.compress.map.output"
-#define MAPRED_MAP_OUTPUT_COMPRESSION_CODEC "mapred.map.output.compression.codec"
-#define MAPRED_MAPOUTPUT_KEY_CLASS "mapred.mapoutput.key.class"
-#define MAPRED_OUTPUT_KEY_CLASS "mapred.output.key.class"
-#define MAPRED_MAPOUTPUT_VALUE_CLASS "mapred.mapoutput.value.class"
-#define MAPRED_OUTPUT_VALUE_CLASS "mapred.output.value.class"
+#define MAPRED_SORT_AVOID "mapreduce.sort.avoidance"
+#define NATIVE_SORT_MAX_BLOCK_SIZE "native.sort.blocksize.max"
+#define MAPRED_COMPRESS_MAP_OUTPUT "mapreduce.map.output.compress"
+#define MAPRED_MAP_OUTPUT_COMPRESSION_CODEC "mapreduce.map.output.compress.codec"
+#define MAPRED_MAPOUTPUT_KEY_CLASS "mapreduce.map.output.key.class"
+#define MAPRED_OUTPUT_KEY_CLASS "mapreduce.job.output.key.class"
+#define MAPRED_MAPOUTPUT_VALUE_CLASS "mapreduce.map.output.value.class"
+#define MAPRED_OUTPUT_VALUE_CLASS "mapreduce.job.output.value.class"
+#define MAPRED_IO_SORT_MB "mapreduce.task.io.sort.mb"
+#define MAPRED_NUM_REDUCES "mapreduce.job.reduces"
+#define MAPRED_COMBINE_CLASS_OLD "mapred.combiner.class"
+#define MAPRED_COMBINE_CLASS_NEW "mapreduce.job.combine.class"
 
 #define NATIVE_LOG_DEVICE "native.log.device"
 
 //format: name=path,name=path,name=path
-#define NATIVE_CLASS_LIBRARY "native.class.library"
+#define NATIVE_CLASS_LIBRARY_BUILDIN "native.class.library.buildin"
 
 #define NATIVE_MAPOUT_KEY_COMPARATOR "native.map.output.key.comparator"
 
+#define NATIVE_PIG_GROUPONLY "native.pig.groupOnly"
+#define NATIVE_PIG_USE_SECONDARY_KEY "native.pig.useSecondaryKey"
+#define NATIVE_PIG_SORT_ORDER "native.pig.sortOrder"
+#define NATIVE_PIG_SECONDARY_SORT_ORDER "native.pig.secondarySortOrder"
 
 extern const std::string NativeObjectTypeToString(NativeObjectType type);
 extern NativeObjectType NativeObjectTypeFromString(const std::string type);
@@ -94,7 +116,9 @@ public:
     return UnknownObjectType;
   }
 
-  virtual ~NativeObject() {};
+  virtual ~NativeObject() {
+  }
+  ;
 };
 
 template<typename T>
@@ -113,46 +137,47 @@ typedef int32_t (*InitLibraryFunc)();
 /**
  * Exceptions
  */
-class HadoopException: public std::exception {
+class HadoopException : public std::exception {
 private:
   std::string _reason;
 public:
   HadoopException(const string & what);
-  virtual ~HadoopException() throw () { }
+  virtual ~HadoopException() throw () {
+  }
 
   virtual const char* what() const throw () {
     return _reason.c_str();
   }
 };
 
-class OutOfMemoryException: public HadoopException {
+class OutOfMemoryException : public HadoopException {
 public:
-  OutOfMemoryException(const string & what) :
-    HadoopException(what) {
+  OutOfMemoryException(const string & what)
+      : HadoopException(what) {
   }
 };
 
-class IOException: public HadoopException {
+class IOException : public HadoopException {
 public:
-  IOException(const string & what) :
-    HadoopException(what) {
+  IOException(const string & what)
+      : HadoopException(what) {
   }
 };
 
 class UnsupportException : public HadoopException {
 public:
-  UnsupportException(const string & what) :
-    HadoopException(what) {
+  UnsupportException(const string & what)
+      : HadoopException(what) {
   }
 };
 
 /**
  * Exception when call java methods using JNI
  */
-class JavaException: public HadoopException {
+class JavaException : public HadoopException {
 public:
-  JavaException(const string & what) :
-    HadoopException(what) {
+  JavaException(const string & what)
+      : HadoopException(what) {
   }
 };
 
@@ -163,13 +188,14 @@ public:
 #define THROW_EXCEPTION_EX(type, fmt, args...) \
         throw type(StringUtil::Format("%s:" fmt, AT, ##args))
 
-
 class Config {
 protected:
   map<string, string> _configs;
 public:
-  Config() {}
-  ~Config() {}
+  Config() {
+  }
+  ~Config() {
+  }
 
   const char * get(const string & name);
 
@@ -177,9 +203,9 @@ public:
 
   bool getBool(const string & name, bool defaultValue);
 
-  int64_t getInt(const string & name, int64_t defaultValue=-1);
+  int64_t getInt(const string & name, int64_t defaultValue = -1);
 
-  float getFloat(const string & name, float defaultValue=-1);
+  float getFloat(const string & name, float defaultValue = -1);
 
   void getStrings(const string & name, vector<string> & dest);
 
@@ -202,7 +228,6 @@ public:
    */
   void load(const string & path);
 
-
   /**
    * Load configs form command line args
    * key1=value1 key2=value2,value2
@@ -210,30 +235,59 @@ public:
   void parse(int32_t argc, const char ** argv);
 };
 
+class Command {
+private:
+  int _id;
+  const char * _description;
+
+public:
+  Command(int id, const char * description)
+      : _id(id), _description(description) {
+  }
+
+  Command(int id)
+      : _id(id), _description(NULL) {
+  }
+
+  int id() const {
+    return _id;
+  }
+
+  const char * description() const {
+    return _description;
+  }
+
+  bool equals(const Command & other) const {
+    if (_id == other._id) {
+      return true;
+    }
+    return false;
+  }
+};
+
 class Buffer {
 protected:
-  char * _data;
+  const char * _data;
   uint32_t _length;
 
 public:
-  Buffer() :
-    _data(NULL),
-    _length(0) {
+  Buffer()
+      : _data(NULL), _length(0) {
   }
 
-  Buffer(char * data, uint32_t length) :
-    _data(data),
-    _length(length) {
+  Buffer(const char * data, uint32_t length)
+      : _data(data), _length(length) {
   }
 
-  ~Buffer() {}
+  ~Buffer() {
+  }
 
-  void reset(char * data, uint32_t length) {
+  void reset(const char * data, uint32_t length) {
     this->_data = data;
     this->_length = length;
   }
 
-  char * data() const {
+  const char * data() const {
     return _data;
   }
 
@@ -241,7 +295,7 @@ public:
     return _length;
   }
 
-  void data(char * data) {
+  void data(const char * data) {
     this->_data = data;
   }
 
@@ -261,33 +315,39 @@ public:
   virtual void readFields(const string & data) = 0;
   virtual void writeFields(string & dest) = 0;
   virtual string toString() = 0;
+
+  virtual ~InputSplit() {
+
+  }
 };
 
 class Configurable : public NativeObject {
 public:
-  Configurable() {}
+  Configurable() {
+  }
 
-  virtual void configure(Config & config) {}
+  virtual void configure(Config * config) {
+  }
 };
 
 class Collector {
 public:
-  virtual ~Collector() {}
-
-  virtual void collect(const void * key, uint32_t keyLen,
-                       const void * value, uint32_t valueLen) {
+  virtual ~Collector() {
   }
 
-  virtual void collect(const void * key, uint32_t keyLen,
-                       const void * value, uint32_t valueLen,
-                       int32_t partition) {
+  virtual void collect(const void * key, uint32_t keyLen, const void * value, uint32_t valueLen) {
+  }
+
+  virtual void collect(const void * key, uint32_t keyLen, const void * value, uint32_t valueLen,
+      int32_t partition) {
     collect(key, keyLen, value, valueLen);
   }
 };
 
 class Progress {
 public:
-  virtual ~Progress() {}
+  virtual ~Progress() {
+  }
   virtual float getProgress() = 0;
 };
 
@@ -300,10 +360,8 @@ private:
   string _group;
   string _name;
 public:
-  Counter(const string & group, const string & name) :
-    _count(0),
-    _group(group),
-    _name(name) {
+  Counter(const string & group, const string & name)
+      : _count(0), _group(group), _name(name) {
   }
 
   const string & group() const {
@@ -324,23 +382,16 @@ public:
   void increase(uint64_t cnt) {
     _count += cnt;
   }
-
-  bool operator<(const Counter & rhs) const {
-    if (_group == rhs._group) {
-      return _name < rhs._name;
-    }
-    return _group < rhs._group;
-  }
 };
 
 class KVIterator {
 public:
-  virtual ~KVIterator() {}
+  virtual ~KVIterator() {
+  }
   virtual bool next(Buffer & key, Buffer & value) = 0;
 };
 
-class RecordReader:
-  public KVIterator, public Configurable, public Progress {
+class RecordReader : public KVIterator, public Configurable, public Progress {
 public:
   virtual NativeObjectType type() {
     return RecordReaderType;
@@ -359,19 +410,20 @@ public:
     return RecordWriterType;
   }
 
-  virtual void collect(const void * key, uint32_t keyLen,
-                     const void * value, uint32_t valueLen) {}
+  virtual void collect(const void * key, uint32_t keyLen, const void * value, uint32_t valueLen) {
+  }
 
-  virtual void close() {}
+  virtual void close() {
+  }
 
 };
-
 
 class ProcessorBase : public Configurable {
 protected:
   Collector * _collector;
 public:
-  ProcessorBase():_collector(NULL) {
+  ProcessorBase()
+      : _collector(NULL) {
   }
 
   void setCollector(Collector * collector) {
@@ -382,23 +434,22 @@ public:
     return _collector;
   }
 
-  void collect(const void * key, uint32_t keyLen,
-               const void * value, uint32_t valueLen) {
+  void collect(const void * key, uint32_t keyLen, const void * value, uint32_t valueLen) {
     _collector->collect(key, keyLen, value, valueLen);
   }
 
-  void collect(const void * key, uint32_t keyLen,
-               const void * value, uint32_t valueLen,
-               int32_t partition) {
+  void collect(const void * key, uint32_t keyLen, const void * value, uint32_t valueLen,
+      int32_t partition) {
     _collector->collect(key, keyLen, value, valueLen, partition);
   }
 
   Counter * getCounter(const string & group, const string & name);
 
-  virtual void close() {}
+  virtual void close() {
+  }
 };
 
-class Mapper: public ProcessorBase {
+class Mapper : public ProcessorBase {
 public:
   virtual NativeObjectType type() {
     return MapperType;
@@ -407,13 +458,12 @@ public:
   /**
    * Map interface, default IdenticalMapper
    */
-  virtual void map(const char * key, uint32_t keyLen,
-                   const char * value, uint32_t valueLen) {
+  virtual void map(const char * key, uint32_t keyLen, const char * value, uint32_t valueLen) {
     collect(key, keyLen, value, valueLen);
   }
 };
 
-class Partitioner: public Configurable {
+class Partitioner : public Configurable {
 public:
   virtual NativeObjectType type() {
     return PartitionerType;
@@ -426,13 +476,25 @@ public:
    *               to truncate key
    * @return partition number
    */
-  virtual uint32_t getPartition(const char * key, uint32_t & keyLen,
-      uint32_t numPartition);
+  virtual uint32_t getPartition(const char * key, uint32_t & keyLen, uint32_t numPartition);
 };
 
-class KeyGroup {
+enum KeyGroupIterState {
+  SAME_KEY,
+  NEW_KEY,
+  NEW_KEY_VALUE,
+  NO_MORE,
+};
+
+class KeyGroupIterator {
 public:
-  virtual ~KeyGroup() {}
+  virtual ~KeyGroupIterator() {
+  }
+  /**
+   * Move to nextKey, or begin this iterator
+   */
+  virtual bool nextKey() = 0;
+
   /**
    * Get key of this input group
    */
@@ -445,30 +507,7 @@ public:
   virtual const char * nextValue(uint32_t & len) = 0;
 };
 
-class KeyGroupIterator : public KeyGroup {
-protected:
-  KVIterator & _kvIterator;
-  string _currentKey;
-public:
-  KeyGroupIterator(KVIterator & kvIterator);
-  /**
-   * Move to nextKey, or begin this iterator
-   */
-  virtual bool nextKey();
-
-  /**
-   * Get key of this input group
-   */
-  virtual const char * getKey(uint32_t & len);
-
-  /**
-   * Get next value of this input group
-   * @return NULL if no more
-   */
-  virtual const char * nextValue(uint32_t & len);
-};
-
-class Reducer: public ProcessorBase {
+class Reducer : public ProcessorBase {
 public:
   virtual NativeObjectType type() {
     return ReducerType;
@@ -477,18 +516,17 @@ public:
   /**
    * Reduce interface, default IdenticalReducer
    */
-  virtual void reduce(KeyGroup & input) {
+  virtual void reduce(KeyGroupIterator & input) {
     const char * key;
     const char * value;
     uint32_t keyLen;
     uint32_t valueLen;
     key = input.getKey(keyLen);
-    while (NULL != (value=input.nextValue(valueLen))) {
+    while (NULL != (value = input.nextValue(valueLen))) {
       collect(key, keyLen, value, valueLen);
     }
   }
 };
-
 
 /**
  * Folder API used for hashtable based aggregation
@@ -530,18 +568,47 @@ public:
   /**
    * Create and/or init new state
    */
-  virtual void * init(const char * key, uint32_t keyLen) {}
+  virtual void * init(const char * key, uint32_t keyLen) {
+    return NULL;
+  }
 
   /**
    * Aggregation function
    */
-  virtual void folder(void * dest, const char * value, uint32_t valueLen) {}
+  virtual void folder(void * dest, const char * value, uint32_t valueLen) {
+  }
 
-  virtual void final(const char * key, uint32_t keyLen, void * dest) {}
+  virtual void final(const char * key, uint32_t keyLen, void * dest) {
+  }
 };
 
+enum KeyValueType {
+  TextType = 0,
+  BytesType = 1,
+  ByteType = 2,
+  BoolType = 3,
+  IntType = 4,
+  LongType = 5,
+  FloatType = 6,
+  DoubleType = 7,
+  MD5HashType = 8,
+  VIntType = 9,
+  VLongType = 10,
+  StringTupleType = 101,
+  VarIntType = 102,
+  VarLongType = 103,
+  GramType = 104,
+  GramKeyType = 105,
+  SplitPartitionedType = 106,
+  EntityEntityType = 107,
+  UnknownType = -1,
+  PigType = 80,  // ascii code of 'P'
+};
 
-typedef int (* ComparatorPtr)(const char * src, uint32_t srcLength, const char * dest, uint32_t destLength);
+typedef int (*ComparatorPtr)(const char * src, uint32_t srcLength, const char * dest,
+    uint32_t destLength);
+
+ComparatorPtr get_comparator(const KeyValueType keyType, const char * comparatorName);
 
 typedef void (*ANY_FUNC_PTR)();
 
@@ -565,7 +632,6 @@ typedef void (*ANY_FUNC_PTR)();
  * in JobConf.
  */
 
-
 #define DEFINE_NATIVE_LIBRARY(Library) \
   static std::map<std::string, NativeTask::ObjectCreatorFunc> Library##ClassMap__; \
   extern "C" void * Library##GetFunctionGetter(const std::string & name) { \
@@ -588,6 +654,6 @@ typedef void (*ANY_FUNC_PTR)();
 
 #define REGISTER_CLASS(Type, Library) Library##ClassMap__[#Library"."#Type] = NativeTask::ObjectCreator<Type>
 
-#define REGISTER_FUNCTION(Type, Library) Library##ClassMap__[#Library"."#Type] = (void *)Type
+#define REGISTER_FUNCTION(Type, Library) Library##ClassMap__[#Library"."#Type] = (ObjectCreatorFunc)Type
 
 #endif /* NATIVETASK_H_ */

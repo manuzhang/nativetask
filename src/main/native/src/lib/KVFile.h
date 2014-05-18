@@ -21,7 +21,7 @@
 
 #include "Checksum.h"
 #include "Buffers.h"
-#include "PartitionIndex.h"
+#include "SpillInfo.h"
 
 namespace NativeTask {
 
@@ -33,18 +33,18 @@ private:
   ChecksumType _checksumType;
   string _codec;
   int32_t _segmentIndex;
-  IndexRange * _spillInfo;
+  SingleSpillInfo * _spillInfo;
 
 public:
-  KVFileReader(InputStream * stream, ChecksumType checksumType,
-               IndexRange * spill_infos, const string & codec);
+  KVFileReader(InputStream * stream, ChecksumType checksumType, SingleSpillInfo * spill_infos,
+      const string & codec);
 
   virtual ~KVFileReader();
 
   /**
    * @return 0 if have next partition, none 0 if no more partition
    */
-  int nextPartition();
+  bool nextPartition();
 
   /**
    * get next key
@@ -53,7 +53,7 @@ public:
    *         guaranteed to be valid
    */
   const char * nextKey(uint32_t & len) {
-    if (unlikely(_source->getLimit()==0)) {
+    if (unlikely(_source->getLimit() == 0)) {
       return NULL;
     }
     len = _reader.read_uint32_le();
@@ -74,13 +74,12 @@ protected:
   OutputStream * _stream;
   ChecksumOutputStream * _dest;
   ChecksumType _checksumType;
-  string       _codec;
+  string _codec;
   AppendBuffer _appendBuffer;
-  vector<IndexEntry> _spillInfo;
+  vector<IFileSegment> _spillInfo;
 
 public:
-  KVFileWriter(OutputStream * stream, ChecksumType checksumType,
-               const string & codec);
+  KVFileWriter(OutputStream * stream, ChecksumType checksumType, const string & codec);
 
   virtual ~KVFileWriter();
 
@@ -88,18 +87,16 @@ public:
 
   void endPartition();
 
-  void writeKey(const char * key, uint32_t key_len,
-                              uint32_t value_len);
+  void writeKey(const char * key, uint32_t key_len, uint32_t value_len);
 
   void writeValue(const char * value, uint32_t value_len);
 
-  void write(const char * key, uint32_t key_len, const char * value,
-             uint32_t value_len) {
+  void write(const char * key, uint32_t key_len, const char * value, uint32_t value_len) {
     writeKey(key, key_len, value_len);
     writeValue(value, value_len);
   }
 
-  IndexRange * getIndex(uint32_t start);
+  SingleSpillInfo * getIndex(uint32_t start);
 
   void getStatistics(uint64_t & offset, uint64_t & realoffset);
 };

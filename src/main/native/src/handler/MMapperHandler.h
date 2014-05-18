@@ -21,46 +21,47 @@
 
 #include "NativeTask.h"
 #include "BatchHandler.h"
+#include "lib/SpillOutputService.h"
+#include "AbstractMapHandler.h"
 
 namespace NativeTask {
 
 class MapOutputCollector;
 
-class MMapperHandler :
-    public BatchHandler,
-    public Collector {
+class MMapperHandler : public AbstractMapHandler, public Collector{
+
 private:
   Config * _config;
   MapOutputCollector * _moc;
   Mapper * _mapper;
   Partitioner * _partitioner;
-  ObjectCreatorFunc _combinerCreator;
+
   int32_t _numPartition;
-  // state info for large KV pairs
-  char * _dest;
-  uint32_t _kvlength;
-  uint32_t _remain;
-  uint32_t _klength;
-  uint32_t _vlength;
+
+  Endium _endium;
+  FixSizeContainer _asideBuffer;
+  ByteArray _asideBytes;
+
 public:
   MMapperHandler();
   virtual ~MMapperHandler();
 
-  virtual void configure(Config & config);
+  virtual void configure(Config * config);
   virtual void finish();
-  virtual void handleInput(char * buff, uint32_t length);
+  virtual void handleInput(ByteBuffer & byteBuffer);
 
   // Collector methods
-  virtual void collect(const void * key, uint32_t keyLen, const void * value,
-      uint32_t valueLen, int partition);
-  virtual void collect(const void * key, uint32_t keyLen, const void * value,
-      uint32_t valueLen);
+  virtual void collect(const void * key, uint32_t keyLen, const void * value, uint32_t valueLen,
+      int partition);
+  virtual void collect(const void * key, uint32_t keyLen, const void * value, uint32_t valueLen);
+  void map();
+
 private:
-  void close();
-  void reset();
+  void map(char * buf, uint32_t length);
+  void collectInJavaNoReducer(const void * key, uint32_t keyLen, const void * value,
+      uint32_t valueLen);
 };
 
 } // namespace NativeTask
-
 
 #endif /* MMAPPERHANDLER_H_ */

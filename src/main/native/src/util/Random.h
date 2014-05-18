@@ -31,9 +31,9 @@ using std::string;
  */
 class Random {
 protected:
-  static const int64_t multiplier = 0x5DEECE66DL;
+  static const int64_t multiplier = 0x5DEECE66DULL;
   static const int64_t addend = 0xBL;
-  static const int64_t mask = (1L << 48) - 1;
+  static const int64_t mask = (1ULL << 48) - 1;
 protected:
   int64_t _seed;
 
@@ -122,7 +122,7 @@ public:
    * @param limit use first <code>limit</code> words in
    *              the word collection
    */
-  const char * nextWord(int64_t limit=-1);
+  const char * nextWord(int64_t limit = -1);
 
   /**
    * Generate random word from a 100 word collection(same
@@ -132,11 +132,9 @@ public:
    * @param limit use first <code>limit</code> words in
    *              the word collection
    */
-  void nextWord(string & dest, int64_t limit=-1);
+  void nextWord(string & dest, int64_t limit = -1);
 };
 
-
 } // namespace NativeTask
-
 
 #endif /* RANDOM_H_ */

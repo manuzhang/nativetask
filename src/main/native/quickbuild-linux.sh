@@ -1,5 +1,3 @@
-JAVA_HOME=$HOME/hadoop-v2/java6
-SNAPPY_PREFIX=$HOME/local
 
 CPPFLAGS="-I. -Isrc -Isrc/util -I$JAVA_HOME/include -I $JAVA_HOME/include/linux/ -I$SNAPPY_PREFIX/include/ -DSIMPLE_MEMCPY -DNDEBUG -DQUICK_BUILD"
 

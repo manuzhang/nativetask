@@ -23,19 +23,12 @@
 
 namespace NativeTask {
 
-
-DynamicBuffer::DynamicBuffer() :
-  _data(NULL),
-  _capacity(0),
-  _size(0),
-  _used(0) {
+DynamicBuffer::DynamicBuffer()
+    : _data(NULL), _capacity(0), _size(0), _used(0) {
 }
 
-DynamicBuffer::DynamicBuffer(uint32_t capacity) :
-  _data(NULL),
-  _capacity(0),
-  _size(0),
-  _used(0) {
+DynamicBuffer::DynamicBuffer(uint32_t capacity)
+    : _data(NULL), _capacity(0), _size(0), _used(0) {
   reserve(capacity);
 }
 
@@ -57,7 +50,8 @@ void DynamicBuffer::reserve(uint32_t capacity) {
     if (capacity > _capacity) {
       char * newdata = (char*)realloc(_data, capacity);
       if (newdata == NULL) {
-        THROW_EXCEPTION_EX(OutOfMemoryException, "DynamicBuffer reserve realloc %u failed", capacity);
+        THROW_EXCEPTION_EX(OutOfMemoryException, "DynamicBuffer reserve realloc %u failed",
+            capacity);
       }
       _data = newdata;
       _capacity = capacity;
@@ -76,18 +70,18 @@ void DynamicBuffer::reserve(uint32_t capacity) {
 }
 
 int32_t DynamicBuffer::refill(InputStream * stream) {
-  if (_data == NULL || freeSpace()==0) {
+  if (_data == NULL || freeSpace() == 0) {
     THROW_EXCEPTION(IOException, "refill DynamicBuffer failed, no space left");
   }
-  int32_t rd = stream->read(_data+_size, freeSpace());
-  if (rd>0) {
+  int32_t rd = stream->read(_data + _size, freeSpace());
+  if (rd > 0) {
     _size += rd;
   }
   return rd;
 }
 
 void DynamicBuffer::cleanUsed() {
-  if (_used>0) {
+  if (_used > 0) {
     uint32_t needToMove = _size - _used;
     if (needToMove > 0) {
       memmove(_data, _data + _used, needToMove);
@@ -101,20 +95,15 @@ void DynamicBuffer::cleanUsed() {
 
 ///////////////////////////////////////////////////////////
 
-ReadBuffer::ReadBuffer() :
-  _buff(NULL),
-  _remain(0),
-  _size(0),
-  _capacity(0),
-  _stream(NULL),
-  _source(NULL) {
+ReadBuffer::ReadBuffer()
+    : _buff(NULL), _remain(0), _size(0), _capacity(0), _stream(NULL), _source(NULL) {
 }
 
 void ReadBuffer::init(uint32_t size, InputStream * stream, const string & codec) {
   if (size < 1024) {
     THROW_EXCEPTION_EX(UnsupportException, "ReadBuffer size %u not support.", size);
   }
-  _buff = (char *) malloc(size);
+  _buff = (char *)malloc(size);
   if (NULL == _buff) {
     THROW_EXCEPTION(OutOfMemoryException, "create append buffer");
   }
@@ -146,23 +135,35 @@ ReadBuffer::~ReadBuffer() {
 }
 
 char * ReadBuffer::fillGet(uint32_t count) {
+
   if (unlikely(count > _capacity)) {
-    uint32_t newcap = _capacity*2 > count ? _capacity*2 : count;
-    char * newbuff = (char*)realloc(_buff, newcap);
-    if (newbuff==NULL) {
-      THROW_EXCEPTION(OutOfMemoryException, StringUtil::Format(
-          "buff realloc failed, size=%u", newcap));
+    uint32_t newcap = _capacity * 2 > count ? _capacity * 2 : count;
+    char * newbuff = (char*)malloc(newcap);
+
+
+    if (newbuff == NULL) {
+      THROW_EXCEPTION(OutOfMemoryException,
+          StringUtil::Format("buff realloc failed, size=%u", newcap));
     }
+
+    if (_remain > 0) {
+      memcpy(newbuff, current(), _remain);
+    }
+    if (NULL != _buff) {
+      free(_buff);
+    }
+
     _buff = newbuff;
     _capacity = newcap;
-  }
-  if (_remain > 0) {
-    memcpy(_buff, current(), _remain);
+  } else {
+    if (_remain > 0) {
+      memcpy(_buff, current(), _remain);
+    }
   }
   _size = _remain;
   while (_remain < count) {
-    int32_t rd = _source->read(_buff+_size, _capacity-_size);
-    if (rd<=0) {
+    int32_t rd = _source->read(_buff + _size, _capacity - _size);
+    if (rd <= 0) {
       THROW_EXCEPTION(IOException, "read reach EOF");
     }
     _remain += rd;
@@ -183,16 +184,15 @@ int32_t ReadBuffer::fillRead(char * buff, uint32_t len) {
   int32_t ret = _source->readFully(buff + cp, len - cp);
   if (ret < 0 && cp == 0) {
     return ret;
-  }
-  else {
+  } else {
     return ret < 0 ? cp : ret + cp;
   }
 }
 
 int64_t ReadBuffer::fillReadVLong() {
-  if (_remain==0) {
+  if (_remain == 0) {
     int32_t rd = _source->read(_buff, _capacity);
-    if (rd<=0) {
+    if (rd <= 0) {
       THROW_EXCEPTION(IOException, "fillReadVLong reach EOF");
     }
     _remain = rd;
@@ -209,29 +209,23 @@ int64_t ReadBuffer::fillReadVLong() {
   const int8_t * end = pos + len;
   uint64_t value = 0;
   while (++pos < end) {
-    value = (value << 8) |  *(uint8_t*)pos;
+    value = (value << 8) | *(uint8_t*)pos;
   }
   return neg ? (value ^ -1LL) : value;
 }
 
-
 ///////////////////////////////////////////////////////////
 
-
-AppendBuffer::AppendBuffer() :
-    _buff(NULL),
-    _remain(0),
-    _capacity(0),
-    _counter(0),
-    _stream(NULL),
-    _dest(NULL) {
+AppendBuffer::AppendBuffer()
+    : _buff(NULL), _remain(0), _capacity(0), _counter(0), _stream(NULL), _dest(NULL),
+        _compression(false) {
 }
 
 void AppendBuffer::init(uint32_t size, OutputStream * stream, const string & codec) {
   if (size < 1024) {
     THROW_EXCEPTION_EX(UnsupportException, "AppendBuffer size %u not support.", size);
   }
-  _buff = (char *) malloc(size + 8);
+  _buff = (char *)malloc(size + 8);
   if (NULL == _buff) {
     THROW_EXCEPTION(OutOfMemoryException, "create append buffer");
   }
@@ -244,6 +238,15 @@ void AppendBuffer::init(uint32_t size, OutputStream * stream, const string & cod
       THROW_EXCEPTION(UnsupportException, "compression codec not support");
     }
     _dest = Compressions::getCompressionStream(codec, _stream, size);
+    _compression = true;
+  }
+}
+
+CompressStream * AppendBuffer::getCompressionStream() {
+  if (_compression) {
+    return (CompressStream *)_dest;
+  } else {
+    return NULL;
   }
 }
 
@@ -261,14 +264,14 @@ AppendBuffer::~AppendBuffer() {
 }
 
 void AppendBuffer::flushd() {
-  _dest->write(_buff, _capacity-_remain);
-  _counter += _capacity-_remain;
+  _dest->write(_buff, _capacity - _remain);
+  _counter += _capacity - _remain;
   _remain = _capacity;
 }
 
 void AppendBuffer::write_inner(const void * data, uint32_t len) {
   flushd();
-  if (len >= _capacity/2) {
+  if (len >= _capacity / 2) {
     _dest->write(data, len);
     _counter += len;
   } else {
@@ -296,7 +299,6 @@ void AppendBuffer::write_vuint2_inner(uint32_t v1, uint32_t v2) {
   WritableUtils::WriteVLong(v2, current(), len);
   _remain -= len;
 }
-
 
 } // namespace NativeTask
 

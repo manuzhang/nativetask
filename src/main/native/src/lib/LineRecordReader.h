@@ -43,7 +43,7 @@ protected:
    * @return bytes of the newline including the ending \r\n or \n
    *         0 if no more line
    */
-  uint32_t readLine(Buffer & line, bool withEOL=false) {
+  uint32_t readLine(Buffer & line, bool withEOL = false) {
     if (_pos >= _end) {
       return 0;
     }
@@ -54,11 +54,11 @@ public:
 
   void init(InputStream * stream, const string & codec);
 
-  void init(const string & file, uint64_t start, uint64_t length, Config & config);
+  void init(const string & file, uint64_t start, uint64_t length, Config * config);
 
   virtual ~LineRecordReader();
 
-  virtual void configure(Config & config);
+  virtual void configure(Config * config);
 
   /**
    * @param key contains nothing
@@ -70,9 +70,8 @@ public:
 
   virtual void close();
 
-  static uint32_t ReadLine(InputStream * in, DynamicBuffer & buffer,
-                           Buffer & line, uint32_t bufferHint,
-                           bool withEOL = false);
+  static uint32_t ReadLine(InputStream * in, DynamicBuffer & buffer, Buffer & line,
+      uint32_t bufferHint, bool withEOL = false);
 };
 
 class KeyValueLineRecordReader : public LineRecordReader {
@@ -80,9 +79,11 @@ protected:
   char _kvSeparator;
 
 public:
-  KeyValueLineRecordReader() : _kvSeparator('\t') {}
+  KeyValueLineRecordReader()
+      : _kvSeparator('\t') {
+  }
 
-  virtual void configure(Config & config);
+  virtual void configure(Config * config);
 
   virtual bool next(Buffer & key, Buffer & value);
 };

@@ -79,11 +79,11 @@ private:
   Lock* _lock;
 };
 
-template <typename LockT>
+template<typename LockT>
 class ScopeLock {
 public:
-  ScopeLock(LockT & lock) :
-    _lock(&lock) {
+  ScopeLock(LockT & lock)
+      : _lock(&lock) {
     _lock->lock();
   }
   ~ScopeLock() {
@@ -99,7 +99,8 @@ private:
 
 class Runnable {
 public:
-  virtual ~Runnable() {}
+  virtual ~Runnable() {
+  }
   virtual void run() = 0;
 };
 
@@ -109,7 +110,7 @@ protected:
   Runnable * _runable;
 public:
   Thread();
-  Thread(const Runnable & runnable);
+  Thread(Runnable * runnable);
   virtual ~Thread();
 
   void setTask(const Runnable & runnable);
@@ -132,15 +133,14 @@ private:
 };
 
 // Sure <tr1/functional> is better
-template <typename Subject, typename Method>
+template<typename Subject, typename Method>
 class FunctionRunner : public Runnable {
 protected:
   Subject & _subject;
   Method _method;
 public:
-  FunctionRunner(Subject & subject, Method method) :
-    _subject(subject),
-    _method(method) {
+  FunctionRunner(Subject & subject, Method method)
+      : _subject(subject), _method(method) {
   }
 
   virtual void run() {
@@ -148,17 +148,15 @@ public:
   }
 };
 
-template <typename Subject, typename Method, typename Arg>
+template<typename Subject, typename Method, typename Arg>
 class FunctionRunner1 : public Runnable {
 protected:
   Subject & _subject;
   Method _method;
   Arg _arg;
 public:
-  FunctionRunner1(Subject & subject, Method method, Arg arg) :
-    _subject(subject),
-    _method(method),
-    _arg(arg) {
+  FunctionRunner1(Subject & subject, Method method, Arg arg)
+      : _subject(subject), _method(method), _arg(arg) {
   }
 
   virtual void run() {
@@ -166,7 +164,7 @@ public:
   }
 };
 
-template <typename Subject, typename Method, typename Arg1, typename Arg2>
+template<typename Subject, typename Method, typename Arg1, typename Arg2>
 class FunctionRunner2 : public Runnable {
 protected:
   Subject & _subject;
@@ -174,11 +172,8 @@ protected:
   Arg1 _arg1;
   Arg2 _arg2;
 public:
-  FunctionRunner2(Subject & subject, Method method, Arg1 arg1, Arg2 arg2) :
-    _subject(subject),
-    _method(method),
-    _arg1(arg1),
-    _arg2(arg2) {
+  FunctionRunner2(Subject & subject, Method method, Arg1 arg1, Arg2 arg2)
+      : _subject(subject), _method(method), _arg1(arg1), _arg2(arg2) {
   }
 
   virtual void run() {
@@ -187,18 +182,8 @@ public:
 };
 
 template<typename Subject, typename Method>
-inline FunctionRunner<Subject, Method> Bind(Subject & subject, Method method) {
-  return FunctionRunner<Subject, Method>(subject, method);
-}
-
-template<typename Subject, typename Method>
 inline FunctionRunner<Subject, Method> * BindNew(Subject & subject, Method method) {
   return new FunctionRunner<Subject, Method>(subject, method);
-}
-
-template<typename Subject, typename Method, typename Arg>
-inline FunctionRunner1<Subject, Method, Arg> Bind(Subject & subject, Method method, Arg arg) {
-  return FunctionRunner1<Subject, Method, Arg>(subject, method, arg);
 }
 
 template<typename Subject, typename Method, typename Arg>
@@ -207,12 +192,8 @@ inline FunctionRunner1<Subject, Method, Arg> * BindNew(Subject & subject, Method
 }
 
 template<typename Subject, typename Method, typename Arg1, typename Arg2>
-inline FunctionRunner2<Subject, Method, Arg1, Arg2> Bind(Subject & subject, Method method, Arg1 arg1, Arg2 arg2) {
-  return FunctionRunner2<Subject, Method, Arg1, Arg2>(subject, method, arg1, arg2);
-}
-
-template<typename Subject, typename Method, typename Arg1, typename Arg2>
-inline FunctionRunner2<Subject, Method, Arg1, Arg2> * BindNew(Subject & subject, Method method, Arg1 arg1, Arg2 arg2) {
+inline FunctionRunner2<Subject, Method, Arg1, Arg2> * BindNew(Subject & subject, Method method,
+    Arg1 arg1, Arg2 arg2) {
   return new FunctionRunner2<Subject, Method, Arg1, Arg2>(subject, method, arg1, arg2);
 }
 
@@ -222,14 +203,12 @@ private:
   size_t _end;
   SpinLock _lock;
 public:
-  ConcurrentIndex(size_t count) :
-    _index(0),
-    _end(count) {
+  ConcurrentIndex(size_t count)
+      : _index(0), _end(count) {
   }
 
-  ConcurrentIndex(size_t start, size_t end) :
-    _index(start),
-    _end(end){
+  ConcurrentIndex(size_t start, size_t end)
+      : _index(start), _end(end) {
   }
 
   size_t count() {
@@ -238,7 +217,7 @@ public:
 
   ssize_t next() {
     ScopeLock<SpinLock> autoLock(_lock);
-    if (_index==_end) {
+    if (_index == _end) {
       return -1;
     } else {
       ssize_t ret = _index;
@@ -248,23 +227,19 @@ public:
   }
 };
 
-
-template <typename Subject, typename Method, typename RangeType>
+template<typename Subject, typename Method, typename RangeType>
 class ParallelForWorker : public Runnable {
 protected:
   ConcurrentIndex * _index;
   Subject * _subject;
   Method _method;
 public:
-  ParallelForWorker() :
-    _index(NULL),
-    _subject(NULL) {
+  ParallelForWorker()
+      : _index(NULL), _subject(NULL) {
   }
 
-  ParallelForWorker(ConcurrentIndex * index, Subject * subject, Method method) :
-    _index(index),
-    _subject(subject),
-    _method(method){
+  ParallelForWorker(ConcurrentIndex * index, Subject * subject, Method method)
+      : _index(index), _subject(subject), _method(method) {
   }
 
   void reset(ConcurrentIndex * index, Subject * subject, Method method) {
@@ -281,10 +256,11 @@ public:
   }
 };
 
-template <typename Subject, typename Method, typename RangeType>
-void ParallelFor(Subject & subject, Method method, RangeType begin, RangeType end, size_t thread_num) {
+template<typename Subject, typename Method, typename RangeType>
+void ParallelFor(Subject & subject, Method method, RangeType begin, RangeType end,
+    size_t thread_num) {
   RangeType count = end - begin;
-  if (thread_num <= 1 || count <=1) {
+  if (thread_num <= 1 || count <= 1) {
     for (RangeType i = begin; i < end; i++) {
       (subject.*method)(i);
     }
@@ -300,21 +276,21 @@ void ParallelFor(Subject & subject, Method method, RangeType begin, RangeType en
     sideThread.join();
   } else {
     ConcurrentIndex index = ConcurrentIndex(begin, end);
-    ParallelForWorker<Subject, Method, RangeType> * workers =
-        new ParallelForWorker<Subject, Method, RangeType> [thread_num];
-    Thread * threads = new Thread[thread_num-1];
-    for (size_t i=0;i<thread_num-1;i++) {
+    ParallelForWorker<Subject, Method, RangeType> * workers = new ParallelForWorker<Subject, Method,
+        RangeType> [thread_num];
+    Thread * threads = new Thread[thread_num - 1];
+    for (size_t i = 0; i < thread_num - 1; i++) {
       workers[i].reset(&index, &subject, method);
       threads[i].setTask(workers[i]);
       threads[i].start();
     }
-    workers[thread_num-1].reset(&index, &subject, method);
-    workers[thread_num-1].run();
-    for (size_t i=0;i<thread_num-1;i++) {
+    workers[thread_num - 1].reset(&index, &subject, method);
+    workers[thread_num - 1].run();
+    for (size_t i = 0; i < thread_num - 1; i++) {
       threads[i].join();
     }
-    delete [] threads;
-    delete [] workers;
+    delete[] threads;
+    delete[] workers;
   }
 }
 

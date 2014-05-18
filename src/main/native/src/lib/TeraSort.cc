@@ -16,12 +16,10 @@
  * limitations under the License.
  */
 
-
 #include "commons.h"
 #include "TeraSort.h"
 
 namespace NativeTask {
-
 
 static uint64_t mask32 = (1l << 32) - 1;
 /**
@@ -33,14 +31,11 @@ static uint32_t seedSkip = 128 * 1024 * 1024;
  * There should be enough values so that a 2**32 iterations are
  * covered.
  */
-static uint64_t seeds[] = { 0L, 4160749568L, 4026531840L, 3892314112L,
-                            3758096384L, 3623878656L, 3489660928L, 3355443200L,
-                            3221225472L, 3087007744L, 2952790016L, 2818572288L,
-                            2684354560L, 2550136832L, 2415919104L, 2281701376L,
-                            2147483648L, 2013265920L, 1879048192L, 1744830464L,
-                            1610612736L, 1476395008L, 1342177280L, 1207959552L,
-                            1073741824L, 939524096L, 805306368L, 671088640L,
-                            536870912L, 402653184L, 268435456L, 134217728L, };
+static uint64_t seeds[] = {0L, 4160749568L, 4026531840L, 3892314112L, 3758096384L, 3623878656L,
+    3489660928L, 3355443200L, 3221225472L, 3087007744L, 2952790016L, 2818572288L, 2684354560L,
+    2550136832L, 2415919104L, 2281701376L, 2147483648L, 2013265920L, 1879048192L, 1744830464L,
+    1610612736L, 1476395008L, 1342177280L, 1207959552L, 1073741824L, 939524096L, 805306368L,
+    671088640L, 536870912L, 402653184L, 268435456L, 134217728L, };
 
 TeraGen::TeraGen(uint64_t row, uint64_t splits, uint64_t index) {
   reset(row, splits, index);
@@ -55,9 +50,9 @@ void TeraGen::reset(uint64_t row, uint64_t splits, uint64_t index) {
   _endRow = std::min(row / splits * (index + 1), row);
 
   uint64_t init = _currentRow * 3;
-  int baseIndex = (int) ((init & mask32) / seedSkip);
+  int baseIndex = (int)((init & mask32) / seedSkip);
   _seed = seeds[baseIndex];
-  for (int i = 0; i < init % seedSkip; ++i) {
+  for (uint32_t i = 0; i < init % seedSkip; ++i) {
     nextSeed();
   }
 }
@@ -71,7 +66,7 @@ bool TeraGen::next(string & key, string & value) {
   if (_currentRow >= _endRow) {
     return false;
   }
-  for (int i = 0; i < 3; i++) {
+  for (uint32_t i = 0; i < 3; i++) {
     int64_t temp = nextSeed() / 52;
     _keyBytes[3 + 4 * i] = (' ' + (temp % 95));
     temp /= 95;
@@ -82,13 +77,13 @@ bool TeraGen::next(string & key, string & value) {
     _keyBytes[4 * i] = (' ' + (temp % 95));
   }
   key.assign(_keyBytes, 10);
-  snprintf(_valueBytes, 100, "%10llu", _currentRow);
+  snprintf(_valueBytes, 100, "%10llu", (long long unsigned int)_currentRow);
   value.assign(_valueBytes, 10);
-  int base = (int) ((_currentRow * 8) % 26);
-  for (int i = 0; i < 7; ++i) {
-    value.append(10, (char) ((base + i) % 26) + 'A');
+  int base = (int)((_currentRow * 8) % 26);
+  for (uint32_t i = 0; i < 7; ++i) {
+    value.append(10, (char)((base + i) % 26) + 'A');
   }
-  value.append(8, (char) ((base + 7) % 26) + 'A');
+  value.append(8, (char)((base + 7) % 26) + 'A');
   _currentRow++;
   return true;
 }
@@ -133,8 +128,8 @@ bool TeraRecordReader::next(Buffer & key, Buffer & value) {
 
 ///////////////////////////////////////////////////////////
 
-void TeraRecordWriter::collect(const void * key, uint32_t keyLen,
-                             const void * value, uint32_t valueLen) {
+void TeraRecordWriter::collect(const void * key, uint32_t keyLen, const void * value,
+    uint32_t valueLen) {
   _appendBuffer.write(key, keyLen);
   _appendBuffer.write(value, valueLen);
   _appendBuffer.write("\r\n", 2);

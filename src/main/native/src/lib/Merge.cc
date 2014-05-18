@@ -20,12 +20,26 @@
 #include "util/Timer.h"
 #include "util/StringUtil.h"
 #include "Merge.h"
+#include "lib/FileSystem.h"
 
 namespace NativeTask {
 
+IFileMergeEntry * IFileMergeEntry::create(SingleSpillInfo * spill) {
+  InputStream * fileOut = FileSystem::getLocal().open(spill->path);
+  IFileReader * reader = new IFileReader(fileOut, spill, true);
+  return new IFileMergeEntry(reader);
+}
+
+Merger::Merger(IFileWriter * writer, Config * config, ComparatorPtr comparator,
+    ICombineRunner * combineRunner)
+    : _writer(writer), _config(config), _combineRunner(combineRunner), _first(true),
+        _comparator(comparator) {
+
+}
+
 Merger::~Merger() {
   _heap.clear();
-  for (size_t i = 0 ; i < _entries.size() ; i++) {
+  for (size_t i = 0; i < _entries.size(); i++) {
     delete _entries[i];
   }
   _entries.clear();
@@ -39,20 +53,21 @@ void Merger::addMergeEntry(MergeEntryPtr pme) {
  * 0 if success, have next partition
  * 1 if failed, no more
  */
-int Merger::startPartition() {
-  int ret = -1;
-  for (size_t i = 0 ; i < _entries.size() ; i++) {
-    int r = _entries[i]->nextPartition();
-    if (ret == -1) {
-      ret = r;
-    } else if (r != ret) {
+bool Merger::startPartition() {
+  bool firstPartitionState = false;
+  for (size_t i = 0; i < _entries.size(); i++) {
+    bool partitionState = _entries[i]->nextPartition();
+    if (i == 0) {
+      firstPartitionState = partitionState;
+    }
+    if (firstPartitionState != partitionState) {
       THROW_EXCEPTION(IOException, "MergeEntry partition number not equal");
     }
   }
-  if (0==ret) { // do have new partition
+  if (firstPartitionState) { // do have new partition
     _writer->startPartition();
   }
-  return ret;
+  return firstPartitionState;
 }
 
 /**
@@ -64,90 +79,53 @@ void Merger::endPartition() {
 
 void Merger::initHeap() {
   _heap.clear();
-  for (size_t i = 0 ; i < _entries.size() ; i++) {
+  for (size_t i = 0; i < _entries.size(); i++) {
     MergeEntryPtr pme = _entries[i];
-    if (0==pme->next()) {
+    if (pme->next()) {
       _heap.push_back(pme);
     }
   }
-  make_heap(&(_heap[0]), &(_heap[0])+_heap.size(), MergeEntryPtrLessThan());
+  makeHeap(&(_heap[0]), &(_heap[0]) + _heap.size(), _comparator);
 }
 
 bool Merger::next() {
   size_t cur_heap_size = _heap.size();
   if (cur_heap_size > 0) {
     if (!_first) {
-      if (0 == _heap[0]->next()) { // have more, adjust heap
+      if (_heap[0]->next()) { // have more, adjust heap
         if (cur_heap_size == 1) {
           return true;
         } else if (cur_heap_size == 2) {
           MergeEntryPtr * base = &(_heap[0]);
-          if (*(base[1]) < *(base[0])) {
+
+          if (_comparator(base[1], base[0])) {
             std::swap(base[0], base[1]);
           }
         } else {
           MergeEntryPtr * base = &(_heap[0]);
-          adjust_heap(base, 1, cur_heap_size, MergeEntryPtrLessThan());
+          heapify(base, 1, cur_heap_size, _comparator);
         }
       } else { // no more, pop heap
         MergeEntryPtr * base = &(_heap[0]);
-        pop_heap(base, base+cur_heap_size, MergeEntryPtrLessThan());
+        popHeap(base, base + cur_heap_size, _comparator);
         _heap.pop_back();
       }
     } else {
       _first = false;
     }
-    return _heap.size()>0;
+    return _heap.size() > 0;
   }
   return false;
 }
 
-bool Merger::nextKey() {
-  uint32_t temp;
-  while (_keyGroupIterState==SAME_KEY) {
-    nextValue(temp);
-  }
-  if (_keyGroupIterState ==  NEW_KEY) {
-    if (unlikely(_first == true)) {
-      if (!next()) {
-        _keyGroupIterState = NO_MORE;
-        return false;
-      }
-    }
-    _currentGroupKey.assign(_heap[0]->_key, _heap[0]->_key_len);
+bool Merger::next(Buffer & key, Buffer & value) {
+  bool result = next();
+  if (result) {
+    MergeEntryPtr * base = &(_heap[0]);
+    key.reset(base[0]->getKey(), base[0]->getKeyLength());
+    value.reset(base[0]->getValue(), base[0]->getValueLength());
     return true;
-  }
-  return false;
-}
-
-const char * Merger::getKey(uint32_t & len) {
-  len = (uint32_t)_currentGroupKey.length();
-  return _currentGroupKey.c_str();
-}
-
-const char * Merger::nextValue(uint32_t & len) {
-  char * pos;
-  switch (_keyGroupIterState) {
-  case SAME_KEY: {
-    if (next()) {
-      if (_heap[0]->_key_len == _currentGroupKey.length()) {
-        if (fmemeq(_heap[0]->_key, _currentGroupKey.c_str(), _heap[0]->_key_len)) {
-          len = _heap[0]->_value_len;
-          return _heap[0]->getValue();
-        }
-      }
-      _keyGroupIterState = NEW_KEY;
-      return NULL;
-    }
-    _keyGroupIterState = NO_MORE;
-    return NULL;
-  }
-  case NEW_KEY: {
-    _keyGroupIterState = SAME_KEY;
-    len = _heap[0]->_value_len;
-    return _heap[0]->getValue();
-  }
-  case NO_MORE:
+  } else {
     return false;
   }
 }
@@ -155,81 +133,48 @@ const char * Merger::nextValue(uint32_t & len) {
 void Merger::merge() {
   Timer timer;
   uint64_t total_record = 0;
-  uint64_t keyGroupCount = 0;
   _heap.reserve(_entries.size());
   MergeEntryPtr * base = &(_heap[0]);
-  while (0 == startPartition()) {
+  while (startPartition()) {
     initHeap();
     if (_heap.size() == 0) {
       endPartition();
       continue;
     }
     _first = true;
-    if (_combinerCreator == NULL) {
+    if (_combineRunner == NULL) {
       while (next()) {
-        _writer->writeKey(base[0]->_key, base[0]->_key_len, base[0]->_value_len);
-        _writer->writeValue(base[0]->getValue(), base[0]->_value_len);
+        _writer->write(base[0]->getKey(), base[0]->getKeyLength(), base[0]->getValue(),
+            base[0]->getValueLength());
         total_record++;
       }
     } else {
-      NativeObject * combiner = _combinerCreator();
-      if (combiner == NULL) {
-        THROW_EXCEPTION_EX(UnsupportException, "Create combiner failed");
-      }
-      switch (combiner->type()) {
-      case MapperType:
-        {
-          Mapper * mapper = (Mapper*)combiner;
-          mapper->setCollector(_writer);
-          mapper->configure(_config);
-          while (next()) {
-            mapper->map(base[0]->_key, base[0]->_key_len, base[0]->getValue(), base[0]->_value_len);
-          }
-          mapper->close();
-          delete mapper;
-        }
-        break;
-      case ReducerType:
-        {
-          _keyGroupIterState = NEW_KEY;
-          Reducer * reducer = (Reducer*)combiner;
-          reducer->setCollector(_writer);
-          reducer->configure(_config);
-          while (nextKey()) {
-            keyGroupCount++;
-            reducer->reduce(*this);
-          }
-          reducer->close();
-          delete reducer;
-        }
-        break;
-      default:
-        delete combiner;
-        THROW_EXCEPTION(UnsupportException, "Combiner type not support");
-      }
+      _combineRunner->combine(CombineContext(UNKNOWN), this, _writer);
     }
     endPartition();
   }
-  double interval = (timer.now() - timer.last())/1000000000.0;
+
+  uint64_t interval = (timer.now() - timer.last());
+  uint64_t M = 1000000; //1 million
+
   uint64_t output_size;
   uint64_t real_output_size;
   _writer->getStatistics(output_size, real_output_size);
-  if (keyGroupCount == 0) {
-    LOG("Merge %lu segments: record: %llu, avg: %.3lf, size: %llu, real: %llu, time: %.3lf",
+
+  if (total_record != 0) {
+    LOG("[Merge] Merged segment#: %lu, record#: %llu, avg record size: %llu, uncompressed total bytes: %llu, compressed total bytes: %llu, time: %llu ms",
         _entries.size(),
         total_record,
-        (double)output_size/total_record,
+        output_size / (total_record),
         output_size,
         real_output_size,
-        interval);
+        interval / M);
   } else {
-    LOG("Merge %lu segments: record %llu, key: %llu, size %llu, real %llu, time: %.3lf",
+    LOG("[Merge] Merged segments#, %lu, uncompressed total bytes: %llu, compressed total bytes: %llu, time: %llu ms",
         _entries.size(),
-        total_record,
-        keyGroupCount,
         output_size,
         real_output_size,
-        interval);
+        interval / M);
   }
 }
 

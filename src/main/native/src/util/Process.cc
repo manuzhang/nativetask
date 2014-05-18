@@ -73,10 +73,7 @@ void PipeOutputStream::close() {
   _fd = -1;
 }
 
-int Process::Popen(const string & cmd,
-                   int & fdstdin,
-                   int & fdstdout,
-                   int & fdstderr) {
+int Process::Popen(const string & cmd, int & fdstdin, int & fdstdout, int & fdstderr) {
   int outfd[2];
   int infd[2];
   int errfd[2];
@@ -99,15 +96,14 @@ int Process::Popen(const string & cmd,
     close(infd[1]);
     close(errfd[0]);
     close(errfd[1]);
-    const char * args[] = { "/bin/sh", "-c", cmd.c_str(), NULL };
-    int ret = execv(args[0], (char * const *) args);
+    const char * args[] = {"/bin/sh", "-c", cmd.c_str(), NULL};
+    int ret = execv(args[0], (char * const *)args);
     if (0 != ret) {
       LOG("Error when execv [%s] ret: %d, error: %s\n", cmd.c_str(), ret, strerror(errno));
       return -1;
     }
     return 0;
-  }
-  else {
+  } else {
     close(outfd[0]);
     close(infd[1]);
     close(errfd[1]);
@@ -118,15 +114,12 @@ int Process::Popen(const string & cmd,
   }
 }
 
-int Process::Popen(const string & cmd,
-                   FILE *& fstdin,
-                   FILE *& fstdout,
-                   FILE *& fstderr) {
+int Process::Popen(const string & cmd, FILE *& fstdin, FILE *& fstdout, FILE *& fstderr) {
   int fdstdin;
   int fdstdout;
   int fdstderr;
   int ret = Popen(cmd, fdstdin, fdstdout, fdstderr);
-  if (ret<=0) {
+  if (ret <= 0) {
     return ret;
   }
   fstdin = fdopen(fdstdin, "w");
@@ -135,15 +128,13 @@ int Process::Popen(const string & cmd,
   return ret;
 }
 
-int Process::Popen(const string & cmd,
-                   PipeOutputStream & pstdin,
-                   PipeInputStream & pstdout,
-                   PipeInputStream & pstderr) {
+int Process::Popen(const string & cmd, PipeOutputStream & pstdin, PipeInputStream & pstdout,
+    PipeInputStream & pstderr) {
   int fdstdin;
   int fdstdout;
   int fdstderr;
   int ret = Popen(cmd, fdstdin, fdstdout, fdstderr);
-  if (ret<=0) {
+  if (ret <= 0) {
     return ret;
   }
   pstdin.setFd(fdstdin);
@@ -157,7 +148,7 @@ int Process::Run(const string & cmd, string * out, string * err) {
   PipeInputStream pout;
   PipeInputStream perr;
   int pid = Popen(cmd, pin, pout, perr);
-  if (pid<0) {
+  if (pid < 0) {
     return pid;
   }
   pin.close();
@@ -173,10 +164,12 @@ int Process::Run(const string & cmd, string * out, string * err) {
   } else {
     serr = new OutputStringStream(*err);
   }
-  Thread errThread = Thread(Bind(perr, &InputStream::readAllTo, *serr, 4096));
+  Runnable * bind = BindNew(perr, &InputStream::readAllTo, *serr, 4096);
+  Thread errThread = Thread(bind);
   errThread.start();
   pout.readAllTo(*sout, 4096);
   errThread.join();
+  delete bind;
   int retcode = 0;
   if (pid != waitpid(pid, &retcode, 0)) {
     retcode = -1;
@@ -186,7 +179,5 @@ int Process::Run(const string & cmd, string * out, string * err) {
   return retcode;
 }
 
-
 } // namespace NativeTask
-
 

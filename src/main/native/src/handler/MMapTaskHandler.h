@@ -19,9 +19,10 @@
 #ifndef MMAPTASKHANDLER_H_
 #define MMAPTASKHANDLER_H_
 
-
 #include "NativeTask.h"
 #include "BatchHandler.h"
+#include "lib/SpillOutputService.h"
+#include "AbstractMapHandler.h"
 
 namespace NativeTask {
 
@@ -32,16 +33,17 @@ class MapOutputCollector;
  * First call setup to setup all sub parts,
  * then call command("run") to run the whole task
  */
-class MMapTaskHandler :
-    public BatchHandler,
-    public Collector {
+class MMapTaskHandler : public AbstractMapHandler, public Collector {
+public:
+  static const Command RUN;
+
 private:
+
   uint32_t _numPartition;
   Config * _config;
   RecordReader * _reader;
   Mapper * _mapper;
   Partitioner * _partitioner;
-  ObjectCreatorFunc _combinerCreator;
   MapOutputCollector * _moc;
   RecordWriter * _writer;
 
@@ -54,18 +56,16 @@ public:
   MMapTaskHandler();
   virtual ~MMapTaskHandler();
 
-  virtual void configure(Config & config);
-  virtual string command(const string & cmd);
+  virtual void configure(Config * config);
+  virtual ResultBuffer * onCall(const Command& command, ParameterBuffer * param);
 
   // Collector methods
-  virtual void collect(const void * key, uint32_t keyLen, const void * value,
-      uint32_t valueLen, int partition);
-  virtual void collect(const void * key, uint32_t keyLen, const void * value,
-      uint32_t valueLen);
+  virtual void collect(const void * key, uint32_t keyLen, const void * value, uint32_t valueLen,
+      int partition);
+  virtual void collect(const void * key, uint32_t keyLen, const void * value, uint32_t valueLen);
+
 private:
   void initCounters();
-  void close();
-  void reset();
 };
 
 } // namespace NativeTask

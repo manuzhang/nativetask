@@ -24,34 +24,29 @@
 #include "KVFile.h"
 #include "test_commons.h"
 
-IndexRange * writeIFile(int partition,
-                             vector<pair<string, string> > & kvs,
-                             const string & path,
-                             KeyValueType type,
-                             const string & codec) {
+SingleSpillInfo * writeIFile(int partition, vector<pair<string, string> > & kvs,
+    const string & path, KeyValueType type, const string & codec) {
   FileOutputStream * fout = (FileOutputStream*)FileSystem::getLocal().create(path);
-  IFileWriter * iw = new IFileWriter(fout, CHECKSUM_CRC32, type, type, codec);
-  for (int i=0;i<partition;i++) {
+  IFileWriter * iw = new IFileWriter(fout, CHECKSUM_CRC32, type, type, codec, NULL);
+  for (int i = 0; i < partition; i++) {
     iw->startPartition();
-    for (size_t i = 0;i<kvs.size();i++) {
+    for (size_t i = 0; i < kvs.size(); i++) {
       pair<string, string> & p = kvs[i];
-      iw->write(p.first.c_str(), p.first.length(),
-                p.second.c_str(), p.second.length());
+      iw->write(p.first.c_str(), p.first.length(), p.second.c_str(), p.second.length());
     }
     iw->endPartition();
   }
-  IndexRange * info = iw->getIndex(0);
+  SingleSpillInfo * info = iw->getSpillInfo();
   delete iw;
   delete fout;
   return info;
 }
 
-void readIFile(vector<pair<string, string> > & kvs, const string & path,
-                KeyValueType type, IndexRange * info, const string & codec) {
-  FileInputStream * fin = (FileInputStream*) FileSystem::getLocal().open(path);
-  IFileReader * ir = new IFileReader(fin, CHECKSUM_CRC32, type, type, info, codec);
-  size_t count = 0;
-  while (ir->nextPartition() == 0) {
+void readIFile(vector<pair<string, string> > & kvs, const string & path, KeyValueType type,
+    SingleSpillInfo * info, const string & codec) {
+  FileInputStream * fin = (FileInputStream*)FileSystem::getLocal().open(path);
+  IFileReader * ir = new IFileReader(fin, info);
+  while (ir->nextPartition()) {
     const char * key, *value;
     uint32_t keyLen, valueLen;
     while (NULL != (key = ir->nextKey(keyLen))) {
@@ -66,17 +61,17 @@ void readIFile(vector<pair<string, string> > & kvs, const string & path,
 }
 
 void TestIFileReadWrite(KeyValueType kvtype, int partition, int size,
-                        vector<pair<string, string> > & kvs, const string & codec="") {
+    vector<pair<string, string> > & kvs, const string & codec = "") {
   string outputpath = "ifilewriter";
-  IndexRange * info = writeIFile(partition, kvs, outputpath, kvtype, codec);
+  SingleSpillInfo * info = writeIFile(partition, kvs, outputpath, kvtype, codec);
   LOG("write finished");
   vector<pair<string, string> > readkvs;
   readIFile(readkvs, outputpath, kvtype, info, codec);
   LOG("read finished");
-  ASSERT_EQ(kvs.size()*partition, readkvs.size());
-  for (int i=0;i<partition;i++) {
-    vector<pair<string, string> > cur_part(readkvs.begin()+i*kvs.size(),
-                                           readkvs.begin()+(i+1)*kvs.size());
+  ASSERT_EQ(kvs.size() * partition, readkvs.size());
+  for (int i = 0; i < partition; i++) {
+    vector<pair<string, string> > cur_part(readkvs.begin() + i * kvs.size(),
+        readkvs.begin() + (i + 1) * kvs.size());
     ASSERT_EQ(kvs.size(), cur_part.size());
 //    for (size_t j=0;j<kvs.size();j++) {
 //      SCOPED_TRACE(j);
@@ -86,7 +81,6 @@ void TestIFileReadWrite(KeyValueType kvtype, int partition, int size,
   }
   FileSystem::getLocal().remove(outputpath);
 }
-
 
 TEST(IFile, WriteRead) {
   int partition = TestConfig.getInt("ifile.partition", 7);
@@ -99,78 +93,74 @@ TEST(IFile, WriteRead) {
   TestIFileReadWrite(TextType, partition, size, kvs, "org.apache.hadoop.io.compress.SnappyCodec");
 }
 
-
-
-void TestIFileWriteRead2(vector<pair<string, string> > & kvs, char * buff,
-                         size_t buffsize, const string & codec,
-                         ChecksumType checksumType, KeyValueType type) {
+void TestIFileWriteRead2(vector<pair<string, string> > & kvs, char * buff, size_t buffsize,
+    const string & codec, ChecksumType checksumType, KeyValueType type) {
   int partition = TestConfig.getInt("ifile.partition", 50);
   Timer timer;
   OutputBuffer outputBuffer = OutputBuffer(buff, buffsize);
-  IFileWriter * iw = new IFileWriter(&outputBuffer, checksumType, type, type, codec);
+  IFileWriter * iw = new IFileWriter(&outputBuffer, checksumType, type, type, codec, NULL);
   timer.reset();
-  for (int i=0;i<partition;i++) {
+  for (int i = 0; i < partition; i++) {
     iw->startPartition();
-    for (size_t j=0;j<kvs.size();j++) {
-      iw->write(kvs[j].first.c_str(), kvs[j].first.length(),
-                kvs[j].second.c_str(), kvs[j].second.length());
+    for (size_t j = 0; j < kvs.size(); j++) {
+      iw->write(kvs[j].first.c_str(), kvs[j].first.length(), kvs[j].second.c_str(),
+          kvs[j].second.length());
     }
     iw->endPartition();
   }
-  IndexRange * info = iw->getIndex(0);
-  LOG("%s", timer.getSpeedM2("Write data", info->getEndPosition(),
-          info->getRealEndPosition()).c_str());
+  SingleSpillInfo * info = iw->getSpillInfo();
+  LOG("%s",
+      timer.getSpeedM2("Write data", info->getEndPosition(), info->getRealEndPosition()).c_str());
   delete iw;
 
   InputBuffer inputBuffer = InputBuffer(buff, outputBuffer.tell());
-  IFileReader * ir = new IFileReader(&inputBuffer, checksumType, type, type, info, codec);
+  IFileReader * ir = new IFileReader(&inputBuffer, info);
   timer.reset();
-  while (0 == ir->nextPartition()) {
-    const char * key, * value;
+  while (ir->nextPartition()) {
+    const char * key, *value;
     uint32_t keyLen, valueLen;
-    while (NULL != (key=ir->nextKey(keyLen))) {
+    while (NULL != (key = ir->nextKey(keyLen))) {
       value = ir->value(valueLen);
     }
   }
-  LOG("%s", timer.getSpeedM2(" Read data", info->getEndPosition(),
-          info->getRealEndPosition()).c_str());
+  LOG("%s",
+      timer.getSpeedM2(" Read data", info->getEndPosition(), info->getRealEndPosition()).c_str());
   delete ir;
   delete info;
 }
 
-void TestKVFileWriteRead2(vector<pair<string, string> > & kvs, char * buff,
-                         size_t buffsize, const string & codec,
-                         ChecksumType checksumType, KeyValueType type) {
+void TestKVFileWriteRead2(vector<pair<string, string> > & kvs, char * buff, size_t buffsize,
+    const string & codec, ChecksumType checksumType, KeyValueType type) {
   int partition = TestConfig.getInt("ifile.partition", 50);
   Timer timer;
   OutputBuffer outputBuffer = OutputBuffer(buff, buffsize);
   KVFileWriter * iw = new KVFileWriter(&outputBuffer, checksumType, codec);
   timer.reset();
-  for (int i=0;i<partition;i++) {
+  for (uint32_t i = 0; i < partition; i++) {
     iw->startPartition();
-    for (size_t j=0;j<kvs.size();j++) {
-      iw->write(kvs[j].first.c_str(), kvs[j].first.length(),
-                kvs[j].second.c_str(), kvs[j].second.length());
+    for (size_t j = 0; j < kvs.size(); j++) {
+      iw->write(kvs[j].first.c_str(), kvs[j].first.length(), kvs[j].second.c_str(),
+          kvs[j].second.length());
     }
     iw->endPartition();
   }
-  IndexRange * info = iw->getIndex(0);
-  LOG("%s", timer.getSpeedM2("Write data", info->getEndPosition(),
-          info->getRealEndPosition()).c_str());
+  SingleSpillInfo * info = iw->getIndex(0);
+  LOG("%s",
+      timer.getSpeedM2("Write data", info->getEndPosition(), info->getRealEndPosition()).c_str());
   delete iw;
 
   InputBuffer inputBuffer = InputBuffer(buff, outputBuffer.tell());
   KVFileReader * ir = new KVFileReader(&inputBuffer, checksumType, info, codec);
   timer.reset();
-  while (0 == ir->nextPartition()) {
-    const char * key, * value;
+  while (ir->nextPartition()) {
+    const char * key, *value;
     uint32_t keyLen, valueLen;
-    while (NULL != (key=ir->nextKey(keyLen))) {
+    while (NULL != (key = ir->nextKey(keyLen))) {
       value = ir->value(valueLen);
     }
   }
-  LOG("%s", timer.getSpeedM2(" Read data", info->getEndPosition(),
-          info->getRealEndPosition()).c_str());
+  LOG("%s",
+      timer.getSpeedM2(" Read data", info->getEndPosition(), info->getRealEndPosition()).c_str());
   delete ir;
   delete info;
 }
@@ -184,7 +174,7 @@ TEST(Perf, IFile) {
   Generate(kvs, size, type);
   std::sort(kvs.begin(), kvs.end());
 
-  size_t buffsize = 200*1024*1024;
+  size_t buffsize = 200 * 1024 * 1024;
   char * buff = new char[buffsize];
   memset(buff, 0, buffsize);
 
@@ -206,5 +196,35 @@ TEST(Perf, IFile) {
   LOG("Test KVFile CRC32C");
   TestKVFileWriteRead2(kvs, buff, buffsize, codec, CHECKSUM_CRC32C, UnknownType);
 
-  delete [] buff;
+  delete[] buff;
+}
+
+// The Glibc has a bug in the file tell api, it will overwrite the file data 
+// unexpected. 
+// Please check https://rhn.redhat.com/errata/RHBA-2013-0279.html
+// This case is to check wether the bug exists.
+// If it exists, it means you need to upgrade the glibc.
+TEST(IFile, TestGlibCBug) {
+  std::string path("./testData/testGlibCBugSpill.out");
+
+  uint32_t expect[5] = {-1538241715, -1288088794, -192294464, 563552421, 1661521654};
+
+  LOG("TestGlibCBug %s", path.c_str());
+  IFileSegment * segments = new IFileSegment [1];
+  segments[0].realEndOffset = 10000000;
+  SingleSpillInfo * info = new SingleSpillInfo(segments, 1, path, CHECKSUM_NONE,
+      IntType, TextType, "");
+
+  InputStream * fileOut = FileSystem::getLocal().open(path);
+  IFileReader * reader = new IFileReader(fileOut, info, true);
+
+  const char * key = NULL;
+  uint32_t length = 0;
+  reader->nextPartition();
+  uint32_t index = 0;
+  while(NULL != (key = reader->nextKey(length))) {
+    int realKey = bswap(*(uint32_t *)(key));
+    ASSERT_EQ(expect[index], realKey);
+    index++;
+  }
 }

@@ -48,9 +48,9 @@ public:
 
   ObjectCreatorFunc getObjectCreator(const string & clz);
 
-  ~NativeLibrary() {}
+  ~NativeLibrary() {
+  }
 };
-
 
 } // namespace NativeTask
 

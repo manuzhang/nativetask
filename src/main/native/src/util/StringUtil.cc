@@ -36,7 +36,7 @@ string StringUtil::ToString(uint32_t v) {
 
 string StringUtil::ToString(int64_t v) {
   char tmp[32];
-  snprintf(tmp, 32, "%lld", v);
+  snprintf(tmp, 32, "%lld", (long long int)v);
   return tmp;
 }
 
@@ -48,7 +48,7 @@ string StringUtil::ToString(int64_t v, char pad, int64_t len) {
 
 string StringUtil::ToString(uint64_t v) {
   char tmp[32];
-  snprintf(tmp, 32, "%llu", v);
+  snprintf(tmp, 32, "%llu", (long long unsigned int)v);
   return tmp;
 }
 
@@ -73,7 +73,7 @@ string StringUtil::ToString(double v) {
 }
 
 string StringUtil::ToString(const void * v, uint32_t len) {
-  string ret = string(len*2, '0');
+  string ret = string(len * 2, '0');
   for (uint32_t i = 0; i < len; i++) {
     ret[i] = (((uint8_t*)v)[i] >> 4) + '0';
     ret[i] = (((uint8_t*)v)[i] & 0xff) + '0';
@@ -97,7 +97,6 @@ float StringUtil::toFloat(const string & str) {
   return strtof(str.c_str(), NULL);
 }
 
-
 string StringUtil::Format(const char * fmt, ...) {
   char tmp[256];
   string dest;
@@ -105,10 +104,10 @@ string StringUtil::Format(const char * fmt, ...) {
   va_start(al, fmt);
   int len = vsnprintf(tmp, 255, fmt, al);
   va_end(al);
-  if (len>255) {
-    char * destbuff = new char[len+1];
+  if (len > 255) {
+    char * destbuff = new char[len + 1];
     va_start(al, fmt);
-    len = vsnprintf(destbuff, len+1, fmt, al);
+    len = vsnprintf(destbuff, len + 1, fmt, al);
     va_end(al);
     dest.append(destbuff, len);
     delete destbuff;
@@ -123,9 +122,9 @@ void StringUtil::Format(string & dest, const char * fmt, ...) {
   va_list al;
   va_start(al, fmt);
   int len = vsnprintf(tmp, 255, fmt, al);
-  if (len>255) {
-    char * destbuff = new char[len+1];
-    len = vsnprintf(destbuff, len+1, fmt, al);
+  if (len > 255) {
+    char * destbuff = new char[len + 1];
+    len = vsnprintf(destbuff, len + 1, fmt, al);
     dest.append(destbuff, len);
   } else {
     dest.append(tmp, len);
@@ -133,60 +132,57 @@ void StringUtil::Format(string & dest, const char * fmt, ...) {
   va_end(al);
 }
 
-
 string StringUtil::ToLower(const string & name) {
   string ret = name;
-  for (size_t i = 0 ; i < ret.length() ; i++) {
+  for (size_t i = 0; i < ret.length(); i++) {
     ret.at(i) = ::tolower(ret[i]);
   }
   return ret;
 }
 
 string StringUtil::Trim(const string & str) {
-  if (str.length()==0) {
+  if (str.length() == 0) {
     return str;
   }
   size_t l = 0;
-  while (l<str.length() && isspace(str[l])) {
+  while (l < str.length() && isspace(str[l])) {
     l++;
   }
-  if (l>=str.length()) {
+  if (l >= str.length()) {
     return string();
   }
   size_t r = str.length();
-  while (isspace(str[r-1])) {
+  while (isspace(str[r - 1])) {
     r--;
   }
-  return str.substr(l, r-l);
+  return str.substr(l, r - l);
 }
 
-
-void StringUtil::Split(const string & src, const string & sep,
-                       vector<string> & dest, bool clean) {
-  if (sep.length()==0) {
+void StringUtil::Split(const string & src, const string & sep, vector<string> & dest, bool clean) {
+  if (sep.length() == 0) {
     return;
   }
   size_t cur = 0;
   while (true) {
     size_t pos;
-    if (sep.length()==1) {
+    if (sep.length() == 1) {
       pos = src.find(sep[0], cur);
     } else {
       pos = src.find(sep, cur);
     }
-    string add = src.substr(cur,pos-cur);
+    string add = src.substr(cur, pos - cur);
     if (clean) {
       string trimed = Trim(add);
-      if (trimed.length()>0) {
+      if (trimed.length() > 0) {
         dest.push_back(trimed);
       }
     } else {
       dest.push_back(add);
     }
-    if (pos==string::npos) {
+    if (pos == string::npos) {
       break;
     }
-    cur=pos+sep.length();
+    cur = pos + sep.length();
   }
 }
 
@@ -202,23 +198,20 @@ string StringUtil::Join(const vector<string> & strs, const string & sep) {
 }
 
 bool StringUtil::StartsWith(const string & str, const string & prefix) {
-  if ((prefix.length() > str.length()) ||
-      (memcmp(str.data(), prefix.data(), prefix.length()) != 0)) {
+  if ((prefix.length() > str.length())
+      || (memcmp(str.data(), prefix.data(), prefix.length()) != 0)) {
     return false;
   }
   return true;
 }
 
 bool StringUtil::EndsWith(const string & str, const string & suffix) {
-  if ((suffix.length() > str.length()) ||
-      (memcmp(str.data() + str.length() - suffix.length(),
-              suffix.data(),
-              suffix.length()) != 0)) {
+  if ((suffix.length() > str.length())
+      || (memcmp(str.data() + str.length() - suffix.length(), suffix.data(), suffix.length()) != 0)) {
     return false;
   }
   return true;
 }
 
 } // namespace NativeTask
-
 

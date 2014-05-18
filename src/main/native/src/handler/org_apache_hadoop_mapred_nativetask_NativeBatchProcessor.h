@@ -11,41 +11,42 @@ extern "C" {
  * Class:     org_apache_hadoop_mapred_nativetask_NativeBatchProcessor
  * Method:    setupHandler
  * Signature: (J)V
- */
-JNIEXPORT void JNICALL Java_org_apache_hadoop_mapred_nativetask_NativeBatchProcessor_setupHandler
-  (JNIEnv *, jobject, jlong);
+ */JNIEXPORT void JNICALL Java_org_apache_hadoop_mapred_nativetask_NativeBatchProcessor_setupHandler(
+    JNIEnv *, jobject, jlong, jobjectArray configs);
 
 /*
  * Class:     org_apache_hadoop_mapred_nativetask_NativeBatchProcessor
  * Method:    nativeProcessInput
  * Signature: (JI)V
- */
-JNIEXPORT void JNICALL Java_org_apache_hadoop_mapred_nativetask_NativeBatchProcessor_nativeProcessInput
-  (JNIEnv *, jobject, jlong, jint);
+ */JNIEXPORT void JNICALL Java_org_apache_hadoop_mapred_nativetask_NativeBatchProcessor_nativeProcessInput(
+    JNIEnv *, jobject, jlong, jint);
 
 /*
  * Class:     org_apache_hadoop_mapred_nativetask_NativeBatchProcessor
  * Method:    nativeFinish
  * Signature: (J)V
- */
-JNIEXPORT void JNICALL Java_org_apache_hadoop_mapred_nativetask_NativeBatchProcessor_nativeFinish
-  (JNIEnv *, jobject, jlong);
-
+ */JNIEXPORT void JNICALL Java_org_apache_hadoop_mapred_nativetask_NativeBatchProcessor_nativeFinish(
+    JNIEnv *, jobject, jlong);
 /*
  * Class:     org_apache_hadoop_mapred_nativetask_NativeBatchProcessor
  * Method:    nativeCommand
  * Signature: (J[B)[B
- */
-JNIEXPORT jbyteArray JNICALL Java_org_apache_hadoop_mapred_nativetask_NativeBatchProcessor_nativeCommand
-  (JNIEnv *, jobject, jlong, jbyteArray);
+ */JNIEXPORT jbyteArray JNICALL Java_org_apache_hadoop_mapred_nativetask_NativeBatchProcessor_nativeCommand(
+    JNIEnv *, jobject, jlong, jint, jbyteArray);
+
+/*
+ * Class:     org_apache_hadoop_mapred_nativetask_NativeBatchProcessor
+ * Method:    nativeLoadData
+ * Signature: (J)V
+ */JNIEXPORT void JNICALL Java_org_apache_hadoop_mapred_nativetask_NativeBatchProcessor_nativeLoadData(
+    JNIEnv *, jobject, jlong);
 
 /*
  * Class:     org_apache_hadoop_mapred_nativetask_NativeBatchProcessor
  * Method:    InitIDs
  * Signature: ()V
- */
-JNIEXPORT void JNICALL Java_org_apache_hadoop_mapred_nativetask_NativeBatchProcessor_InitIDs
-  (JNIEnv *, jclass);
+ */JNIEXPORT void JNICALL Java_org_apache_hadoop_mapred_nativetask_NativeBatchProcessor_InitIDs(
+    JNIEnv *, jclass);
 
 #ifdef __cplusplus
 }

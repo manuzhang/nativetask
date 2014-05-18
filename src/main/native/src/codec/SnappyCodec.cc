@@ -23,19 +23,18 @@
 
 namespace NativeTask {
 
-SnappyCompressStream::SnappyCompressStream(
-    OutputStream * stream,
-    uint32_t bufferSizeHint) :
-    BlockCompressStream(stream, bufferSizeHint) {
+SnappyCompressStream::SnappyCompressStream(OutputStream * stream, uint32_t bufferSizeHint)
+    : BlockCompressStream(stream, bufferSizeHint) {
+  init();
 }
 
 void SnappyCompressStream::compressOneBlock(const void * buff, uint32_t length) {
   size_t compressedLength = _tempBufferSize - 8;
-  snappy_status ret = snappy_compress((const char*) buff, length,
-                                      _tempBuffer + 8, &compressedLength);
+  snappy_status ret = snappy_compress((const char*)buff, length, _tempBuffer + 8,
+      &compressedLength);
   if (ret == SNAPPY_OK) {
-    ((uint32_t*) _tempBuffer)[0] = bswap(length);
-    ((uint32_t*) _tempBuffer)[1] = bswap((uint32_t) compressedLength);
+    ((uint32_t*)_tempBuffer)[0] = bswap(length);
+    ((uint32_t*)_tempBuffer)[1] = bswap((uint32_t)compressedLength);
     _stream->write(_tempBuffer, compressedLength + 8);
     _compressedBytesWritten += (compressedLength + 8);
   } else if (ret == SNAPPY_INVALID_INPUT) {
@@ -53,15 +52,13 @@ uint64_t SnappyCompressStream::maxCompressedLength(uint64_t origLength) {
 
 //////////////////////////////////////////////////////////////
 
-SnappyDecompressStream::SnappyDecompressStream(
-    InputStream * stream,
-    uint32_t bufferSizeHint) :
-    BlockDecompressStream(stream, bufferSizeHint) {
+SnappyDecompressStream::SnappyDecompressStream(InputStream * stream, uint32_t bufferSizeHint)
+    : BlockDecompressStream(stream, bufferSizeHint) {
+  init();
 }
 
-uint32_t SnappyDecompressStream::decompressOneBlock(uint32_t compressedSize,
-                                                    void * buff,
-                                                    uint32_t length) {
+uint32_t SnappyDecompressStream::decompressOneBlock(uint32_t compressedSize, void * buff,
+    uint32_t length) {
   if (compressedSize > _tempBufferSize) {
     char * newBuffer = (char *)realloc(_tempBuffer, compressedSize);
     if (newBuffer == NULL) {
@@ -70,14 +67,14 @@ uint32_t SnappyDecompressStream::decompressOneBlock(uint32_t compressedSize,
     _tempBuffer = newBuffer;
     _tempBufferSize = compressedSize;
   }
-  int32_t rd = _stream->readFully(_tempBuffer, compressedSize);
+  uint32_t rd = _stream->readFully(_tempBuffer, compressedSize);
   if (rd != compressedSize) {
     THROW_EXCEPTION(IOException, "readFully reach EOF");
   }
   _compressedBytesRead += rd;
   size_t uncompressedLength = length;
-  snappy_status ret = snappy_uncompress(_tempBuffer, compressedSize,
-                                        (char *) buff, &uncompressedLength);
+  snappy_status ret = snappy_uncompress(_tempBuffer, compressedSize, (char *)buff,
+      &uncompressedLength);
   if (ret == SNAPPY_OK) {
     return uncompressedLength;
   } else if (ret == SNAPPY_INVALID_INPUT) {

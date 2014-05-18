@@ -22,21 +22,9 @@
 #include <stdint.h>
 #include <string>
 #include "Streams.h"
+#include "NativeTask.h"
 
 namespace NativeTask {
-
-enum KeyValueType {
-  TextType = 0,
-  BytesType = 1,
-  ByteType = 2,
-  BoolType = 3,
-  IntType = 4,
-  LongType = 5,
-  FloatType = 6,
-  DoubleType = 7,
-  MD5HashType = 8,
-  UnknownType = 9
-};
 
 KeyValueType JavaClassToKeyValueType(const std::string & clazz);
 
@@ -69,7 +57,7 @@ public:
   }
 
   inline static int64_t ReadVLong(const char * pos, uint32_t & len) {
-    if (*pos>=(char)-112) {
+    if (*pos >= (char)-112) {
       len = 1;
       return *pos;
     } else {
@@ -81,17 +69,46 @@ public:
     return (int32_t)ReadVLong(pos, len);
   }
 
-  inline static void WriteVLong(int64_t v, char * pos, uint32_t & len) {
-    if (v<=127 && v>=-112) {
-      len = 1;
-      *pos = (char)v;
+  inline static void WriteVLong(int64_t v, char * target, uint32_t & written) {
+    if (v <= 127 && v >= -112) {
+      written = 1;
+      *target = (char)v;
     } else {
-      WriteVLongInner(v, pos, len);
+      WriteVLongInner(v, target, written);
     }
   }
 
-  inline static void WriteVInt(int32_t v, char * pos, uint32_t & len) {
-    WriteVLong(v, pos, len);
+  inline static void WriteVInt(int32_t v, char * target, uint32_t & written) {
+    WriteVLong(v, target, written);
+  }
+
+  //The next functions are used by Mahout
+  static uint32_t ReadUnsignedVarInt(const char * pos, uint32_t & len);
+
+  static uint64_t ReadUnsignedVarLong(const char * pos, uint32_t & len);
+
+  inline static int32_t ReadSignedVarInt(const char * pos, uint32_t & len) {
+    int32_t raw = ReadUnsignedVarInt(pos, len);
+    int32_t tmp = (((raw << 31) >> 31) ^ raw) >> 1;
+    return tmp ^ (raw & (1 << 31));
+  }
+
+  inline static int64_t ReadSignedVarLong(const char * pos, uint32_t & len) {
+    int64_t raw = ReadUnsignedVarLong(pos, len);
+    int64_t tmp = (((raw << 63) >> 63) ^ raw) >> 1;
+    return tmp ^ (raw & (1LL << 63));
+  }
+
+  static void WriteUnsignedVarInt(uint32_t num, char * pos, uint32_t & len);
+
+  static void WriteUnsignedVarLong(uint64_t num, char * pos, uint32_t & len);
+
+  inline static void WriteSignedVarInt(int32_t num, char * pos, uint32_t & len) {
+    WriteUnsignedVarInt((num << 1) ^ (num >> 31), pos, len);
+  }
+
+  inline static void WriteSignedVarLong(int64_t num, char * pos, uint32_t & len) {
+    WriteUnsignedVarLong((num << 1) ^ (num >> 63), pos, len);
   }
 
   // Stream interfaces

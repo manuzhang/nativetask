@@ -35,7 +35,7 @@ class FileInputStream : public InputStream {
 private:
   string _path;
   FILE * _handle;
-  int    _fd;
+  int _fd;
   Counter * _bytesRead;
 public:
   FileInputStream(const string & path);
@@ -58,7 +58,7 @@ class FileOutputStream : public OutputStream {
 private:
   string _path;
   FILE * _handle;
-  int    _fd;
+  int _fd;
   Counter * _bytesWrite;
 public:
   FileOutputStream(const string & path, bool overwite = true);
@@ -72,7 +72,6 @@ public:
 
   virtual void close();
 };
-
 
 /**
  * Simple wrapper for java org.apache.hadoop.fs.FSDataInputstream
@@ -127,9 +126,11 @@ public:
  */
 class FileSystem {
 protected:
-  FileSystem() {}
+  FileSystem() {
+  }
 public:
-  virtual ~FileSystem() {}
+  virtual ~FileSystem() {
+  }
 
   virtual InputStream * open(const string & path) {
     return NULL;
@@ -147,21 +148,22 @@ public:
     return false;
   }
 
-  virtual void remove(const string & path) {}
+  virtual void remove(const string & path) {
+  }
 
   virtual bool exists(const string & path) {
     return false;
   }
 
-  virtual void mkdirs(const string & path) {}
+  virtual void mkdirs(const string & path) {
+  }
 
-  static string getDefaultFsUri(Config & config);
+  static string getDefaultFsUri(Config * config);
   static FileSystem & getLocal();
-  static FileSystem & getJava(Config & config);
-  static FileSystem & get(Config & config);
+  static FileSystem & getJava(Config * config);
+  static FileSystem & get(Config * config);
 };
 
 } // namespace NativeTask
-
 
 #endif /* FILESYSTEM_H_ */

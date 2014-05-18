@@ -40,7 +40,7 @@ int32_t InputStream::readFully(void * buff, uint32_t length) {
       return ret > 0 ? ret : -1;
     }
     ret += rd;
-    buff = ((char *) buff) + rd;
+    buff = ((char *)buff) + rd;
     length -= rd;
   }
   return ret;
@@ -50,7 +50,7 @@ void InputStream::readAllTo(OutputStream & out, uint32_t bufferHint) {
   char * buffer = new char[bufferHint];
   while (true) {
     int32_t rd = read(buffer, bufferHint);
-    if (rd<=0) {
+    if (rd <= 0) {
       break;
     }
     out.write(buffer, rd);
@@ -66,10 +66,8 @@ uint64_t OutputStream::tell() {
 
 ///////////////////////////////////////////////////////////
 
-ChecksumInputStream::ChecksumInputStream(InputStream * stream, ChecksumType type) :
-  FilterInputStream(stream),
-  _type(type),
-  _limit(-1) {
+ChecksumInputStream::ChecksumInputStream(InputStream * stream, ChecksumType type)
+    : FilterInputStream(stream), _type(type), _limit(-1) {
   resetChecksum();
 }
 
@@ -103,9 +101,8 @@ int32_t ChecksumInputStream::read(void * buff, uint32_t length) {
 
 ///////////////////////////////////////////////////////////
 
-ChecksumOutputStream::ChecksumOutputStream(OutputStream * stream, ChecksumType type) :
-  FilterOutputStream(stream),
-  _type(type) {
+ChecksumOutputStream::ChecksumOutputStream(OutputStream * stream, ChecksumType type)
+    : FilterOutputStream(stream), _type(type) {
   resetChecksum();
 }
 
@@ -121,6 +118,5 @@ void ChecksumOutputStream::write(const void * buff, uint32_t length) {
   Checksum::update(_type, _checksum, buff, length);
   _stream->write(buff, length);
 }
-
 
 } // namespace NativeTask

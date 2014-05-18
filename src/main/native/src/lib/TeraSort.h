@@ -56,11 +56,9 @@ public:
 
 class TeraRecordWriter : public LineRecordWriter {
 public:
-  virtual void collect(const void * key, uint32_t keyLen,
-                     const void * value, uint32_t valueLen);
+  virtual void collect(const void * key, uint32_t keyLen, const void * value, uint32_t valueLen);
 };
 
 } // namespace NativeTask
-
 
 #endif /* TERASORT_H_ */

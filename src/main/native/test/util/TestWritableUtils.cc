@@ -33,16 +33,88 @@ void TestVLong(int64_t v) {
   ASSERT_EQ(rsize, dsize);
 }
 
+void TestSignedVarLong(int64_t v) {
+  char buff[24];
+  char buff2[24];
+  uint32_t write_size = 0;
+  uint32_t read_size = 0;
+  WritableUtils::WriteSignedVarLong(v, buff, write_size);
+  memcpy(buff2, buff, write_size);
+  int64_t result = WritableUtils::ReadSignedVarLong(buff2, read_size);
+  ASSERT_EQ(write_size, read_size);
+  ASSERT_EQ(v, result);
+}
+
+void TestUnSignedVarLong(uint64_t v) {
+  char buff[24];
+  char buff2[24];
+  uint32_t write_size = 0;
+  uint32_t read_size = 0;
+  WritableUtils::WriteUnsignedVarLong(v, buff, write_size);
+  memcpy(buff2, buff, write_size);
+  uint64_t result = WritableUtils::ReadUnsignedVarLong(buff2, read_size);
+  ASSERT_EQ(write_size, read_size);
+  ASSERT_EQ(v, result);
+}
+
+void TestSignedVarInt(int32_t v) {
+  char buff[24];
+  char buff2[24];
+  uint32_t write_size = 0;
+  uint32_t read_size = 0;
+  WritableUtils::WriteSignedVarInt(v, buff, write_size);
+  memcpy(buff2, buff, write_size);
+  int64_t result = WritableUtils::ReadSignedVarInt(buff2, read_size);
+  ASSERT_EQ(write_size, read_size);
+  ASSERT_EQ(v, result);
+}
+
+void TestUnSignedVarInt(uint32_t v) {
+  char buff[24];
+  char buff2[24];
+  uint32_t write_size = 0;
+  uint32_t read_size = 0;
+  WritableUtils::WriteUnsignedVarInt(v, buff, write_size);
+  memcpy(buff2, buff, write_size);
+  uint64_t result = WritableUtils::ReadUnsignedVarInt(buff2, read_size);
+  ASSERT_EQ(write_size, read_size);
+  ASSERT_EQ(v, result);
+}
+
 TEST(WritableUtils, VLong) {
   int num = TestConfig.getInt("test.size", 3000);
   int seed = TestConfig.getInt("test.seed", -1);
   Random r(seed);
   for (int i = 0; i < num; i++) {
-    uint64_t v = r.nextLog2(((uint64_t)-1)/2-3);
+    uint64_t v = r.nextLog2(((uint64_t)-1) / 2 - 3);
     TestVLong(v);
     TestVLong(-v);
   }
 }
 
+TEST(WritableUtils, VarLong) {
+  int num = TestConfig.getInt("test.size", 3000);
+  int seed = TestConfig.getInt("test.seed", -1);
+  Random r(seed);
+  for (int i = 0; i < num; i++) {
+    uint64_t v = r.nextLog2(((uint64_t)-1) / 2 - 3);
+    TestSignedVarLong(v);
+    TestSignedVarLong(-v);
+    TestUnSignedVarLong(v);
+    TestUnSignedVarLong(-v);
+  }
+}
 
+TEST(WritableUtils, VarInt) {
+  int num = TestConfig.getInt("test.size", 3000);
+  int seed = TestConfig.getInt("test.seed", -1);
+  Random r(seed);
+  for (int i = 0; i < num; i++) {
+    uint32_t v = r.nextLog2(((uint32_t)-1) / 2 - 3);
+    TestSignedVarInt(v);
+    TestSignedVarInt(-v);
+    TestUnSignedVarInt(v);
+    TestUnSignedVarInt(-v);
+  }
+}
 

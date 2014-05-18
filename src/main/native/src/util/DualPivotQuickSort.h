@@ -25,15 +25,21 @@
 namespace NativeTask {
 
 // TODO: definitely needs refactoring..
-template <typename _Compare>
-void DualPivotQuicksort(std::vector<uint32_t> & elements, int left, int right, int div, _Compare compare) {
+template<typename _Compare>
+void DualPivotQuicksort(std::vector<uint32_t> & elements, int left, int right, int div,
+    _Compare compare) {
+
+  if (left >= right) {
+    return;
+  }
+
   uint32_t * e = &(elements[0]);
   int len = right - left;
 
   if (len < 27) { // insertion sort for tiny array
     for (int i = left + 1; i <= right; i++) {
       for (int j = i; j > left && compare(e[j - 1], e[j]) > 0; --j) {
-        std::swap(e[j], e[j-1]);
+        std::swap(e[j], e[j - 1]);
       }
     }
     return;
@@ -42,7 +48,7 @@ void DualPivotQuicksort(std::vector<uint32_t> & elements, int left, int right, i
   int third = len / div;
 
   // "medians"
-  int m1 = left  + third;
+  int m1 = left + third;
   int m2 = right - third;
 
   if (m1 <= left) {
@@ -64,7 +70,7 @@ void DualPivotQuicksort(std::vector<uint32_t> & elements, int left, int right, i
   int pivot2 = right;
 
   // pointers
-  int less  = left  + 1;
+  int less = left + 1;
   int great = right - 1;
 
   // sorting
@@ -95,7 +101,7 @@ void DualPivotQuicksort(std::vector<uint32_t> & elements, int left, int right, i
   std::swap(e[great + 1], e[right]);
 
   // subarrays
-  DualPivotQuicksort(elements, left,   less - 2, div, compare);
+  DualPivotQuicksort(elements, left, less - 2, div, compare);
   DualPivotQuicksort(elements, great + 2, right, div, compare);
 
   // equal elements
@@ -121,9 +127,9 @@ void DualPivotQuicksort(std::vector<uint32_t> & elements, int left, int right, i
   }
 }
 
-template <typename _Compare>
+template<typename _Compare>
 void DualPivotQuicksort(std::vector<uint32_t> & elements, _Compare compare) {
-  DualPivotQuicksort(elements, 0, elements.size()-1, 3, compare);
+  DualPivotQuicksort(elements, 0, elements.size() - 1, 3, compare);
 }
 
 } // namespace NativeTask

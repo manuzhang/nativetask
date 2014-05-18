@@ -1,5 +1,6 @@
 #!/bin/sh
 
+set -e 
 SCRIPT_PATH="${BASH_SOURCE[0]}";
 if ([ -h "${SCRIPT_PATH}" ]) then
   while([ -h "${SCRIPT_PATH}" ]) do SCRIPT_PATH=`readlink "${SCRIPT_PATH}"`; done
@@ -24,12 +25,11 @@ clean() {
         echo 'cleaning...'
         make distclean >/dev/null 2>&1
         rm -rf autom4te.cache m4
-        for fn in aclocal.m4 configure config.guess config.sub depcomp install-sh \
-                ltmain.sh libtool missing mkinstalldirs config.log config.status Makefile; do
+        for fn in mkinstalldirs config.log config.status Makefile simple.sh config.h.in~; do
                 rm -f $fn
         done
 
-        find . -name Makefile.in -exec rm -f {} \;
+        #find . -name Makefile.in -exec rm -f {} \;
         find . -name Makefile -exec rm -f {} \;
         find . -name .deps -prune -exec rm -rf {} \;
         echo 'done'
@@ -44,8 +44,21 @@ install() {
   cp -r .libs $target
 }
 
+
+
 build() {
-.$basedir/configure
+#aclocal
+#automake --foreign --copy --add-missing
+if hash icpc 2>/dev/null; then
+echo "We are going to use Intel compiler icpc"
+true
+#Don't remove this dummy line, otherwise ICC won't work
+echo " " >> .$basedir/configure
+sh .$basedir/configure CC="icc -static-intel" CXX="icpc -static-intel -DGTEST_HAS_TR1_TUPLE=0"
+else
+true
+sh .$basedir/configure
+fi
 make
 }
 
@@ -54,9 +67,11 @@ case "x$1" in
 xclean)
 	clean
 	;;
+xinit)
+	init
+
+;;	
 xall)
-	clean
-        init
 	build
 	;;
 xinstall)

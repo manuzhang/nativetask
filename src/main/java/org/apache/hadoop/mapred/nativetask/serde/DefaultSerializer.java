@@ -35,8 +35,8 @@ public class DefaultSerializer implements INativeSerializer<Writable> {
     }
   }
 
-  private ModifiedByteArrayOutputStream outBuffer = new ModifiedByteArrayOutputStream();
-  private DataOutputStream outData = new DataOutputStream(outBuffer);
+  private final ModifiedByteArrayOutputStream outBuffer = new ModifiedByteArrayOutputStream();
+  private final DataOutputStream outData = new DataOutputStream(outBuffer);
   private Writable buffered = null;
   private int bufferedLength = -1;
 
@@ -57,16 +57,11 @@ public class DefaultSerializer implements INativeSerializer<Writable> {
 
   @Override
   public void serialize(Writable w, DataOutput out) throws IOException {
-    // if (w == buffered) {
-    // out.write(outBuffer.getBuffer(), 0, outBuffer.size());
-    // return;
-    // }
     w.write(out);
   }
 
   @Override
-  public void deserialize(Writable w, int length, DataInput in)
-      throws IOException {
+  public void deserialize(DataInput in, int length, Writable w) throws IOException {
     w.readFields(in);
   }
 }

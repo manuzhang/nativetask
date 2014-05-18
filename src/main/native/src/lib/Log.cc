@@ -26,8 +26,5 @@ FILE * LOG_DEVICE = stderr;
 
 #endif
 
-
 } //namespace NativeTask
-
-
 

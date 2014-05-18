@@ -26,9 +26,9 @@ TEST(LineRecordReader, Read) {
   vector<string> inputs;
   Generate(inputs, size, type);
   string input;
-  for (int32_t i=0;i<size;i++) {
+  for (int32_t i = 0; i < size; i++) {
     input.append(inputs[i]);
-    if (i%2==0) {
+    if (i % 2 == 0) {
       input.append(1, '\n');
     } else {
       input.append("\r\n");
@@ -39,12 +39,12 @@ TEST(LineRecordReader, Read) {
   reader.init(&inputBuffer, "");
   Buffer key;
   Buffer value;
-  for (int32_t i=0;i<size;i++) {
+  for (int32_t i = 0; i < size; i++) {
     ASSERT_TRUE(reader.next(key, value));
     ASSERT_EQ(0, key.length());
     ASSERT_EQ(inputs[i], value.toString());
   }
-  ASSERT_FALSE(reader.next(key,value));
+  ASSERT_FALSE(reader.next(key, value));
 }
 
 void TestLineRecordReaderLen(uint32_t recordLength) {
@@ -55,9 +55,9 @@ void TestLineRecordReaderLen(uint32_t recordLength) {
   vector<string> inputs;
   Generate(inputs, size, type);
   string input;
-  for (int32_t i=0;i<size;i++) {
+  for (int32_t i = 0; i < size; i++) {
     input.append(inputs[i]);
-    if (i%2==0) {
+    if (i % 2 == 0) {
       input.append(1, '\n');
     } else {
       input.append("\r\n");
@@ -69,8 +69,10 @@ void TestLineRecordReaderLen(uint32_t recordLength) {
   Buffer key;
   Buffer value;
   Timer timer;
-  while (reader.next(key, value));
-  LOG("Record Length: %u %s", recordLength, timer.getSpeedM2("read speed byte/record", input.length(), size).c_str());
+  while (reader.next(key, value))
+    ;
+  LOG("Record Length: %u %s", recordLength,
+      timer.getSpeedM2("read speed byte/record", input.length(), size).c_str());
   TestConfig.setInt(GenerateLen, origLength);
 }
 

@@ -24,72 +24,66 @@
 
 namespace NativeTask {
 
-class RReducerHandler :
-    public BatchHandler,
-    public Collector,
-    public KeyGroup {
-  enum KeyGroupIterState {
-    SAME_KEY,
-    NEW_KEY,
-    NO_MORE,
-  };
+class RReducerHandler : public BatchHandler, public Collector, public KVIterator {
+
+public:
+  static const Command RUN;
+  static const Command LOAD;
+
 protected:
-  NativeObjectType _reducerType;
-  // passive mapper (hash aggregation) style reducer
-  Mapper  * _mapper;
-  // active style reducer
-  Reducer * _reducer;
-  // passive folder style reducer
-  Folder  * _folder;
+  ProcessorBase * _processor;
+
   // RecordWriter
   RecordWriter * _writer;
+
   // Reduce output collector
   Collector * _collector;
-  // state info KV pairs
-  char * _current;
-  uint32_t _remain;
-  uint32_t _klength;
-  uint32_t _vlength;
-
-  uint32_t _keyOffset;
-  uint32_t _valueOffset;
-
-  KeyGroupIterState _keyGroupIterState;
-  std::string _currentGroupKey;
-  char * _nextKeyValuePair;
-  // for big key/value pairs
-  char * _KVBuffer;
-  uint32_t _KVBufferCapacity;
 
   // counters
-  Counter * _reduceInputRecords;
-  Counter * _reduceInputGroups;
-  Counter * _reduceOutputRecords;
+  Counter * _inputGroupCounter;
+  Counter * _inputRecordCounter;
+  Counter * _outputRecordCounter;
+
+  NativeObjectType _reducerType;
+
+  FixSizeContainer _asideBuffer;
+  ByteArray _asideBytes;
+
+  char * _inputStart;
+  uint32_t _inputLength;
+  Endium _endium;
+
 public:
   RReducerHandler();
   virtual ~RReducerHandler();
 
-  virtual void configure(Config & config);
-  virtual std::string command(const std::string & cmd);
+  virtual void configure(Config * config);
+  virtual ResultBuffer * onCall(const Command & cmd, ParameterBuffer * param);
 
-  // KeyGroup methods
-  bool nextKey();
-  virtual const char * getKey(uint32_t & len);
-  virtual const char * nextValue(uint32_t & len);
+  virtual void handleInput(ByteBuffer & in);
 
   // Collector methods
-  virtual void collect(const void * key, uint32_t keyLen, const void * value,
-      uint32_t valueLen);
+  virtual void collect(const void * key, uint32_t keyLen, const void * value, uint32_t valueLen);
+
+  virtual bool next(Buffer & key, Buffer & value);
+
+protected:
+
 private:
   void initCounters();
   void run();
   virtual int32_t refill();
-  char * nextKeyValuePair(); // return key position
-  void reset();
+  KVBuffer * nextKeyValue(); // return key position
+
+  virtual void writeToJavaRecordWriter(const void * key, uint32_t keyLen, const void * value,
+      uint32_t valueLen);
+
+  RecordWriter * getWriter(Config * config);
+
+  KeyGroupIterator * createKeyGroupIterator();
 
 };
 
 } // namespace NativeTask
-
 
 #endif /* RREDUCERHANDLER_H_ */

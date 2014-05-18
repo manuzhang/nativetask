@@ -46,6 +46,7 @@ import org.apache.hadoop.mapred.lib.IdentityReducer;
 import org.apache.hadoop.mapred.nativetask.Constants;
 import org.apache.hadoop.mapred.nativetask.NativeMapTaskDelegator;
 import org.apache.hadoop.mapred.nativetask.NativeReduceTaskDelegator;
+import org.apache.hadoop.mapreduce.MRJobConfig;
 import org.apache.hadoop.util.GenericOptionsParser;
 import org.apache.hadoop.util.Tool;
 
@@ -61,8 +62,7 @@ public class Submitter extends Configured implements Tool {
   }
 
   /**
-   * Set the configuration, if it doesn't already have a value for the given
-   * key.
+   * Set the configuration, if it doesn't already have a value for the given key.
    * 
    * @param conf
    *          the configuration to modify
@@ -78,33 +78,31 @@ public class Submitter extends Configured implements Tool {
   }
 
   public static void setupNativeJob(JobConf conf) throws IOException {
-    String textClassname = Text.class.getName();
-    setIfUnset(conf, "mapred.mapoutput.key.class", textClassname);
-    setIfUnset(conf, "mapred.mapoutput.value.class", textClassname);
-    setIfUnset(conf, "mapred.output.key.class", textClassname);
-    setIfUnset(conf, "mapred.output.value.class", textClassname);
+    final String textClassname = Text.class.getName();
+    setIfUnset(conf, MRJobConfig.MAP_OUTPUT_KEY_CLASS, textClassname);
+    setIfUnset(conf, MRJobConfig.MAP_OUTPUT_VALUE_CLASS, textClassname);
+    setIfUnset(conf, MRJobConfig.OUTPUT_KEY_CLASS, textClassname);
+    setIfUnset(conf, MRJobConfig.OUTPUT_VALUE_CLASS, textClassname);
     conf.setBoolean(Constants.NATIVE_TASK_ENABLED, true);
-    if ("JAVA".equals(conf.get("native.mapper.class"))) {
+    if ("JAVA".equals(conf.get(Constants.NATIVE_MAPPER_CLASS))) {
       conf.setMapperClass(IdentityMapper.class);
     } else {
-      conf.set(Constants.MAPRED_MAPTASK_DELEGATOR_CLASS,
-          NativeMapTaskDelegator.class.getCanonicalName());
+      conf.set(Constants.MAPRED_MAPTASK_DELEGATOR_CLASS, NativeMapTaskDelegator.class.getCanonicalName());
     }
-    if ("JAVA".equals(conf.get("native.reducer.class"))) {
+    if ("JAVA".equals(conf.get(Constants.NATIVE_REDUCER_CLASS))) {
       conf.setReducerClass(IdentityReducer.class);
     } else {
-      conf.set(Constants.MAPRED_REDUCETASK_DELEGATOR_CLASS,
-          NativeReduceTaskDelegator.class.getCanonicalName());
+      conf.set(Constants.MAPRED_REDUCETASK_DELEGATOR_CLASS, NativeReduceTaskDelegator.class.getCanonicalName());
     }
     if (conf.getJobName() == null || conf.getJobName().length() == 0) {
-      conf.setJobName("Native-" + conf.get("native.mapper.class") + "-"
-          + conf.get("native.reducer.class"));
+      conf.setJobName("Native-" + conf.get(Constants.NATIVE_MAPPER_CLASS) + "-"
+          + conf.get(Constants.NATIVE_REDUCER_CLASS));
     }
   }
 
   /**
-   * Submit a job to the map/reduce cluster. All of the necessary modifications
-   * to the job to run under pipes are made to the configuration.
+   * Submit a job to the map/reduce cluster. All of the necessary modifications to the job to run under pipes are made
+   * to the configuration.
    * 
    * @param conf
    *          the job to submit to the cluster (MODIFIED)
@@ -119,26 +117,25 @@ public class Submitter extends Configured implements Tool {
    * A command line parser for the CLI-based Pipes job submitter.
    */
   static class CommandLineParser {
-    private Options options = new Options();
+    private final Options options = new Options();
 
     @SuppressWarnings("static-access")
-    void addOption(String longName, boolean required, String description,
-        String paramName) {
-      Option option = OptionBuilder.withArgName(paramName).hasArgs(1)
-          .withDescription(description).isRequired(required).create(longName);
+    void addOption(String longName, boolean required, String description, String paramName) {
+      final Option option = OptionBuilder.withArgName(paramName).hasArgs(1).withDescription(description)
+          .isRequired(required).create(longName);
       options.addOption(option);
     }
 
     @SuppressWarnings("static-access")
     void addArgument(String name, boolean required, String description) {
-      Option option = OptionBuilder.withArgName(name).hasArgs(1)
-          .withDescription(description).isRequired(required).create();
+      final Option option = OptionBuilder.withArgName(name).hasArgs(1).withDescription(description)
+          .isRequired(required).create();
       options.addOption(option);
 
     }
 
     Parser createParser() {
-      Parser result = new BasicParser();
+      final Parser result = new BasicParser();
       return result;
     }
 
@@ -149,45 +146,32 @@ public class Submitter extends Configured implements Tool {
       System.out.println("  [-lib <name=path>,..    // user native libraries");
       System.out.println("  [-inputformat <class>]  // InputFormat class");
       System.out.println("  [-outputformat <class>] // OutputFormat class");
-      System.out
-          .println("  [-mapper <class|JAVA>]  // native Mapper class, JAVA if you want java IdentityMapper");
-      System.out
-          .println("                          // default NativeTask.Mapper (IndentityMapper)");
-      System.out
-          .println("  [-reducer <class|JAVA>] // native Reducer class, JAVA if you want java IdentityReducer");
-      System.out
-          .println("                          // default NativeTask.Mapper (IndentityReducer)");
-      System.out
-          .println("  [-partitioner <class>]  // native Partitioner class");
+      System.out.println("  [-mapper <class|JAVA>]  // native Mapper class, JAVA if you want java IdentityMapper");
+      System.out.println("                          // default NativeTask.Mapper (IndentityMapper)");
+      System.out.println("  [-reducer <class|JAVA>] // native Reducer class, JAVA if you want java IdentityReducer");
+      System.out.println("                          // default NativeTask.Mapper (IndentityReducer)");
+      System.out.println("  [-partitioner <class>]  // native Partitioner class");
       System.out.println("  [-combiner <class>]     // native Combiner class");
-      System.out
-          .println("  [-reader <class>]       // native RecordReader class");
-      System.out
-          .println("                          // default NativeTask.LineRecordReader");
-      System.out
-          .println("  [-writer <class>]       // native RecordWrtier class");
-      System.out
-          .println("                          // default NativeTask.LineRecordWriter");
-      System.out
-          .println("  [-maps <num>]           // number of maps, just a hint");
-      System.out
-          .println("  [-reduces <num>]        // number of reduces, default 1");
-      System.out
-          .println("  [-jobconf <n1=v1>[,n2=v2]...] // Add or override a JobConf property.");
+      System.out.println("  [-reader <class>]       // native RecordReader class");
+      System.out.println("                          // default NativeTask.LineRecordReader");
+      System.out.println("  [-writer <class>]       // native RecordWrtier class");
+      System.out.println("                          // default NativeTask.LineRecordWriter");
+      System.out.println("  [-maps <num>]           // number of maps, just a hint");
+      System.out.println("  [-reduces <num>]        // number of reduces, default 1");
+      System.out.println("  [-jobconf <n1=v1>[,n2=v2]...] // Add or override a JobConf property.");
       System.out.println();
       GenericOptionsParser.printGenericCommandUsage(System.out);
     }
   }
 
-  private static <InterfaceType> Class<? extends InterfaceType> getClass(
-      CommandLine cl, String key, JobConf conf, Class<InterfaceType> cls)
-      throws ClassNotFoundException {
+  private static <InterfaceType> Class<? extends InterfaceType> getClass(CommandLine cl, String key, JobConf conf,
+      Class<InterfaceType> cls) throws ClassNotFoundException {
     return conf.getClassByName(cl.getOptionValue(key)).asSubclass(cls);
   }
 
   @Override
   public int run(String[] args) throws Exception {
-    CommandLineParser cli = new CommandLineParser();
+    final CommandLineParser cli = new CommandLineParser();
     if (args.length == 0) {
       cli.printUsage();
       return 1;
@@ -196,10 +180,8 @@ public class Submitter extends Configured implements Tool {
     cli.addOption("input", true, "input path to the maps", "path");
     cli.addOption("output", true, "output path from the reduces", "path");
     cli.addOption("lib", false, "extra native library used", "path");
-    cli.addOption("inputformat", false, "java classname of InputFormat",
-        "class");
-    cli.addOption("outputformat", false, "java classname of OutputFormat",
-        "class");
+    cli.addOption("inputformat", false, "java classname of InputFormat", "class");
+    cli.addOption("outputformat", false, "java classname of OutputFormat", "class");
     cli.addOption("mapper", false, "native Mapper class", "class");
     cli.addOption("reducer", false, "native Reducer class", "class");
     cli.addOption("partitioner", false, "native Partitioner class", "class");
@@ -208,84 +190,74 @@ public class Submitter extends Configured implements Tool {
     cli.addOption("writer", false, "native RecordWriter class", "class");
     cli.addOption("maps", false, "number of maps(just hint)", "num");
     cli.addOption("reduces", false, "number of reduces", "num");
-    cli.addOption(
-        "jobconf",
-        false,
-        "\"n1=v1,n2=v2,..\" (Deprecated) Optional. Add or override a JobConf property.",
+    cli.addOption("jobconf", false, "\"n1=v1,n2=v2,..\" (Deprecated) Optional. Add or override a JobConf property.",
         "key=val");
-    Parser parser = cli.createParser();
+    final Parser parser = cli.createParser();
     try {
 
-      JobConf job = new JobConf(getConf());
+      final JobConf job = new JobConf(getConf());
 
-      GenericOptionsParser genericParser = new GenericOptionsParser(job, args);
+      final GenericOptionsParser genericParser = new GenericOptionsParser(job, args);
 
       setConf(job);
 
-      CommandLine results = parser.parse(cli.options,
-          genericParser.getRemainingArgs());
+      final CommandLine results = parser.parse(cli.options, genericParser.getRemainingArgs());
 
       if (results.hasOption("input")) {
         FileInputFormat.setInputPaths(job, results.getOptionValue("input"));
       }
       if (results.hasOption("output")) {
-        FileOutputFormat.setOutputPath(job,
-            new Path(results.getOptionValue("output")));
+        FileOutputFormat.setOutputPath(job, new Path(results.getOptionValue("output")));
       }
       if (results.hasOption("mapper")) {
-        job.set("native.mapper.class", results.getOptionValue("mapper"));
+        job.set(Constants.NATIVE_MAPPER_CLASS, results.getOptionValue("mapper"));
       }
       if (results.hasOption("reducer")) {
-        job.set("native.reducer.class", results.getOptionValue("reducer"));
+        job.set(Constants.NATIVE_REDUCER_CLASS, results.getOptionValue("reducer"));
       }
       if (results.hasOption("partitioner")) {
-        job.set("native.partitioner.class",
-            results.getOptionValue("partitioner"));
+        job.set(Constants.NATIVE_PARTITIONER_CLASS, results.getOptionValue("partitioner"));
       }
       if (results.hasOption("combiner")) {
-        job.set("native.combiner.class", results.getOptionValue("combiner"));
+        job.set(Constants.NATIVE_COMBINER_CLASS, results.getOptionValue("combiner"));
       }
       if (results.hasOption("reader")) {
-        job.set(Constants.NATIVE_RECORDREADER_CLASS,
-            results.getOptionValue("reader"));
+        job.set(Constants.NATIVE_RECORDREADER_CLASS, results.getOptionValue("reader"));
       }
       if (results.hasOption("writer")) {
-        job.set("native.recordwriter.class", results.getOptionValue("writer"));
+        job.set(Constants.NATIVE_RECORDWRITER_CLASS, results.getOptionValue("writer"));
       }
       if (results.hasOption("maps")) {
-        int numMapTasks = Integer.parseInt(results.getOptionValue("maps"));
+        final int numMapTasks = Integer.parseInt(results.getOptionValue("maps"));
         job.setNumReduceTasks(numMapTasks);
       }
       if (results.hasOption("reduces")) {
-        int numReduceTasks = Integer
-            .parseInt(results.getOptionValue("reduces"));
+        final int numReduceTasks = Integer.parseInt(results.getOptionValue("reduces"));
         job.setNumReduceTasks(numReduceTasks);
       }
       if (results.hasOption("lib")) {
-        job.set("native.class.library", results.getOptionValue("lib"));
+        job.set(Constants.NATIVE_CLASS_LIBRARY, results.getOptionValue("lib"));
       }
       if (results.hasOption("inputformat")) {
-        job.setInputFormat(getClass(results, "inputformat", job,
-            InputFormat.class));
+        job.setInputFormat(getClass(results, "inputformat", job, InputFormat.class));
       }
       if (results.hasOption("outputformat")) {
-        job.setOutputFormat(getClass(results, "outputformat", job,
-            OutputFormat.class));
+        job.setOutputFormat(getClass(results, "outputformat", job, OutputFormat.class));
       }
       if (results.hasOption("jobconf")) {
         LOG.warn("-jobconf option is deprecated, please use -D instead.");
-        String options = results.getOptionValue("jobconf");
-        StringTokenizer tokenizer = new StringTokenizer(options, ",");
+        final String options = results.getOptionValue("jobconf");
+        final StringTokenizer tokenizer = new StringTokenizer(options, ",");
         while (tokenizer.hasMoreTokens()) {
-          String keyVal = tokenizer.nextToken().trim();
-          String[] keyValSplit = keyVal.split("=", 2);
+          final String keyVal = tokenizer.nextToken().trim();
+          final String[] keyValSplit = keyVal.split("=", 2);
           job.set(keyValSplit[0], keyValSplit[1]);
         }
       }
       runJob(job);
       return 0;
-    } catch (ParseException pe) {
-      LOG.info("Error : " + pe);
+    } catch (final ParseException pe) {
+      LOG.error("Error : " + pe);
       cli.printUsage();
       return 1;
     }
@@ -298,12 +270,12 @@ public class Submitter extends Configured implements Tool {
    */
   public static void main(String[] args) throws Exception {
     if (args.length > 0 && args[0].equals("terasort")) {
-      String[] rest = new String[args.length - 1];
+      final String[] rest = new String[args.length - 1];
       System.arraycopy(args, 1, rest, 0, rest.length);
-      int exitCode = new TeraSort().run(rest);
+      final int exitCode = new TeraSort().run(rest);
       System.exit(exitCode);
     } else {
-      int exitCode = new Submitter().run(args);
+      final int exitCode = new Submitter().run(args);
       System.exit(exitCode);
     }
   }

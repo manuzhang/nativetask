@@ -22,19 +22,19 @@
 
 namespace NativeTask {
 
-BlockCompressStream::BlockCompressStream(
-    OutputStream * stream,
-    uint32_t bufferSizeHint) :
-    CompressStream(stream),
-    _compressedBytesWritten(0) {
+BlockCompressStream::BlockCompressStream(OutputStream * stream, uint32_t bufferSizeHint)
+    : CompressStream(stream), _compressedBytesWritten(0), _tempBufferSize(0), _tempBuffer(NULL) {
   _hint = bufferSizeHint;
   _blockMax = bufferSizeHint / 2 * 3;
-  _tempBufferSize = maxCompressedLength(_blockMax)+8;
+}
+
+void BlockCompressStream::init() {
+  _tempBufferSize = maxCompressedLength(_blockMax) + 8;
   _tempBuffer = new char[_tempBufferSize];
 }
 
 BlockCompressStream::~BlockCompressStream() {
-  delete [] _tempBuffer;
+  delete[] _tempBuffer;
   _tempBuffer = NULL;
   _tempBufferSize = 0;
 }
@@ -65,22 +65,23 @@ uint64_t BlockCompressStream::compressedBytesWritten() {
   return _compressedBytesWritten;
 }
 
-
 //////////////////////////////////////////////////////////////
 
-BlockDecompressStream::BlockDecompressStream(
-    InputStream * stream,
-    uint32_t bufferSizeHint) :
-    DecompressStream(stream) {
+BlockDecompressStream::BlockDecompressStream(InputStream * stream, uint32_t bufferSizeHint)
+    : DecompressStream(stream), _tempBufferSize(0), _tempBuffer(NULL) {
   _hint = bufferSizeHint;
   _blockMax = bufferSizeHint / 2 * 3;
-  _tempBufferSize = maxCompressedLength(_blockMax) + 8;
-  _tempBuffer = (char*)malloc(_tempBufferSize);
   _tempDecompressBuffer = NULL;
   _tempDecompressBufferSize = 0;
   _tempDecompressBufferUsed = 0;
   _tempDecompressBufferCapacity = 0;
   _compressedBytesRead = 0;
+}
+
+void BlockDecompressStream::init() {
+   _tempBufferSize = maxCompressedLength(_blockMax) + 8;
+  _tempBuffer = (char*)malloc(_tempBufferSize);
+
 }
 
 BlockDecompressStream::~BlockDecompressStream() {
@@ -95,12 +96,12 @@ BlockDecompressStream::~BlockDecompressStream() {
 int32_t BlockDecompressStream::read(void * buff, uint32_t length) {
   if (_tempDecompressBufferSize == 0) {
     uint32_t sizes[2];
-    int32_t rd = _stream->readFully(&sizes, sizeof(uint32_t)*2);
+    int32_t rd = _stream->readFully(&sizes, sizeof(uint32_t) * 2);
     if (rd <= 0) {
       // EOF
       return -1;
     }
-    if (rd != sizeof(uint32_t)*2) {
+    if (rd != sizeof(uint32_t) * 2) {
       THROW_EXCEPTION(IOException, "readFully get incomplete data");
     }
     _compressedBytesRead += rd;
@@ -130,7 +131,7 @@ int32_t BlockDecompressStream::read(void * buff, uint32_t length) {
     }
   }
   if (_tempDecompressBufferSize > 0) {
-    uint32_t left = _tempDecompressBufferSize-_tempDecompressBufferUsed;
+    uint32_t left = _tempDecompressBufferSize - _tempDecompressBufferUsed;
     if (length < left) {
       memcpy(buff, _tempDecompressBuffer + _tempDecompressBufferUsed, length);
       _tempDecompressBufferUsed += length;
@@ -149,7 +150,7 @@ int32_t BlockDecompressStream::read(void * buff, uint32_t length) {
 
 void BlockDecompressStream::close() {
   if (_tempDecompressBufferSize > 0) {
-    LOG("Some data left in the _tempDecompressBuffer when close()");
+    LOG("[BlockDecompressStream] Some data left in the _tempDecompressBuffer when close()");
   }
   if (NULL != _tempDecompressBuffer) {
     free(_tempDecompressBuffer);
@@ -165,7 +166,7 @@ int32_t BlockDecompressStream::readDirect(void * buff, uint32_t length) {
     THROW_EXCEPTION(IOException, "temp decompress data exists when call readDirect()");
   }
   int32_t ret = _stream->readFully(buff, length);
-  if (ret>0) {
+  if (ret > 0) {
     _compressedBytesRead += ret;
   }
   return ret;

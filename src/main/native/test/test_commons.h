@@ -59,16 +59,15 @@ enum GenerateType {
 
 GenerateType GetGenerateType(const string & type);
 
-string & GenerateOne(string & dest, Random & r, GenerateType gtype,
-                     int64_t choice, int64_t len, int64_t range = 0);
+string & GenerateOne(string & dest, Random & r, GenerateType gtype, int64_t choice, int64_t len,
+    int64_t range = 0);
 /**
  * Generate random string sequences
  * @param dest dest array
  * @param size output array size
  * @param type string type (word|number|bytes|tera)
  */
-vector<string> & Generate(vector<string> & dest, uint64_t size,
-                          const string & type);
+vector<string> & Generate(vector<string> & dest, uint64_t size, const string & type);
 
 /**
  * Generate random string pair sequences
@@ -76,8 +75,8 @@ vector<string> & Generate(vector<string> & dest, uint64_t size,
  * @param size output array size
  * @param type string type (word|number|bytes|tera)
  */
-vector<pair<string, string> > & Generate(vector<pair<string, string> > & dest,
-                                         uint64_t size, const string & type);
+vector<pair<string, string> > & Generate(vector<pair<string, string> > & dest, uint64_t size,
+    const string & type);
 
 /**
  * Generate random string pair sequences
@@ -86,8 +85,7 @@ vector<pair<string, string> > & Generate(vector<pair<string, string> > & dest,
  * @param type string type (word|number|bytes|tera)
  */
 vector<pair<string, string> > & GenerateLength(vector<pair<string, string> > & dest,
-                                               uint64_t length,
-                                               const string & type);
+    uint64_t length, const string & type);
 
 /**
  * Generate random KV text:
@@ -138,7 +136,7 @@ protected:
   set<int64_t> old_keys;
 
 public:
-  KVGenerator(uint32_t keylen, uint32_t vallen, bool unique=false);
+  KVGenerator(uint32_t keylen, uint32_t vallen, bool unique = false);
 
   ~KVGenerator();
 
@@ -148,6 +146,5 @@ public:
 
   void write(FILE * fout, int64_t totallen);
 };
-
 
 #endif /* TEST_COMMONS_H_ */

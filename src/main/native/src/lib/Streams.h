@@ -27,9 +27,11 @@ class OutputStream;
 
 class InputStream {
 public:
-  InputStream() {}
+  InputStream() {
+  }
 
-  virtual ~InputStream() {}
+  virtual ~InputStream() {
+  }
 
   virtual void seek(uint64_t position);
 
@@ -39,35 +41,44 @@ public:
     return -1;
   }
 
-  virtual void close() {}
+  virtual void close() {
+  }
 
   virtual int32_t readFully(void * buff, uint32_t length);
 
-  void readAllTo(OutputStream & out, uint32_t bufferHint=1024*4);
+  void readAllTo(OutputStream & out, uint32_t bufferHint = 1024 * 4);
 };
 
 class OutputStream {
 public:
-  OutputStream() {}
+  OutputStream() {
+  }
 
-  virtual ~OutputStream() {}
+  virtual ~OutputStream() {
+  }
 
   virtual uint64_t tell();
 
-  virtual void write(const void * buff, uint32_t length) {}
+  virtual void write(const void * buff, uint32_t length) {
+  }
 
-  virtual void flush() {}
+  virtual void flush() {
+  }
 
-  virtual void close() {}
+  virtual void close() {
+  }
 };
 
 class FilterInputStream : public InputStream {
 protected:
   InputStream * _stream;
 public:
-  FilterInputStream(InputStream * stream) : _stream(stream) {}
+  FilterInputStream(InputStream * stream)
+      : _stream(stream) {
+  }
 
-  virtual ~FilterInputStream() {}
+  virtual ~FilterInputStream() {
+  }
 
   void setStream(InputStream * stream) {
     _stream = stream;
@@ -82,7 +93,7 @@ public:
   }
 
   virtual uint64_t tell() {
-    _stream->tell();
+    return _stream->tell();
   }
 
   virtual int32_t read(void * buff, uint32_t length) {
@@ -94,9 +105,12 @@ class FilterOutputStream : public OutputStream {
 protected:
   OutputStream * _stream;
 public:
-  FilterOutputStream(OutputStream * stream) : _stream(stream) {}
+  FilterOutputStream(OutputStream * stream)
+      : _stream(stream) {
+  }
 
-  virtual ~FilterOutputStream() {}
+  virtual ~FilterOutputStream() {
+  }
 
   void setStream(OutputStream * stream) {
     _stream = stream;
@@ -107,7 +121,7 @@ public:
   }
 
   virtual uint64_t tell() {
-    _stream->tell();
+    return _stream->tell();
   }
 
   virtual void write(const void * buff, uint32_t length) {
@@ -127,11 +141,12 @@ class LimitInputStream : public FilterInputStream {
 protected:
   int64_t _limit;
 public:
-  LimitInputStream(InputStream * stream, int64_t limit) :
-      FilterInputStream(stream), _limit(limit) {
+  LimitInputStream(InputStream * stream, int64_t limit)
+      : FilterInputStream(stream), _limit(limit) {
   }
 
-  virtual ~LimitInputStream() {}
+  virtual ~LimitInputStream() {
+  }
 
   int64_t getLimit() {
     return _limit;
@@ -165,7 +180,8 @@ protected:
 public:
   ChecksumInputStream(InputStream * stream, ChecksumType type);
 
-  virtual ~ChecksumInputStream() {}
+  virtual ~ChecksumInputStream() {
+  }
 
   int64_t getLimit() {
     return _limit;
@@ -189,7 +205,8 @@ protected:
 public:
   ChecksumOutputStream(OutputStream * stream, ChecksumType type);
 
-  virtual ~ChecksumOutputStream() {}
+  virtual ~ChecksumOutputStream() {
+  }
 
   void resetChecksum();
 

@@ -22,19 +22,16 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 
-import org.apache.hadoop.io.Writable;
-
 /**
- * Note: if you implemented your customized NativeSerializer instead of
- * DefaultSerializer, you have to make sure the native side can serialize it
- * correctly.
+ * Note: if you implemented your customized NativeSerializer instead of DefaultSerializer, you have to make sure the
+ * native side can serialize it correctly.
  * 
  */
-public interface INativeSerializer<T extends Writable> {
+public interface INativeSerializer<T> {
 
   public int getLength(T w) throws IOException;
 
   public void serialize(T w, DataOutput out) throws IOException;
 
-  public void deserialize(T w, int length, DataInput in) throws IOException;
+  public void deserialize(DataInput in, int length, T w) throws IOException;
 }

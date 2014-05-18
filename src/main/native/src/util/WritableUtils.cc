@@ -17,6 +17,7 @@
  */
 
 #include "commons.h"
+#include "PigUtils.h"
 #include "StringUtil.h"
 #include "WritableUtils.h"
 
@@ -29,13 +30,11 @@ KeyValueType JavaClassToKeyValueType(const std::string & clazz) {
   if (clazz == "org.apache.hadoop.io.BytesWritable") {
     return BytesType;
   }
-  if(clazz == "org.apache.hadoop.io.ImmutableBytesWritable")
-  {
-	return BytesType;
+  if (clazz == "org.apache.hadoop.hbase.io.ImmutableBytesWritable") {
+    return BytesType;
   }
-  if(clazz == "org.apache.hadoop.hive.ql.io.HiveKey")
-  {
-	return BytesType;
+  if (clazz == "org.apache.hadoop.hive.ql.io.HiveKey") {
+    return BytesType;
   }
   if (clazz == "org.apache.hadoop.io.ByteWritable") {
     return ByteType;
@@ -58,9 +57,42 @@ KeyValueType JavaClassToKeyValueType(const std::string & clazz) {
   if (clazz == "org.apache.hadoop.io.MD5Hash") {
     return MD5HashType;
   }
+  if (clazz == "org.apache.hadoop.io.VIntWritable") {
+    return VIntType;
+  }
+  if (clazz == "org.apache.hadoop.io.VLongWritable") {
+    return VLongType;
+  }
+  if (clazz == "org.apache.mahout.common.StringTuple") {
+    return StringTupleType;
+  }
+  if (clazz == "org.apache.mahout.vectorizer.collocations.llr.Gram") {
+    return GramType;
+  }
+  if (clazz == "org.apache.mahout.vectorizer.collocations.llr.GramKey") {
+    return GramKeyType;
+  }
+  if (clazz == "org.apache.mahout.math.hadoop.stochasticsvd.SplitPartitionedWritable") {
+    return SplitPartitionedType;
+  }
+  if (clazz == "org.apache.mahout.cf.taste.hadoop.EntityEntityWritable") {
+    return EntityEntityType;
+  }
+  if (clazz == "org.apache.mahout.math.VarIntWritable") {
+    return VarIntType;
+  }
+  if (clazz == "org.apache.mahout.math.VarLongWritable") {
+    return VarLongType;
+  }
+  if (clazz == "org.apache.mahout.classifier.df.mapreduce.partial.TreeID") {
+    return LongType;
+  }
+  if (clazz.find(PigUtils::getPackageName()) == 0) {
+    PigUtils::setPigWritableType();
+    return PigType;
+  }
   return UnknownType;
 }
-
 
 int64_t WritableUtils::ReadVLongInner(const char * pos, uint32_t & len) {
   bool neg = *pos < -120;
@@ -78,25 +110,24 @@ uint32_t WritableUtils::GetVLongSizeInner(int64_t value) {
     value ^= -1L; // take one's complement'
   }
 
-  if (value < (1LL<<8)) {
+  if (value < (1LL << 8)) {
     return 2;
-  } else if (value < (1LL<<16)) {
+  } else if (value < (1LL << 16)) {
     return 3;
-  } else if (value < (1LL<<24)) {
+  } else if (value < (1LL << 24)) {
     return 4;
-  } else if (value < (1LL<<32)) {
+  } else if (value < (1LL << 32)) {
     return 5;
-  } else if (value < (1LL<<40)) {
+  } else if (value < (1LL << 40)) {
     return 6;
-  } else if (value < (1LL<<48)) {
+  } else if (value < (1LL << 48)) {
     return 7;
-  } else if (value < (1LL<<56)) {
+  } else if (value < (1LL << 56)) {
     return 8;
   } else {
     return 9;
   }
 }
-
 
 void WritableUtils::WriteVLongInner(int64_t v, char * pos, uint32_t & len) {
   char base;
@@ -107,67 +138,59 @@ void WritableUtils::WriteVLongInner(int64_t v, char * pos, uint32_t & len) {
     base = -121;
   }
   uint64_t value = v;
-  if (value<(1<<8)) {
-     *(pos++) = base;
-     *(uint8_t*)(pos) = value;
-     len = 2;
-   }
-   else if (value<(1<<16)) {
-     *(pos++) = base - 1;
-     *(uint8_t*)(pos++) = value >> 8;
-     *(uint8_t*)(pos) = value;
-     len = 3;
-   }
-   else if (value<(1<<24)) {
-     *(pos++) = base - 2;
-     *(uint8_t*)(pos++) = value >> 16;
-     *(uint8_t*)(pos++) = value >> 8;
-     *(uint8_t*)(pos) = value;
-     len = 4;
-   }
-   else if (value<(1ULL<<32)){
-     *(pos++) = base - 3;
-     *(uint32_t*)(pos) = bswap((uint32_t)value);
-     len = 5;
-   }
-   else if (value<(1ULL<<40)){
-     *(pos++) = base - 4;
-     *(uint32_t*)(pos) = bswap((uint32_t)(value>>8));
-     *(uint8_t*)(pos+4) = value;
-     len = 6;
-   }
-   else if (value<(1ULL<<48)){
-     *(pos++) = base - 5;
-     *(uint32_t*)(pos) = bswap((uint32_t)(value>>16));
-     *(uint8_t*)(pos+4) = value >> 8;
-     *(uint8_t*)(pos+5) = value;
-     len = 7;
-   }
-   else if (value<(1ULL<<56)){
-     *(pos++) = base - 6;
-     *(uint32_t*)(pos) = bswap((uint32_t)(value>>24));
-     *(uint8_t*)(pos+4) = value >> 16;
-     *(uint8_t*)(pos+5) = value >> 8;
-     *(uint8_t*)(pos+6) = value;
-     len = 8;
-   }
-   else {
-     *(pos++) = base - 7;
-     *(uint64_t*)pos = bswap64(value);
-     len = 9;
-   }
+  if (value < (1 << 8)) {
+    *(pos++) = base;
+    *(uint8_t*)(pos) = value;
+    len = 2;
+  } else if (value < (1 << 16)) {
+    *(pos++) = base - 1;
+    *(uint8_t*)(pos++) = value >> 8;
+    *(uint8_t*)(pos) = value;
+    len = 3;
+  } else if (value < (1 << 24)) {
+    *(pos++) = base - 2;
+    *(uint8_t*)(pos++) = value >> 16;
+    *(uint8_t*)(pos++) = value >> 8;
+    *(uint8_t*)(pos) = value;
+    len = 4;
+  } else if (value < (1ULL << 32)) {
+    *(pos++) = base - 3;
+    *(uint32_t*)(pos) = bswap((uint32_t)value);
+    len = 5;
+  } else if (value < (1ULL << 40)) {
+    *(pos++) = base - 4;
+    *(uint32_t*)(pos) = bswap((uint32_t)(value >> 8));
+    *(uint8_t*)(pos + 4) = value;
+    len = 6;
+  } else if (value < (1ULL << 48)) {
+    *(pos++) = base - 5;
+    *(uint32_t*)(pos) = bswap((uint32_t)(value >> 16));
+    *(uint8_t*)(pos + 4) = value >> 8;
+    *(uint8_t*)(pos + 5) = value;
+    len = 7;
+  } else if (value < (1ULL << 56)) {
+    *(pos++) = base - 6;
+    *(uint32_t*)(pos) = bswap((uint32_t)(value >> 24));
+    *(uint8_t*)(pos + 4) = value >> 16;
+    *(uint8_t*)(pos + 5) = value >> 8;
+    *(uint8_t*)(pos + 6) = value;
+    len = 8;
+  } else {
+    *(pos++) = base - 7;
+    *(uint64_t*)pos = bswap64(value);
+    len = 9;
+  }
 }
-
 
 // Stream interfaces
 int64_t WritableUtils::ReadVLong(InputStream * stream) {
   char buff[10];
-  if (stream->read(buff, 1)!=1) {
+  if (stream->read(buff, 1) != 1) {
     THROW_EXCEPTION(IOException, "ReadVLong reach EOF");
   }
   uint32_t len = DecodeVLongSize(buff);
   if (len > 1) {
-    if (stream->readFully(buff+1, len-1)!=len-1) {
+    if (stream->readFully(buff + 1, len - 1) != len - 1) {
       THROW_EXCEPTION(IOException, "ReadVLong reach EOF");
     }
   }
@@ -176,7 +199,7 @@ int64_t WritableUtils::ReadVLong(InputStream * stream) {
 
 int64_t WritableUtils::ReadLong(InputStream * stream) {
   int64_t ret;
-  if (stream->readFully(&ret, 8)!=8) {
+  if (stream->readFully(&ret, 8) != 8) {
     THROW_EXCEPTION(IOException, "ReadLong reach EOF");
   }
   return (int64_t)bswap64(ret);
@@ -184,7 +207,7 @@ int64_t WritableUtils::ReadLong(InputStream * stream) {
 
 int32_t WritableUtils::ReadInt(InputStream * stream) {
   int32_t ret;
-  if (stream->readFully(&ret, 4)!=4) {
+  if (stream->readFully(&ret, 4) != 4) {
     THROW_EXCEPTION(IOException, "ReadInt reach EOF");
   }
   return (int32_t)bswap(ret);
@@ -192,15 +215,15 @@ int32_t WritableUtils::ReadInt(InputStream * stream) {
 
 int16_t WritableUtils::ReadShort(InputStream * stream) {
   uint16_t ret;
-  if (stream->readFully(&ret, 2)!=2) {
+  if (stream->readFully(&ret, 2) != 2) {
     THROW_EXCEPTION(IOException, "ReadShort reach EOF");
   }
-  return (int16_t) ((ret >> 8) | (ret << 8));
+  return (int16_t)((ret >> 8) | (ret << 8));
 }
 
 float WritableUtils::ReadFloat(InputStream * stream) {
   uint32_t ret;
-  if (stream->readFully(&ret, 4)!=4) {
+  if (stream->readFully(&ret, 4) != 4) {
     THROW_EXCEPTION(IOException, "ReadFloat reach EOF");
   }
   ret = bswap(ret);
@@ -210,7 +233,7 @@ float WritableUtils::ReadFloat(InputStream * stream) {
 string WritableUtils::ReadText(InputStream * stream) {
   int64_t len = ReadVLong(stream);
   string ret = string(len, '\0');
-  if (stream->readFully((void *)ret.data(), len)!=len) {
+  if (stream->readFully((void *)ret.data(), len) != len) {
     THROW_EXCEPTION_EX(IOException, "ReadString reach EOF, need %d", len);
   }
   return ret;
@@ -219,7 +242,7 @@ string WritableUtils::ReadText(InputStream * stream) {
 string WritableUtils::ReadBytes(InputStream * stream) {
   int32_t len = ReadInt(stream);
   string ret = string(len, '\0');
-  if (stream->readFully((void *)ret.data(), len)!=len) {
+  if (stream->readFully((void *)ret.data(), len) != len) {
     THROW_EXCEPTION_EX(IOException, "ReadString reach EOF, need %d", len);
   }
   return ret;
@@ -228,10 +251,58 @@ string WritableUtils::ReadBytes(InputStream * stream) {
 string WritableUtils::ReadUTF8(InputStream * stream) {
   int16_t len = ReadShort(stream);
   string ret = string(len, '\0');
-  if (stream->readFully((void *)ret.data(), len)!=len) {
+  if (stream->readFully((void *)ret.data(), len) != len) {
     THROW_EXCEPTION_EX(IOException, "ReadString reach EOF, need %d", len);
   }
   return ret;
+}
+
+uint32_t WritableUtils::ReadUnsignedVarInt(const char * pos, uint32_t & len) {
+  uint32_t value = 0;
+  int i = 0;
+  while (((*pos) & 0x80) != 0 && i <= 35) {
+    value |= ((*pos) & 0x7F) << i;
+    i += 7;
+    pos++;
+  }
+  len = i / 7 + 1;
+  return value | (*pos << i);
+}
+
+uint64_t WritableUtils::ReadUnsignedVarLong(const char * pos, uint32_t & len) {
+  uint64_t value = 0;
+  int i = 0;
+  while (((*pos) & 0x80) != 0 && i <= 63) {
+    value |= ((uint64_t)(*pos) & 0x7F) << i;
+    i += 7;
+    pos++;
+  }
+  len = i / 7 + 1;
+  return value | ((uint64_t)(*pos) << i);
+}
+
+void WritableUtils::WriteUnsignedVarInt(uint32_t num, char * pos, uint32_t & len) {
+  len = 0;
+  while ((num & 0xFFFFFF80) != 0L) {
+    *pos = (num & 0x7F) | 0x80;
+    num >>= 7;
+    pos++;
+    len++;
+  }
+  len++;
+  *pos = num & 0x7F;
+}
+
+void WritableUtils::WriteUnsignedVarLong(uint64_t num, char * pos, uint32_t & len) {
+  len = 0;
+  while ((num & 0xFFFFFFFFFFFFFF80L) != 0L) {
+    *pos = (num & 0x7F) | 0x80;
+    num >>= 7;
+    pos++;
+    len++;
+  }
+  len++;
+  *pos = num & 0x7F;
 }
 
 void WritableUtils::WriteVLong(OutputStream * stream, int64_t v) {
@@ -253,7 +324,7 @@ void WritableUtils::WriteInt(OutputStream * stream, int32_t v) {
 
 void WritableUtils::WriteShort(OutputStream * stream, int16_t v) {
   uint16_t be = v;
-  be = ((be>>8) | (be<<8));
+  be = ((be >> 8) | (be << 8));
   stream->write(&be, 2);
 }
 
@@ -274,7 +345,7 @@ void WritableUtils::WriteBytes(OutputStream * stream, const string & v) {
 }
 
 void WritableUtils::WriteUTF8(OutputStream * stream, const string & v) {
-  if (v.length()>65535) {
+  if (v.length() > 65535) {
     THROW_EXCEPTION_EX(IOException, "string too long (%lu) for WriteUTF8", v.length());
   }
   WriteShort(stream, (int16_t)v.length());
@@ -293,7 +364,7 @@ void WritableUtils::toString(string & dest, KeyValueType type, const void * data
     dest.append(1, *(char*)data);
     break;
   case BoolType:
-    dest.append(*(uint8_t*)data?"true":"false");
+    dest.append(*(uint8_t*)data ? "true" : "false");
     break;
   case IntType:
     dest.append(StringUtil::ToString((int32_t)bswap(*(uint32_t*)data)));

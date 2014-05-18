@@ -45,5 +45,4 @@ extern FILE * LOG_DEVICE;
 
 } // namespace NativeTask
 
-
 #endif /* LOG_H_ */
