@@ -20,33 +20,19 @@
 #define BATCHHANDLER_H_
 
 #include "NativeTask.h"
+#include "lib/Buffers.h"
 
 namespace NativeTask {
 
 /**
- * Native side abstraction of java ByteBuffer
- */
-struct ByteBuffer {
-  char * buff;
-  uint32_t capacity;
-  uint32_t position;
-  ByteBuffer():buff(NULL),capacity(0),position(0){}
-  ~ByteBuffer() {}
-  void reset(char * buff, uint32_t capacity) {
-    this->buff = buff;
-    this->capacity = capacity;
-    this->position = 0;
-  }
-};
-
-/**
  * Native side counterpart of java side NativeBatchProcessor
  */
-class BatchHandler: public Configurable {
+class BatchHandler : public Configurable {
 protected:
-  ByteBuffer _ib;
-  ByteBuffer _ob;
+  ByteBuffer _in;
+  ByteBuffer _out;
   void * _processor;
+  Config * _config;
 public:
   BatchHandler();
   virtual ~BatchHandler();
@@ -68,14 +54,17 @@ public:
    * Called by java side to setup native side BatchHandler
    * initialize buffers by default
    */
-  void onSetup(char * inputBuffer, uint32_t inputBufferCapacity,
-               char * outputBuffer, uint32_t outputBufferCapacity);
+  void onSetup(Config * config, char * inputBuffer, uint32_t inputBufferCapacity,
+      char * outputBuffer, uint32_t outputBufferCapacity);
 
   /**
    * Called by java side to notice that input data available to handle
    * @param length input buffer's available data length
    */
   void onInputData(uint32_t length);
+
+  virtual void onLoadData() {
+  }
 
   /**
    * Called by java side to notice that input has finished
@@ -90,28 +79,21 @@ public:
    * @param cmd command data
    * @return command return value
    */
-  std::string onCommand(const std::string & cmd) {
-    return command(cmd);
+  virtual ResultBuffer * onCall(const Command& command, ReadWriteBuffer * param) {
+    return NULL;
   }
 
 protected:
-  /**
-   * Used by subclass, send command to java side
-   * @param data command data
-   * @return command return value
-   */
-  virtual std::string sendCommand(const std::string & cmd);
-
-  virtual std::string sendCommand(const char * data, size_t length);
+  virtual ResultBuffer * call(const Command& cmd, ParameterBuffer * param);
 
   /**
    * Used by subclass, call java side flushOutput(int length)
    * @param length output buffer's available data length
    */
-  virtual void flushOutput(uint32_t length);
+  virtual void flushOutput();
 
   /**
-   * Used by subclass, class java side finishOutput()
+   * Used by subclass, call java side finishOutput()
    */
   void finishOutput();
 
@@ -119,38 +101,26 @@ protected:
    * Write output buffer and use flushOutput manually,
    * or use this helper method
    */
-  inline void put(const char * buff, uint32_t length) {
-    while (length>0) {
-      if (_ob.position + length > _ob.capacity) {
-        flushOutput(_ob.position);
-        _ob.position = 0;
+  inline void output(const char * buff, uint32_t length) {
+    while (length > 0) {
+      if (length > _out.remain()) {
+        flushOutput();
       }
-      uint32_t remain = _ob.capacity - _ob.position;
+      uint32_t remain = _out.remain();
       uint32_t cp = length < remain ? length : remain;
-      simple_memcpy(_ob.buff+_ob.position, buff, cp);
+      simple_memcpy(_out.current(), buff, cp);
       buff += cp;
       length -= cp;
-      _ob.position += cp;
+      _out.advance(cp);
     }
   }
 
-  inline void putInt(uint32_t v) {
-    if (_ob.position + 4 > _ob.capacity) {
-      flushOutput(_ob.position);
-      _ob.position = 0;
+  inline void outputInt(uint32_t v) {
+    if (4 > _out.remain()) {
+      flushOutput();
     }
-    *(uint32_t*) (_ob.buff + _ob.position) = v;
-    _ob.position += 4;
-  }
-
-  /**
-   * Use flushOutput manually or use this helper method
-   */
-  inline void flush() {
-    if (_ob.position > 0) {
-      flushOutput(_ob.position);
-      _ob.position = 0;
-    }
+    *(uint32_t*)(_out.current()) = v;
+    _out.advance(4);
   }
 
   /////////////////////////////////////////////////////////////
@@ -161,31 +131,25 @@ protected:
    * Called by onSetup, do nothing by default
    * Subclass should override this if needed
    */
-  virtual void configure(Config & config) {}
+  virtual void configure(Config * config) {
+  }
 
   /**
    * Called by onFinish, flush & close output by default
    * Subclass should override this if needed
    */
   virtual void finish() {
-    flush();
+    flushOutput();
     finishOutput();
-  };
+  }
+  ;
 
   /**
    * Called by onInputData, internal input data processor,
    * Subclass should override this if needed
    */
-  virtual void handleInput(char * buff, uint32_t length) { }
-
-  /**
-   * Called by onCommand, do nothing by default
-   * Subclass should override this if needed
-   */
-  virtual std::string command(const std::string & cmd) {
-    return std::string();
+  virtual void handleInput(ByteBuffer & byteBuffer) {
   }
-
 };
 
 } // namespace NativeTask

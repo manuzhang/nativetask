@@ -37,8 +37,7 @@ public:
   Lz4DecompressStream(InputStream * stream, uint32_t bufferSizeHint);
 protected:
   virtual uint64_t maxCompressedLength(uint64_t origLength);
-  virtual uint32_t decompressOneBlock(uint32_t compressedSize, void * buff,
-                                      uint32_t length);
+  virtual uint32_t decompressOneBlock(uint32_t compressedSize, void * buff, uint32_t length);
 };
 
 } // namespace NativeTask

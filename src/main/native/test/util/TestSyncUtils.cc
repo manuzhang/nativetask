@@ -21,15 +21,15 @@
 
 class TestThread : public Thread {
   virtual void run() {
-    for (int i=0;i<5;i++) {
+    for (uint32_t i = 0; i < 5; i++) {
       usleep(100);
-      LOG("sleep %d", i*100);
+      LOG("sleep %d", i * 100);
     }
   }
 };
 
 TEST(SyncUtil, Thread) {
-  TestThread a,b,c;
+  TestThread a, b, c;
   a.start();
   b.start();
   c.start();
@@ -40,16 +40,21 @@ TEST(SyncUtil, Thread) {
 
 class TestBind {
 public:
+
+  int get() {
+    return 100;
+  }
+
   void foo() {
-    for (int i=0;i<2;i++) {
+    for (uint32_t i = 0; i < 2; i++) {
       usleep(100);
-      LOG("usleep %d", i*100);
+      LOG("usleep %d", i * 100);
     }
   }
   void bar(const char * msg) {
-    for (int i=0;i<2;i++) {
+    for (uint32_t i = 0; i < 2; i++) {
       usleep(100);
-      LOG("usleep %d %s", i*100, msg);
+      LOG("usleep %d %s", i * 100, msg);
     }
   }
 
@@ -57,14 +62,18 @@ public:
 
 TEST(SyncUtil, ThreadBind) {
   TestBind a = TestBind();
-  Thread t = Thread(Bind(a, &TestBind::foo));
-  Thread t2 = Thread(Bind(a, &TestBind::bar, "testmsg"));
+  Runnable * bind1 = BindNew(a, &TestBind::get);
+  Thread t = Thread(bind1);
+  Runnable * bind2 = BindNew(a, &TestBind::bar, "testmsg");
+  Thread t2 = Thread(bind2);
   t.start();
   t2.start();
   t.join();
   t2.join();
-}
 
+  delete bind1;
+  delete bind2;
+}
 
 //class TestParallelFor {
 //protected:
@@ -92,17 +101,16 @@ TEST(SyncUtil, ThreadBind) {
 //  tpf.test(100000, 4);
 //}
 
-
 TEST(Perf, ThreadOverhead) {
   int64_t threadnum = TestConfig.getInt("thread.num", 1000);
   Thread * t = new Thread[threadnum];
   Timer timer;
-  for (int i=0;i<threadnum;i++) {
+  for (uint32_t i = 0; i < threadnum; i++) {
     t[i].start();
   }
-  for (int i=0;i<threadnum;i++) {
+  for (uint32_t i = 0; i < threadnum; i++) {
     t[i].join();
   }
-  LOG("%lld thread %s", threadnum, timer.getInterval("start&join").c_str());
-  delete [] t;
+  LOG("%lld thread %s", (long long int )threadnum, timer.getInterval("start&join").c_str());
+  delete[] t;
 }

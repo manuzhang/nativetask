@@ -37,7 +37,6 @@
 #define unlikely(x)     (x)
 #endif
 
-
 //#define SIMPLE_MEMCPY
 
 #if !defined(SIMPLE_MEMCPY)
@@ -59,19 +58,19 @@ inline void simple_memcpy(void * dest, const void * src, size_t len) {
   const uint8_t * src8 = (const uint8_t*)src;
   uint8_t * dest8 = (uint8_t*)dest;
   switch (len) {
-  case 0:
+    case 0:
     return;
-  case 1:
+    case 1:
     dest8[0]=src8[0];
     return;
-  case 2:
+    case 2:
     *(uint16_t*)dest8=*(const uint16_t*)src8;
     return;
-  case 3:
+    case 3:
     *(uint16_t*)dest8 = *(const uint16_t*)src8;
     dest8[2]=src8[2];
     return;
-  case 4:
+    case 4:
     *(uint32_t*)dest8 = *(const uint32_t*)src8;
     return;
   }
@@ -97,15 +96,25 @@ inline void simple_memcpy(void * dest, const void * src, size_t len) {
 /**
  * little-endian to big-endian or vice versa
  */
-inline uint32_t bswap(uint32_t val)
-{
+inline uint32_t bswap(uint32_t val) {
   __asm__("bswap %0" : "=r" (val) : "0" (val));
   return val;
 }
 
-inline uint64_t bswap64(uint64_t val)
-{
+inline uint64_t bswap64(uint64_t val) {
+#ifdef __X64
   __asm__("bswapq %0" : "=r" (val) : "0" (val));
+#else
+
+  uint64_t lower = val & 0xffffffffU;
+  uint32_t higher = (val >> 32) & 0xffffffffU;
+
+  lower = bswap(lower);
+  higher = bswap(higher);
+
+  return (lower << 32) + higher;
+
+#endif
   return val;
 }
 
@@ -113,6 +122,11 @@ inline uint64_t bswap64(uint64_t val)
  * Fast memcmp
  */
 inline int64_t fmemcmp(const char * src, const char * dest, uint32_t len) {
+
+#ifdef BUILDIN_MEMCMP
+  return memcmp(src, dest, len);
+#else
+
   const uint8_t * src8 = (const uint8_t*)src;
   const uint8_t * dest8 = (const uint8_t*)dest;
   switch (len) {
@@ -120,37 +134,38 @@ inline int64_t fmemcmp(const char * src, const char * dest, uint32_t len) {
     return 0;
   case 1:
     return (int64_t)src8[0] - (int64_t)dest8[0];
-  case 2:
-  {
+  case 2: {
     int64_t ret = ((int64_t)src8[0] - (int64_t)dest8[0]);
-    if (ret) return ret;
+    if (ret)
+      return ret;
     return ((int64_t)src8[1] - (int64_t)dest8[1]);
   }
-  case 3:
-  {
+  case 3: {
     int64_t ret = ((int64_t)src8[0] - (int64_t)dest8[0]);
-    if (ret) return ret;
+    if (ret)
+      return ret;
     ret = ((int64_t)src8[1] - (int64_t)dest8[1]);
-    if (ret) return ret;
+    if (ret)
+      return ret;
     return ((int64_t)src8[2] - (int64_t)dest8[2]);
   }
-  case 4:
-  {
+  case 4: {
     return (int64_t)bswap(*(uint32_t*)src) - (int64_t)bswap(*(uint32_t*)dest);
   }
   }
-  if (len<8) {
+  if (len < 8) {
     int64_t ret = ((int64_t)bswap(*(uint32_t*)src) - (int64_t)bswap(*(uint32_t*)dest));
     if (ret) {
       return ret;
     }
-    return ((int64_t)bswap(*(uint32_t*)(src+len-4)) - (int64_t)bswap(*(uint32_t*)(dest+len-4)));
+    return ((int64_t)bswap(*(uint32_t*)(src + len - 4))
+        - (int64_t)bswap(*(uint32_t*)(dest + len - 4)));
   }
   uint32_t cur = 0;
   uint32_t end = len & (0xffffffffU << 3);
-  while (cur<end) {
-    uint64_t l = *(uint64_t*)(src8+cur);
-    uint64_t r = *(uint64_t*)(dest8+cur);
+  while (cur < end) {
+    uint64_t l = *(uint64_t*)(src8 + cur);
+    uint64_t r = *(uint64_t*)(dest8 + cur);
     if (l != r) {
       l = bswap64(l);
       r = bswap64(r);
@@ -158,19 +173,19 @@ inline int64_t fmemcmp(const char * src, const char * dest, uint32_t len) {
     }
     cur += 8;
   }
-  uint64_t l = *(uint64_t*)(src8+len-8);
-  uint64_t r = *(uint64_t*)(dest8+len-8);
+  uint64_t l = *(uint64_t*)(src8 + len - 8);
+  uint64_t r = *(uint64_t*)(dest8 + len - 8);
   if (l != r) {
     l = bswap64(l);
     r = bswap64(r);
     return l > r ? 1 : -1;
   }
   return 0;
+#endif
 }
 
-inline int64_t fmemcmp(const char * src, const char * dest,
-                       uint32_t srcLen, uint32_t destLen) {
-  uint32_t minlen = srcLen<destLen?srcLen:destLen;
+inline int64_t fmemcmp(const char * src, const char * dest, uint32_t srcLen, uint32_t destLen) {
+  uint32_t minlen = srcLen < destLen ? srcLen : destLen;
   int64_t ret = fmemcmp(src, dest, minlen);
   if (ret) {
     return ret;
@@ -182,6 +197,10 @@ inline int64_t fmemcmp(const char * src, const char * dest,
  * Fast memory equal
  */
 inline bool fmemeq(const char * src, const char * dest, uint32_t len) {
+#ifdef BUILDIN_MEMCMP
+  return 0 == memcmp(src, dest, len);
+#else
+
   const uint8_t * src8 = (const uint8_t*)src;
   const uint8_t * dest8 = (const uint8_t*)dest;
   switch (len) {
@@ -192,35 +211,35 @@ inline bool fmemeq(const char * src, const char * dest, uint32_t len) {
   case 2:
     return *(uint16_t*)src8 == *(uint16_t*)dest8;
   case 3:
-    return (*(uint16_t*)src8 == *(uint16_t*)dest8) &&
-           (src8[2]==dest8[2]);
+    return (*(uint16_t*)src8 == *(uint16_t*)dest8) && (src8[2] == dest8[2]);
   case 4:
     return *(uint32_t*)src8 == *(uint32_t*)dest8;
   }
-  if (len<8) {
-    return (*(uint32_t*)src8 == *(uint32_t*)dest8) &&
-           (*(uint32_t*)(src8+len-4) == *(uint32_t*)(dest8+len-4));
+  if (len < 8) {
+    return (*(uint32_t*)src8 == *(uint32_t*)dest8)
+        && (*(uint32_t*)(src8 + len - 4) == *(uint32_t*)(dest8 + len - 4));
   }
   uint32_t cur = 0;
   uint32_t end = len & (0xffffffff << 3);
-  while (cur<end) {
-    uint64_t l = *(uint64_t*)(src8+cur);
-    uint64_t r = *(uint64_t*)(dest8+cur);
+  while (cur < end) {
+    uint64_t l = *(uint64_t*)(src8 + cur);
+    uint64_t r = *(uint64_t*)(dest8 + cur);
     if (l != r) {
       return false;
     }
     cur += 8;
   }
-  uint64_t l = *(uint64_t*)(src8+len-8);
-  uint64_t r = *(uint64_t*)(dest8+len-8);
+  uint64_t l = *(uint64_t*)(src8 + len - 8);
+  uint64_t r = *(uint64_t*)(dest8 + len - 8);
   if (l != r) {
     return false;
   }
   return true;
+#endif
 }
 
-inline bool fmemeq(const char * src, const char * dest, uint32_t srcLen, uint32_t destLen) {
-  if (srcLen!=destLen) {
+inline bool fmemeq(const char * src, uint32_t srcLen, const char * dest, uint32_t destLen) {
+  if (srcLen != destLen) {
     return false;
   }
   return fmemeq(src, dest, std::min(srcLen, destLen));
@@ -240,18 +259,17 @@ inline bool frmemeq(const char * src, const char * dest, uint32_t len) {
   case 2:
     return *(uint16_t*)src8 == *(uint16_t*)dest8;
   case 3:
-    return (src8[2]==dest8[2]) &&
-           (*(uint16_t*)src8 == *(uint16_t*)dest8);
+    return (src8[2] == dest8[2]) && (*(uint16_t*)src8 == *(uint16_t*)dest8);
   case 4:
     return *(uint32_t*)src8 == *(uint32_t*)dest8;
   }
-  if (len<8) {
-    return (*(uint32_t*)(src8+len-4) == *(uint32_t*)(dest8+len-4)) &&
-           (*(uint32_t*)src8 == *(uint32_t*)dest8);
+  if (len < 8) {
+    return (*(uint32_t*)(src8 + len - 4) == *(uint32_t*)(dest8 + len - 4))
+        && (*(uint32_t*)src8 == *(uint32_t*)dest8);
   }
   int32_t cur = (int32_t)len - 8;
-  while (cur>0) {
-    if (*(uint64_t*)(src8+cur) != *(uint64_t*)(dest8+cur)) {
+  while (cur > 0) {
+    if (*(uint64_t*)(src8 + cur) != *(uint64_t*)(dest8 + cur)) {
       return false;
     }
     cur -= 8;
@@ -260,7 +278,7 @@ inline bool frmemeq(const char * src, const char * dest, uint32_t len) {
 }
 
 inline bool frmemeq(const char * src, const char * dest, uint32_t srcLen, uint32_t destLen) {
-  if (srcLen!=destLen) {
+  if (srcLen != destLen) {
     return false;
   }
   return frmemeq(src, dest, std::min(srcLen, destLen));

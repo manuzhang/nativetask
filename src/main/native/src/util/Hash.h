@@ -31,7 +31,6 @@ extern uint64_t CityHash64WithSeed(const char *buf, size_t len, uint64_t seed);
 
 namespace NativeTask {
 
-
 class Hash {
 public:
   /**
@@ -39,7 +38,7 @@ public:
    */
   inline static int32_t BytesHash(const char * bytes, uint32_t length) {
     int32_t hash = 1;
-    for (int i = 0; i < length; i++)
+    for (uint32_t i = 0; i < length; i++)
       hash = (31 * hash) + (int32_t)bytes[i];
     return hash;
   }
@@ -49,7 +48,7 @@ public:
    */
   inline static uint32_t BytesHashU(const char * bytes, uint32_t length) {
     uint32_t hash = 1;
-    for (int i = 0; i < length; i++)
+    for (uint32_t i = 0; i < length; i++)
       hash = (31U * hash) + (uint32_t)bytes[i];
     return hash;
   }

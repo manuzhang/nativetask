@@ -19,11 +19,10 @@
 #ifndef IFILE_H_
 #define IFILE_H_
 
-
 #include "Checksum.h"
 #include "Buffers.h"
 #include "WritableUtils.h"
-#include "PartitionIndex.h"
+#include "SpillInfo.h"
 #include "MapOutputSpec.h"
 
 namespace NativeTask {
@@ -41,21 +40,20 @@ private:
   KeyValueType _vType;
   string _codec;
   int32_t _segmentIndex;
-  IndexRange * _spillInfo;
+  SingleSpillInfo * _spillInfo;
   const char * _valuePos;
   uint32_t _valueLen;
+  bool _deleteSourceStream;
 
 public:
-  IFileReader(InputStream * stream, ChecksumType checksumType,
-               KeyValueType ktype, KeyValueType vtype,
-               IndexRange * spill_infos, const string & codec);
+  IFileReader(InputStream * stream, SingleSpillInfo * spill, bool deleteSourceStream = false);
 
   virtual ~IFileReader();
 
   /**
    * @return 0 if have next partition, none 0 if no more partition
    */
-  int nextPartition();
+  bool nextPartition();
 
   /**
    * get next key
@@ -69,7 +67,7 @@ public:
     if (t1 == -1) {
       return NULL;
     }
-    const char * kvbuff = _reader.get((uint32_t)(t1+t2));
+    const char * kvbuff = _reader.get((uint32_t)(t1 + t2));
     uint32_t len;
     switch (_kType) {
     case TextType:
@@ -84,7 +82,7 @@ public:
       len = 0;
     }
     const char * kbuff = kvbuff + len;
-    const char * vbuff = kbuff + keyLen;
+    const char * vbuff = kvbuff + (uint32_t)t1;
     switch (_vType) {
     case TextType:
       _valueLen = WritableUtils::ReadVInt(vbuff, len);
@@ -104,7 +102,7 @@ public:
   /**
    * length of current value part of IFile entry
    */
-  const uint32_t valueLen() {
+  uint32_t valueLen() {
     return _valueLen;
   }
 
@@ -127,13 +125,23 @@ protected:
   ChecksumType _checksumType;
   KeyValueType _kType;
   KeyValueType _vType;
-  string       _codec;
+  string _codec;
   AppendBuffer _appendBuffer;
-  vector<IndexEntry> _spillInfo;
+  vector<IFileSegment> _spillFileSegments;
+  Counter * _recordCounter;
+
+  bool _deleteTargetStream;
+
+private:
+  IFileSegment * toArray(std::vector<IFileSegment> *segments);
 
 public:
-  IFileWriter(OutputStream * stream, ChecksumType checksumType,
-               KeyValueType ktype, KeyValueType vtype, const string & codec);
+  static IFileWriter * create(const std::string & filepath, const MapOutputSpec & spec,
+      Counter * spilledRecords);
+
+  IFileWriter(OutputStream * stream, ChecksumType checksumType, KeyValueType ktype,
+      KeyValueType vtype, const string & codec, Counter * recordCounter,
+      bool deleteTargetStream = false);
 
   virtual ~IFileWriter();
 
@@ -141,30 +149,17 @@ public:
 
   void endPartition();
 
-  void writeKey(const char * key, uint32_t keyLen, uint32_t valueLen);
+  virtual void write(const char * key, uint32_t keyLen, const char * value, uint32_t valueLen);
 
-  void writeValue(const char * value, uint32_t valueLen);
-
-  void write(const char * key, uint32_t keyLen, const char * value,
-             uint32_t valueLen) {
-    writeKey(key, keyLen, valueLen);
-    writeValue(value, valueLen);
-  }
-
-  IndexRange * getIndex(uint32_t start);
+  SingleSpillInfo * getSpillInfo();
 
   void getStatistics(uint64_t & offset, uint64_t & realOffset);
 
-  virtual void collect(const void * key, uint32_t keyLen,
-                       const void * value, uint32_t valueLen) {
+  virtual void collect(const void * key, uint32_t keyLen, const void * value, uint32_t valueLen) {
     write((const char*)key, keyLen, (const char*)value, valueLen);
   }
 };
 
-
-
 } // namespace NativeTask
-
-
 
 #endif /* IFILE_H_ */

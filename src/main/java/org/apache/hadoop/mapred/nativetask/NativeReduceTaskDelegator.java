@@ -32,69 +32,64 @@ import org.apache.hadoop.mapred.Task.TaskReporter;
 import org.apache.hadoop.mapred.TaskAttemptID;
 import org.apache.hadoop.mapred.TaskDelegation;
 import org.apache.hadoop.mapred.TaskUmbilicalProtocol;
-import org.apache.hadoop.mapred.nativetask.handlers.NativeReduceAndWriteHandler;
-import org.apache.hadoop.mapred.nativetask.handlers.NativeReduceOnlyHandler;
-import org.apache.hadoop.mapred.nativetask.util.OutputPathUtil;
+import org.apache.hadoop.mapred.nativetask.handlers.NativeReduceTask;
+import org.apache.hadoop.mapred.nativetask.util.NativeTaskOutput;
+import org.apache.hadoop.mapred.nativetask.util.OutputUtil;
 
-public class NativeReduceTaskDelegator<IK, IV, OK, OV> implements
-    TaskDelegation.ReduceTaskDelegator {
-  private static final Log LOG = LogFactory
-      .getLog(NativeReduceTaskDelegator.class);
+public class NativeReduceTaskDelegator<IK, IV, OK, OV> implements TaskDelegation.ReduceTaskDelegator {
+  private static final Log LOG = LogFactory.getLog(NativeReduceTaskDelegator.class);
+
   private JobConf job;
-  private TaskUmbilicalProtocol protocol;
   private TaskReporter reporter;
 
   public NativeReduceTaskDelegator() {
   }
 
   @Override
-  public void init(TaskUmbilicalProtocol protocol, TaskReporter reporter,
-      Configuration conf) throws Exception {
+  public void init(TaskUmbilicalProtocol protocol, TaskReporter reporter, Configuration conf) throws Exception {
     this.job = new JobConf(conf);
-    this.protocol = protocol;
+
+    Platforms.init(conf);
+
     this.reporter = reporter;
   }
 
   @Override
-  public void run(TaskAttemptID taskAttemptID, RawKeyValueIterator rIter,
-      RawComparator comparator, Class keyClass, Class valueClass)
-      throws IOException {
-    long updateInterval = job.getLong("native.update.interval", 1000);
-    StatusReportChecker updater = new StatusReportChecker(reporter,
-        updateInterval);
-    updater.startUpdater();
+  @SuppressWarnings({ "unchecked", "rawtypes" })
+  public void run(TaskAttemptID taskAttemptID, RawKeyValueIterator rIter, RawComparator comparator, Class keyClass,
+      Class valueClass) throws IOException {
+    final long updateInterval = job.getLong(Constants.NATIVE_STATUS_UPDATE_INTERVAL,
+        Constants.NATIVE_STATUS_UPDATE_INTERVAL_DEFVAL);
+    final StatusReportChecker updater = new StatusReportChecker(reporter, updateInterval);
+    updater.start();
     NativeRuntime.configure(job);
 
-    int bufferCapacity = job.getInt(Constants.NATIVE_PROCESSOR_BUFFER_KB,
-        Constants.NATIVE_PROCESSOR_BUFFER_KB_DEFAULT) * 1024;
-    String finalName = OutputPathUtil.getOutputName(taskAttemptID.getTaskID()
-        .getId());
+    NativeTaskOutput output = OutputUtil.createNativeTaskOutput(job, taskAttemptID.toString());
+    final String finalName = output.getOutputName(taskAttemptID.getTaskID().getId());
 
-    if (job.get("native.recordwriter.class") != null) {
-      // delegate whole reduce task
-      NativeRuntime.configure("native.output.file.name", finalName);
-      NativeReduceAndWriteHandler<IK, IV> processor = new NativeReduceAndWriteHandler<IK, IV>(
-          bufferCapacity, 0, keyClass, valueClass, job, reporter, rIter);
-      processor.init(job);
-      processor.run();
-      processor.close();
+    LOG.info("Delegeate reduce function to native space: ");
+
+    final FileSystem fs = FileSystem.get(job);
+
+    RecordWriter<OK, OV> writer = null;
+    if (job.get(Constants.NATIVE_RECORDWRITER_CLASS) == null) {
+      // use java record writer
+      writer = job.getOutputFormat().getRecordWriter(fs, job, finalName, reporter);
     } else {
-      FileSystem fs = FileSystem.get(job);
-      RecordWriter<OK, OV> writer = job.getOutputFormat().getRecordWriter(fs,
-          job, finalName, reporter);
-      Class<OK> okeyClass = (Class<OK>) job.getOutputKeyClass();
-      Class<OV> ovalueClass = (Class<OV>) job.getOutputValueClass();
-      NativeReduceOnlyHandler<IK, IV, OK, OV> processor = new NativeReduceOnlyHandler<IK, IV, OK, OV>(
-          bufferCapacity, bufferCapacity, keyClass, valueClass, okeyClass,
-          ovalueClass, job, writer, reporter, rIter);
-      processor.init(job);
-      processor.run();
-      writer.close(reporter);
+      // configure the native record writer output file name
+      job.set(Constants.NATIVE_OUTPUT_FILE_NAME, finalName);
     }
 
+    final Class<OK> okeyClass = (Class<OK>) job.getOutputKeyClass();
+    final Class<OV> ovalueClass = (Class<OV>) job.getOutputValueClass();
+
+    final NativeReduceTask processor = NativeReduceTask.create(keyClass, valueClass, okeyClass, ovalueClass, job,
+        writer, reporter, rIter);
+    processor.run();
+
     try {
-      updater.stopUpdater();
-    } catch (InterruptedException e) {
+      updater.stop();
+    } catch (final InterruptedException e) {
       throw new IOException(e);
     }
     // final update

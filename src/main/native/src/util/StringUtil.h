@@ -42,7 +42,7 @@ public:
 
   static int64_t toInt(const string & str);
   static bool toBool(const string & str);
-  static float  toFloat(const string & str);
+  static float toFloat(const string & str);
 
   static string Format(const char * fmt, ...);
 
@@ -52,19 +52,15 @@ public:
 
   static string Trim(const string & str);
 
-  static void Split(const string & src,
-                    const string & sep,
-                    vector<string> & dest,
-                    bool clean=false);
+  static void Split(const string & src, const string & sep, vector<string> & dest,
+      bool clean = false);
 
-  static string Join(const vector<string> & strs,
-                          const string & sep);
+  static string Join(const vector<string> & strs, const string & sep);
 
   static bool StartsWith(const string & str, const string & prefix);
   static bool EndsWith(const string & str, const string & suffix);
 };
 
 } // namespace NativeTask
-
 
 #endif /* STRINGUTIL_H_ */

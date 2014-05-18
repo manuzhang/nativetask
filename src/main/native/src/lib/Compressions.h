@@ -30,11 +30,21 @@ using std::string;
 
 class CompressStream : public FilterOutputStream {
 public:
-  CompressStream(OutputStream * stream) : FilterOutputStream(stream) {}
+  CompressStream(OutputStream * stream)
+      : FilterOutputStream(stream) {
+  }
 
   virtual ~CompressStream();
 
   virtual void writeDirect(const void * buff, uint32_t length);
+
+  virtual void finish() {
+    flush();
+  }
+
+  virtual void resetState() {
+
+  }
 
   virtual uint64_t compressedBytesWritten() {
     return 0;
@@ -43,8 +53,8 @@ public:
 
 class DecompressStream : public FilterInputStream {
 public:
-  DecompressStream(InputStream * stream) :
-    FilterInputStream(stream) {
+  DecompressStream(InputStream * stream)
+      : FilterInputStream(stream) {
   }
 
   virtual ~DecompressStream();
@@ -56,7 +66,6 @@ public:
   }
 };
 
-
 class Compressions {
 protected:
   class Codec {
@@ -64,9 +73,8 @@ protected:
     string name;
     string extension;
 
-    Codec(const string & name, const string & extension) :
-      name(name),
-      extension(extension) {
+    Codec(const string & name, const string & extension)
+        : name(name), extension(extension) {
     }
   };
 
@@ -88,16 +96,13 @@ public:
 
   static const string getCodecByFile(const string & file);
 
-  static CompressStream * getCompressionStream(const string & codec,
-                                               OutputStream * stream,
-                                               uint32_t bufferSizeHint);
+  static CompressStream * getCompressionStream(const string & codec, OutputStream * stream,
+      uint32_t bufferSizeHint);
 
-  static DecompressStream * getDecompressionStream(const string & codec,
-                                                   InputStream * stream,
-                                                   uint32_t bufferSizeHint);
+  static DecompressStream * getDecompressionStream(const string & codec, InputStream * stream,
+      uint32_t bufferSizeHint);
 };
 
 } // namespace NativeTask
-
 
 #endif /* COMPRESSIONS_H_ */

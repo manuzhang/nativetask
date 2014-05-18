@@ -20,10 +20,8 @@
 #include "WritableUtils.h"
 #include "FileSystem.h"
 #include "TotalOrderPartitioner.h"
-#include "MapOutputSpec.h"
 #include "MapOutputCollector.h"
 #include "StringUtil.h"
-
 
 namespace NativeTask {
 
@@ -41,12 +39,11 @@ struct TrieNode {
 };
 
 inline TrieNode * GetNode(string & trie, uint32_t offset) {
-  return (TrieNode*) (trie.data() + offset);
+  return (TrieNode*)(trie.data() + offset);
 }
 
-static uint32_t MakeTrieInner(string & trie, vector<string> & splits,
-                              uint32_t lower, uint32_t upper, string & prefix,
-                              uint32_t maxDepth) {
+static uint32_t MakeTrieInner(string & trie, vector<string> & splits, uint32_t lower,
+    uint32_t upper, string & prefix, uint32_t maxDepth) {
   uint32_t depth = prefix.length();
   uint32_t ret = trie.length();
   trie.append(sizeof(TrieNode), '\0');
@@ -59,8 +56,8 @@ static uint32_t MakeTrieInner(string & trie, vector<string> & splits,
     trial[depth] = (char)(ch + 1);
     lower = currentBound;
     while (currentBound < upper) {
-      if (fmemcmp(splits[currentBound].c_str(), trial.c_str(),
-                  splits[currentBound].length(), trial.length()) >= 0) {
+      if (fmemcmp(splits[currentBound].c_str(), trial.c_str(), splits[currentBound].length(),
+          trial.length()) >= 0) {
         break;
       }
       currentBound += 1;
@@ -69,11 +66,9 @@ static uint32_t MakeTrieInner(string & trie, vector<string> & splits,
     if (lower == currentBound || trial.length() >= maxDepth) {
       node->offset[ch].lower = lower;
       node->offset[ch].upper = currentBound;
-    }
-    else {
+    } else {
       node->offset[ch].lower = 0xffffffff;
-      node->offset[ch].upper = MakeTrieInner(trie, splits, lower, currentBound,
-                                             trial, maxDepth);
+      node->offset[ch].upper = MakeTrieInner(trie, splits, lower, currentBound, trial, maxDepth);
     }
   }
 
@@ -84,34 +79,30 @@ static uint32_t MakeTrieInner(string & trie, vector<string> & splits,
   if (currentBound == upper || trial.length() >= maxDepth) {
     node->offset[255].lower = currentBound;
     node->offset[255].upper = upper;
-  }
-  else {
+  } else {
     node->offset[255].lower = 0xffffffff;
-    node->offset[255].upper = MakeTrieInner(trie, splits, currentBound, upper,
-                                            trial, maxDepth);
+    node->offset[255].upper = MakeTrieInner(trie, splits, currentBound, upper, trial, maxDepth);
   }
   return ret;
 }
 
-static uint32_t SearchTrieInner(vector<string> & splits, string & trie,
-                                uint32_t nodeOffset, uint32_t level,
-                                const char * key, uint32_t keyLen) {
-  if (splits.size()==0) {
+static uint32_t SearchTrieInner(vector<string> & splits, string & trie, uint32_t nodeOffset,
+    uint32_t level, const char * key, uint32_t keyLen) {
+  if (splits.size() == 0) {
     return 0;
   }
   TrieNode * node = GetNode(trie, nodeOffset);
-  Range & range = node->offset[(uint8_t)(level<keyLen ? key[level] : 0)];
+  Range & range = node->offset[(uint8_t)(level < keyLen ? key[level] : 0)];
   if (range.lower == 0xffffffff) {
-    return SearchTrieInner(splits, trie, range.upper, level+1, key, keyLen);
-  }
-  else {
+    return SearchTrieInner(splits, trie, range.upper, level + 1, key, keyLen);
+  } else {
     uint32_t retmax = splits.size();
     if (range.lower >= retmax) {
       return retmax;
     }
     if (range.lower == range.upper) {
       string & p = splits[range.lower];
-      if (fmemcmp(key, p.data(), keyLen, p.length())>=0) {
+      if (fmemcmp(key, p.data(), keyLen, p.length()) >= 0) {
         return range.lower + 1;
       } else {
         return range.lower;
@@ -126,14 +117,12 @@ static uint32_t SearchTrieInner(vector<string> & splits, string & trie,
         int64_t ret = fmemcmp(key, splits[middle].data(), keyLen, splits[middle].length());
         if (ret < 0) {
           len = half;
-          if (len==0) {
+          if (len == 0) {
             return current;
           }
-        }
-        else if (ret==0) {
+        } else if (ret == 0) {
           return middle + 1;
-        }
-        else {
+        } else {
           len = len - half - 1;
           current = middle + 1;
           if (len == 0) {
@@ -146,60 +135,60 @@ static uint32_t SearchTrieInner(vector<string> & splits, string & trie,
   THROW_EXCEPTION(IOException, "Logic errir, can not get here");
 }
 
-TotalOrderPartitioner::TotalOrderPartitioner() :
-    useTrieTree(false),
-    _keyComparator(NULL) {
+TotalOrderPartitioner::TotalOrderPartitioner()
+    : useTrieTree(false), _keyComparator(NULL) {
 }
 
-void TotalOrderPartitioner::configure(Config & config) {
-  string path = config.get(TOTAL_ORDER_PARTITIONER_PATH, PARTITION_FILE_NAME);
-  uint32_t maxDepth = config.getInt("total.order.partitioner.max.trie.depth", 2);
+ComparatorPtr TotalOrderPartitioner::get_comparator(Config * config, MapOutputSpec & spec) {
+  const char * comparatorName = config->get(NATIVE_MAPOUT_KEY_COMPARATOR);
+  return NativeTask::get_comparator(spec.keyType, comparatorName);
+}
+
+void TotalOrderPartitioner::configure(Config * config) {
+  string path = config->get(TOTAL_ORDER_PARTITIONER_PATH, PARTITION_FILE_NAME);
+  uint32_t maxDepth = config->getInt(TOTAL_ORDER_PARTITIONER_MAX_TRIE_DEPTH, 2);
   InputStream * is = FileSystem::getLocal().open(path);
   _splits.clear();
   LoadPartitionFile(_splits, is);
   delete is;
-  uint32_t numPartition = config.getInt("mapred.reduce.tasks", 1);
+  uint32_t numPartition = config->getInt(MAPRED_NUM_REDUCES, 1);
   if (_splits.size() + 1 != numPartition) {
     THROW_EXCEPTION(IOException, "splits in partition file does not match mapred.reduce.tasks");
   }
 
   MapOutputSpec spec;
   MapOutputSpec::getSpecFromConfig(config, spec);
-  if (spec.keyType == TextType ||
-      spec.keyType == BytesType) {
+  if (spec.keyType == TextType || spec.keyType == BytesType) {
     this->useTrieTree = true;
-  }
-  else {
+  } else {
     this->useTrieTree = false;
   }
 
   if (useTrieTree) {
     MakeTrie(_splits, _trie, maxDepth);
-  }
-  else {
-    this->_keyComparator = MapOutputCollector::getComparator(config, spec);
+  } else {
+    this->_keyComparator = get_comparator(config, spec);
   }
 }
 
-uint32_t TotalOrderPartitioner::getPartition(const char * key,
-                                             uint32_t & keyLen,
-                                             uint32_t numPartition) {
+uint32_t TotalOrderPartitioner::getPartition(const char * key, uint32_t & keyLen,
+    uint32_t numPartition) {
   if (useTrieTree) {
     return SearchTrieInner(_splits, _trie, 0, 0, key, keyLen);
-  }
-  else {
+  } else {
     return binarySearchPartition(_splits, key, keyLen);
   }
 }
 
-uint32_t TotalOrderPartitioner::binarySearchPartition(vector<string> & splits, const char * key, uint32_t keyLen) {
+uint32_t TotalOrderPartitioner::binarySearchPartition(vector<string> & splits, const char * key,
+    uint32_t keyLen) {
   //TODO: add support for other kv types.
-  THROW_EXCEPTION_EX(UnsupportException, "TotalOrderPartitioner, current only support Text type key");
+  THROW_EXCEPTION_EX(UnsupportException,
+      "TotalOrderPartitioner, current only support Text type key");
 }
 
-uint32_t TotalOrderPartitioner::SearchTrie(vector<string> & splits,
-                                           string & trie, const char * key,
-                                           uint32_t keyLen) {
+uint32_t TotalOrderPartitioner::SearchTrie(vector<string> & splits, string & trie, const char * key,
+    uint32_t keyLen) {
   return SearchTrieInner(splits, trie, 0, 0, key, keyLen);
 }
 
@@ -214,8 +203,7 @@ void TotalOrderPartitioner::LoadPartitionFile(vector<string> & splits, InputStre
   }
 }
 
-void TotalOrderPartitioner::MakeTrie(vector<string> & splits, string & trie,
-                                     uint32_t maxDepth) {
+void TotalOrderPartitioner::MakeTrie(vector<string> & splits, string & trie, uint32_t maxDepth) {
   trie.clear();
   if (splits.size() == 0) {
     return;
@@ -229,24 +217,21 @@ void TotalOrderPartitioner::MakeTrie(vector<string> & splits, string & trie,
   MakeTrieInner(trie, splits, 0, splits.size(), prefix, maxDepth);
 }
 
-void TotalOrderPartitioner::PrintTrie(vector<string> & splits, string & trie, uint32_t pos, uint32_t indent) {
+void TotalOrderPartitioner::PrintTrie(vector<string> & splits, string & trie, uint32_t pos,
+    uint32_t indent) {
   TrieNode * node = GetNode(trie, pos);
   string indexStr = string(indent * 2, ' ');
-  for (int i = 0; i < 256; i++) {
+  for (uint32_t i = 0; i < 256; i++) {
     Range & range = node->offset[i];
     if (range.lower == 0xffffffff) {
       LOG("%sInnerNode[%6u]", indexStr.c_str(), range.upper);
       PrintTrie(splits, trie, range.upper, indent + 2);
-    }
-    else {
+    } else {
       if (range.lower == range.upper) {
         LOG("%sLeaf[%4d][%s]", indexStr.c_str(), range.lower, splits[range.lower].c_str());
-      }
-      else {
-        LOG("%sLeaf[%4d][%s]-[%5d][%s]",
-            indexStr.c_str(),
-            range.lower, splits[range.lower].c_str(),
-            range.upper, range.upper==splits.size() ? "<NULL>":splits[range.upper].c_str());
+      } else {
+        LOG("%sLeaf[%4d][%s]-[%5d][%s]", indexStr.c_str(), range.lower, splits[range.lower].c_str(),
+            range.upper, range.upper == splits.size() ? "<NULL>" : splits[range.upper].c_str());
       }
     }
   }

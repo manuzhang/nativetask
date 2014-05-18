@@ -23,12 +23,12 @@ TEST(StringUtil, Convertion) {
   ASSERT_FLOAT_EQ(StringUtil::toFloat("1.333"), 1.333);
   ASSERT_FLOAT_EQ(StringUtil::toFloat(StringUtil::ToString(1.333f)), 1.333);
   ASSERT_EQ(StringUtil::ToString(76957382U), "76957382");
-  ASSERT_EQ(StringUtil::ToString((uint64_t)76957382234233432ULL), "76957382234233432");
+  ASSERT_EQ(StringUtil::ToString((uint64_t )76957382234233432ULL), "76957382234233432");
   ASSERT_EQ(StringUtil::ToString(111, ' ', 40), "                                     111");
 }
 
 TEST(StringUtil, Format) {
-  string t = StringUtil::Format("%d %d %d %.3lf %s", 1,2,3,1.333,"aaaaaaaaaaa");
+  string t = StringUtil::Format("%d %d %d %.3lf %s", 1, 2, 3, 1.333, "aaaaaaaaaaa");
   ASSERT_EQ(t, "1 2 3 1.333 aaaaaaaaaaa");
   string longstring(999, 'a');
   string d = StringUtil::Format("%s", longstring.c_str());
@@ -47,7 +47,7 @@ TEST(StringUtil, ToLower) {
 }
 
 TEST(StringUtil, JoinSplit) {
-  vector<string> temp1,temp2,temp3,temp4;
+  vector<string> temp1, temp2, temp3, temp4;
   StringUtil::Split("1aaa bbb ccc", " ", temp1, false);
   StringUtil::Split("  1aaa  bbb  ccc ", " ", temp2, true);
   ASSERT_EQ(temp1, temp2);

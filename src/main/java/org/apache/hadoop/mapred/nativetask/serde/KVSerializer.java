@@ -20,82 +20,89 @@ package org.apache.hadoop.mapred.nativetask.serde;
 
 import java.io.IOException;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.io.Writable;
-import org.apache.hadoop.mapred.nativetask.NativeDataReader;
-import org.apache.hadoop.mapred.nativetask.NativeDataWriter;
+import org.apache.hadoop.mapred.nativetask.Constants;
+import org.apache.hadoop.mapred.nativetask.buffer.DataInputStream;
+import org.apache.hadoop.mapred.nativetask.buffer.DataOutputStream;
+import org.apache.hadoop.mapred.nativetask.util.SizedWritable;
 
 public class KVSerializer<K, V> implements IKVSerializer {
 
-  private INativeSerializer<Writable> keySerializer;
-  private INativeSerializer<Writable> valueSerializer;
 
-  // reserve some space for meta data.
-  // Like partition id
-  private final static int RESERVE_SPACE_FOR_META = 16; // bytes
-  private final static int LENGTH_INT_BYTES = 4; // 4 bytes
+  private static final Log LOG = LogFactory.getLog(KVSerializer.class);
+  
+  public static int KV_HEAD_LENGTH = Constants.SIZEOF_KV_LENGTH;
+
+  private final INativeSerializer<Writable> keySerializer;
+  private final INativeSerializer<Writable> valueSerializer;
 
   public KVSerializer(Class<K> kclass, Class<V> vclass) throws IOException {
-    this.keySerializer = NativeSerialization.getInstance()
-        .getSerializer(kclass);
-    this.valueSerializer = NativeSerialization.getInstance().getSerializer(
-        vclass);
+    
+    this.keySerializer = NativeSerialization.getInstance().getSerializer(kclass);
+    this.valueSerializer = NativeSerialization.getInstance().getSerializer(vclass);
   }
 
   @Override
-  public int serializeKV(NativeDataWriter out, Writable key, Writable value)
+  public void updateLength(SizedWritable key, SizedWritable value) throws IOException {
+    key.length = keySerializer.getLength(key.v);
+    value.length = valueSerializer.getLength(value.v);
+    return;
+  }
+
+  @Override
+  public int serializeKV(DataOutputStream out, SizedWritable key, SizedWritable value) throws IOException {
+    return serializePartitionKV(out, -1, key, value);
+  }
+
+  @Override
+  public int serializePartitionKV(DataOutputStream out, int partitionId, SizedWritable key, SizedWritable value)
       throws IOException {
-    return serializeKV(out, -1, key, value);
-  }
 
-  /**
-   * 
-   * @param out
-   * @param remain
-   *          , -1 means unlimitted
-   * @param key
-   * @param value
-   * @return
-   * @throws IOException
-   */
-  @Override
-  public int serializeKV(NativeDataWriter out, int remain, Writable key,
-      Writable value) throws IOException {
-
-    int keylength = keySerializer.getLength(key);
-    int valueLength = valueSerializer.getLength(value);
-
-    int kvLength = keylength + valueLength + LENGTH_INT_BYTES
-        + LENGTH_INT_BYTES;
-
-    if (-1 != remain && kvLength > remain) {
-      return 0;
+    if (key.length == SizedWritable.INVALID_LENGTH || value.length == SizedWritable.INVALID_LENGTH) {
+      updateLength(key, value);
     }
 
-    int reserved = out.reserve(kvLength + RESERVE_SPACE_FOR_META);
-    if (kvLength > reserved) {
-      return 0;
+    final int keyLength = key.length;
+    final int valueLength = value.length;
+
+    int bytesWritten = KV_HEAD_LENGTH + keyLength + valueLength;
+    if (partitionId != -1) {
+      bytesWritten += Constants.SIZEOF_PARTITION_LENGTH;
     }
 
-    out.writeInt(keylength);
+    if (out.hasUnFlushedData() && out.shortOfSpace(bytesWritten)) {
+      out.flush();
+    }
 
-    keySerializer.serialize(key, out);
-
+    if (partitionId != -1) {
+      out.writeInt(partitionId);
+    }
+        
+    out.writeInt(keyLength);
     out.writeInt(valueLength);
+    
+    keySerializer.serialize(key.v, out);
+    valueSerializer.serialize(value.v, out);
 
-    valueSerializer.serialize(value, out);
-
-    return keylength + valueLength + 8;
+    return bytesWritten;
   }
 
   @Override
-  public int deserializeKV(NativeDataReader in, Writable key, Writable value)
-      throws IOException {
-    int keyLength = in.readInt();
-    keySerializer.deserialize(key, keyLength, in);
+  public int deserializeKV(DataInputStream in, SizedWritable key, SizedWritable value) throws IOException {
 
-    int valueLength = in.readInt();
-    valueSerializer.deserialize(value, valueLength, in);
+    if (!in.hasUnReadData()) {
+      return 0;
+    }
 
-    return keyLength + valueLength;
+    key.length = in.readInt();
+    value.length = in.readInt();
+
+    keySerializer.deserialize(in, key.length, key.v);
+    valueSerializer.deserialize(in, value.length, value.v);
+
+    return key.length + value.length + KV_HEAD_LENGTH;
   }
+
 }

@@ -20,23 +20,18 @@ package org.apache.hadoop.mapred.nativetask.serde;
 
 import java.io.IOException;
 
-import org.apache.hadoop.io.Writable;
-import org.apache.hadoop.mapred.nativetask.NativeDataReader;
-import org.apache.hadoop.mapred.nativetask.NativeDataWriter;
+import org.apache.hadoop.mapred.nativetask.buffer.DataInputStream;
+import org.apache.hadoop.mapred.nativetask.buffer.DataOutputStream;
+import org.apache.hadoop.mapred.nativetask.util.SizedWritable;
 
-/**
- * 
- * 
- *
- */
 public interface IKVSerializer {
 
-  public int serializeKV(NativeDataWriter out, Writable key, Writable value)
+  public void updateLength(SizedWritable key, SizedWritable value) throws IOException;
+
+  public int serializeKV(DataOutputStream out, SizedWritable key, SizedWritable value) throws IOException;
+
+  public int serializePartitionKV(DataOutputStream out, int partitionId, SizedWritable key, SizedWritable value)
       throws IOException;
 
-  public int serializeKV(NativeDataWriter out, int remain, Writable key,
-      Writable value) throws IOException;
-
-  public int deserializeKV(NativeDataReader in, Writable key, Writable value)
-      throws IOException;
+  public int deserializeKV(DataInputStream in, SizedWritable key, SizedWritable value) throws IOException;
 }

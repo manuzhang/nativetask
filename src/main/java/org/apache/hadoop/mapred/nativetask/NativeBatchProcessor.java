@@ -20,72 +20,90 @@ package org.apache.hadoop.mapred.nativetask;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.mapred.nativetask.serde.KVSerializer;
+import org.apache.hadoop.mapred.nativetask.buffer.BufferType;
+import org.apache.hadoop.mapred.nativetask.buffer.DirectBufferPool;
+import org.apache.hadoop.mapred.nativetask.buffer.InputBuffer;
+import org.apache.hadoop.mapred.nativetask.buffer.OutputBuffer;
+import org.apache.hadoop.mapred.nativetask.util.ReadWriteBuffer;
+import org.apache.hadoop.mapred.nativetask.util.ConfigUtil;
 
-public abstract class NativeBatchProcessor<IK, IV, OK, OV> implements
-    INativeHandler {
-
+public class NativeBatchProcessor implements INativeHandler {
   private static Log LOG = LogFactory.getLog(NativeBatchProcessor.class);
 
-  private ByteBuffer inputBuffer;
-  private ByteBuffer outputBuffer;
-
-  private String nativeHandlerName;
+  private final String nativeHandlerName;
   private long nativeHandlerAddr;
+
   private boolean isInputFinished = false;
 
-  protected KVSerializer<IK, IV> serializer;
-  protected KVSerializer<OK, OV> deserializer;
+  // << Field used directly in Native, the name must NOT be changed
+  private ByteBuffer rawOutputBuffer;
+  private ByteBuffer rawInputBuffer;
+  // >>
 
-  protected NativeDataReader nativeReader;
-  protected NativeDataWriter nativeWriter;
+  private InputBuffer in;
+  private OutputBuffer out;
+
+  private CommandDispatcher commandDispatcher;
+  private DataReceiver dataReceiver;
 
   static {
-    // InitIDs();
     if (NativeRuntime.isNativeLibraryLoaded()) {
       InitIDs();
     }
   }
 
-  public NativeBatchProcessor(Class<IK> iKClass, Class<IV> iVClass,
-      Class<OK> oKClass, Class<OV> oVClass, String nativeHandlerName,
-      int inputBufferCapacity, int outputBufferCapacity) throws IOException {
-    if (inputBufferCapacity > 0) {
-      this.inputBuffer = ByteBuffer.allocateDirect(inputBufferCapacity);
-      this.inputBuffer.order(ByteOrder.BIG_ENDIAN);
+  public static INativeHandler create(String nativeHandlerName,
+      Configuration conf, DataChannel channel) throws IOException {
+
+    final int bufferSize = conf.getInt(Constants.NATIVE_PROCESSOR_BUFFER_KB,
+        1024) * 1024;
+
+    LOG.info("NativeHandler: direct buffer size: " + bufferSize);
+
+    OutputBuffer out = null;
+    InputBuffer in = null;
+
+    switch (channel) {
+    case IN:
+      in = new InputBuffer(BufferType.DIRECT_BUFFER, bufferSize);
+      break;
+    case OUT:
+      out = new OutputBuffer(BufferType.DIRECT_BUFFER, bufferSize);
+      break;
+    case INOUT:
+      in = new InputBuffer(BufferType.DIRECT_BUFFER, bufferSize);
+      out = new OutputBuffer(BufferType.DIRECT_BUFFER, bufferSize);
+      break;
+    case NONE:
     }
-    if (outputBufferCapacity > 0) {
-      this.outputBuffer = ByteBuffer.allocateDirect(outputBufferCapacity);
-      this.outputBuffer.order(ByteOrder.BIG_ENDIAN);
-    }
+
+    final INativeHandler handler = new NativeBatchProcessor(nativeHandlerName,
+        in, out);
+    handler.init(conf);
+    return handler;
+  }
+
+  protected NativeBatchProcessor(String nativeHandlerName, InputBuffer input,
+      OutputBuffer output) throws IOException {
     this.nativeHandlerName = nativeHandlerName;
 
-    this.nativeReader = new NativeInputStream(outputBuffer);
-    this.nativeWriter = new NativeOutputStream(inputBuffer) {
-
-      @Override
-      public void flush() throws IOException {
-        flushInputAndProcess();
-      }
-
-      @Override
-      public void close() throws IOException {
-        finishInput();
-      }
-
-    };
-
-    if (null != iKClass && null != iVClass) {
-      this.serializer = new KVSerializer<IK, IV>(iKClass, iVClass);
+    if (null != input) {
+      this.in = input;
+      this.rawInputBuffer = input.getByteBuffer();
     }
-    if (null != oKClass && null != oVClass) {
-      this.deserializer = new KVSerializer<OK, OV>(oKClass, oVClass);
+    if (null != output) {
+      this.out = output;
+      this.rawOutputBuffer = output.getByteBuffer();
     }
+  }
+
+  @Override
+  public void setCommandDispatcher(CommandDispatcher handler) {
+    this.commandDispatcher = handler;
   }
 
   @Override
@@ -96,44 +114,82 @@ public abstract class NativeBatchProcessor<IK, IV, OK, OV> implements
       throw new RuntimeException("Native object create failed, class: "
           + nativeHandlerName);
     }
-    setupHandler(nativeHandlerAddr);
+    setupHandler(nativeHandlerAddr, ConfigUtil.toBytes(conf));
   }
 
   @Override
   public synchronized void close() throws IOException {
-    nativeWriter.close();
     if (nativeHandlerAddr != 0) {
       NativeRuntime.releaseNativeObject(nativeHandlerAddr);
       nativeHandlerAddr = 0;
     }
+    if (null != in && null != in.getByteBuffer() && in.getByteBuffer().isDirect()) {
+      DirectBufferPool.getInstance().returnBuffer(in.getByteBuffer());
+    }
   }
 
-  private void finishInput() throws IOException {
-    if (null == inputBuffer) {
+  @Override
+  public long getNativeHandler() {
+    return nativeHandlerAddr;
+  }
+
+  @Override
+  public ReadWriteBuffer call(Command command, ReadWriteBuffer parameter)
+      throws IOException {
+    final byte[] bytes = nativeCommand(nativeHandlerAddr, command.id(),
+        null == parameter ? null : parameter.getBuff());
+
+    final ReadWriteBuffer result = new ReadWriteBuffer(bytes);
+    result.setWritePoint(bytes.length);
+    return result;
+  }
+
+  @Override
+  public void sendData() throws IOException {
+    nativeProcessInput(nativeHandlerAddr, rawOutputBuffer.position());
+    rawOutputBuffer.position(0);
+  }
+
+  @Override
+  public void finishSendData() throws IOException {
+    if (null == rawOutputBuffer || isInputFinished) {
       return;
     }
 
-    if (isInputFinished) {
-      return;
-    }
-    if (inputBuffer.position() > 0) {
-      flushInputAndProcess();
-    }
+    sendData();
     nativeFinish(nativeHandlerAddr);
     isInputFinished = true;
   }
 
-  private void flushInputAndProcess() throws IOException {
-    nativeProcessInput(nativeHandlerAddr, inputBuffer.position());
-    inputBuffer.position(0);
-  }
+  private byte[] sendCommandToJava(int command, byte[] data) throws IOException {
+    try {
 
-  protected byte[] sendCommandToNative(byte[] cmd) throws IOException {
-    return nativeCommand(nativeHandlerAddr, cmd);
-  }
+      final Command cmd = new Command(command);
+      ReadWriteBuffer param = null;
 
-  protected byte[] sendCommandToJava(byte[] data) throws IOException {
-    return null;
+      if (null != data) {
+        param = new ReadWriteBuffer();
+        param.reset(data);
+        param.setWritePoint(data.length);
+      }
+
+      if (null != commandDispatcher) {
+        ReadWriteBuffer result = null;
+
+        result = commandDispatcher.onCall(cmd, param);
+        if (null != result) {
+          return result.getBuff();
+        } else {
+          return null;
+        }
+      } else {
+        return null;
+      }
+
+    } catch (Exception e) {
+      e.printStackTrace();
+      throw new IOException(e);
+    }
   }
 
   /**
@@ -141,9 +197,20 @@ public abstract class NativeBatchProcessor<IK, IV, OK, OV> implements
    * processing
    */
   private void flushOutput(int length) throws IOException {
-    outputBuffer.position(0);
-    outputBuffer.limit(length);
-    flushOutputAndProcess(nativeReader, length);
+
+    if (null != rawInputBuffer) {
+      rawInputBuffer.position(0);
+      rawInputBuffer.limit(length);
+
+      if (null != dataReceiver) {
+        try {
+          dataReceiver.receiveData();
+        } catch (IOException e) {
+          e.printStackTrace();
+          throw e;
+        }
+      }
+    }
   }
 
   /**
@@ -154,7 +221,7 @@ public abstract class NativeBatchProcessor<IK, IV, OK, OV> implements
   /**
    * Setup native side BatchHandler
    */
-  private native void setupHandler(long nativeHandlerAddr);
+  private native void setupHandler(long nativeHandlerAddr, byte[][] configs);
 
   /**
    * Let native side to process data in inputBuffer
@@ -178,27 +245,42 @@ public abstract class NativeBatchProcessor<IK, IV, OK, OV> implements
    *          command data
    * @return return value
    */
-  private native byte[] nativeCommand(long handler, byte[] cmd);
+  private native byte[] nativeCommand(long handler, int cmd, byte[] parameter);
 
-  @Override
-  public NativeDataWriter getWriter() {
-    return nativeWriter;
-  }
-
-  @Override
-  public NativeDataReader getReader() {
-    return nativeReader;
-  }
+  /**
+   * Load data from native
+   * 
+   * @return
+   */
+  private native void nativeLoadData(long handler);
 
   protected void finishOutput() {
   }
 
-  /**
-   * @param outputbuffer
-   * @return true if succeed
-   */
-  protected boolean flushOutputAndProcess(NativeDataReader outputbuffer,
-      int length) throws IOException {
-    return true;
+  @Override
+  public InputBuffer getInputBuffer() {
+    return this.in;
+  }
+
+  @Override
+  public OutputBuffer getOutputBuffer() {
+    return this.out;
+  }
+
+  @Override
+  public void loadData() throws IOException {
+    nativeLoadData(nativeHandlerAddr);
+    //
+    // return call(Command.CMD_LOAD, param);
+  }
+
+  @Override
+  public void setDataReceiver(DataReceiver handler) {
+    this.dataReceiver = handler;
+  }
+
+  @Override
+  public String name() {
+    return nativeHandlerName;
   }
 }

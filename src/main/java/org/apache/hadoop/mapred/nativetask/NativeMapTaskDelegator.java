@@ -35,122 +35,111 @@ import org.apache.hadoop.mapred.Task.TaskReporter;
 import org.apache.hadoop.mapred.TaskAttemptID;
 import org.apache.hadoop.mapred.TaskDelegation;
 import org.apache.hadoop.mapred.TaskUmbilicalProtocol;
-import org.apache.hadoop.mapred.nativetask.handlers.AllNativeMapTask;
-import org.apache.hadoop.mapred.nativetask.handlers.NativeMapAndCollectHandler;
-import org.apache.hadoop.mapred.nativetask.handlers.NativeMapOnlyHandler;
-import org.apache.hadoop.mapred.nativetask.util.OutputPathUtil;
+import org.apache.hadoop.mapred.nativetask.handlers.NativeMapAndCollectorHandler;
+import org.apache.hadoop.mapred.nativetask.handlers.NativeMapOnlyHandlerNoReducer;
+import org.apache.hadoop.mapred.nativetask.handlers.NativeMapTask;
+import org.apache.hadoop.mapred.nativetask.util.BytesUtil;
+import org.apache.hadoop.mapred.nativetask.util.NativeTaskOutput;
+import org.apache.hadoop.mapred.nativetask.util.OutputUtil;
 
-public class NativeMapTaskDelegator<INKEY, INVALUE, OUTKEY, OUTVALUE>
-    implements TaskDelegation.MapTaskDelegator {
-  private static final Log LOG = LogFactory
-      .getLog(NativeMapTaskDelegator.class);
+@SuppressWarnings("unchecked")
+public class NativeMapTaskDelegator<INKEY, INVALUE, OUTKEY, OUTVALUE> implements TaskDelegation.MapTaskDelegator {
+  private static final Log LOG = LogFactory.getLog(NativeMapTaskDelegator.class);
 
   private JobConf job = null;
 
   private TaskReporter reporter;
 
-  private TaskUmbilicalProtocol protocol;
-
   public NativeMapTaskDelegator() {
   }
 
-  private static <T> byte[] serialize(Configuration conf, Object obj)
-      throws IOException {
-    SerializationFactory factory = new SerializationFactory(conf);
+  private static <T> byte[] serialize(Configuration conf, Object obj) throws IOException {
+    final SerializationFactory factory = new SerializationFactory(conf);
 
-    @SuppressWarnings({ "unchecked" })
-    Serializer<T> serializer = (Serializer<T>) factory.getSerializer(obj
-        .getClass());
-    DataOutputBuffer out = new DataOutputBuffer(1024);
+    final Serializer<T> serializer = (Serializer<T>) factory.getSerializer(obj.getClass());
+    final DataOutputBuffer out = new DataOutputBuffer(1024);
     serializer.open(out);
 
     serializer.serialize((T) obj);
-    byte[] ret = new byte[out.getLength()];
+    final byte[] ret = new byte[out.getLength()];
     System.arraycopy(out.getData(), 0, ret, 0, out.getLength());
     return ret;
   }
 
   @Override
-  public void init(TaskUmbilicalProtocol protocol, TaskReporter reporter,
-      Configuration conf) throws Exception {
+  public void init(TaskUmbilicalProtocol protocol, TaskReporter reporter, Configuration conf) throws Exception {
 
     this.job = new JobConf(conf);
+
+    Platforms.init(conf);
+
     this.reporter = reporter;
-    this.protocol = protocol;
+    
+    NativeRuntime.configure(job);
   }
 
   @Override
   public void run(TaskAttemptID taskAttemptID, Object split) throws IOException {
-    long updateInterval = job.getLong("native.update.interval", 1000);
-    StatusReportChecker updater = new StatusReportChecker(reporter,
-        updateInterval);
-    updater.startUpdater();
-    NativeRuntime.configure(job);
+    final long updateInterval = job.getLong(Constants.NATIVE_STATUS_UPDATE_INTERVAL, 1000);
+    final StatusReportChecker statusChecker = new StatusReportChecker(reporter, updateInterval);
+    statusChecker.start();
 
     if (job.get(Constants.NATIVE_RECORDREADER_CLASS) != null) {
 
       // delegate entire map task
-      byte[] splitData = serialize(job, split);
-      NativeRuntime.configure("native.input.split", splitData);
-      AllNativeMapTask processor = new AllNativeMapTask(job, taskAttemptID);
-      processor.init(job);
+      final byte[] splitData = serialize(job, split);
+      job.set(Constants.NATIVE_INPUT_SPLIT, BytesUtil.fromBytes(splitData));
+      final NativeMapTask processor = NativeMapTask.create(job, taskAttemptID);
 
       try {
         processor.run();
-      } catch (Exception e) {
+      } catch (final Exception e) {
         throw new IOException(e);
       } finally {
         processor.close();
       }
     } else {
-      RecordReader<INKEY, INVALUE> rawIn = job.getInputFormat()
+
+      final RecordReader<INKEY, INVALUE> rawIn = job.getInputFormat()
           .getRecordReader((InputSplit) split, job, reporter);
 
-      INKEY key = rawIn.createKey();
-      INVALUE value = rawIn.createValue();
-      Class<INKEY> ikeyClass = (Class<INKEY>) key.getClass();
-      Class<INVALUE> ivalueClass = (Class<INVALUE>) value.getClass();
+      final INKEY key = rawIn.createKey();
+      final INVALUE value = rawIn.createValue();
 
-      int bufferCapacity = job.getInt(Constants.NATIVE_PROCESSOR_BUFFER_KB,
-          Constants.NATIVE_PROCESSOR_BUFFER_KB_DEFAULT) * 1024;
 
-      int numReduceTasks = job.getNumReduceTasks();
-      LOG.info("numReduceTasks: " + numReduceTasks);
+      final Class<INKEY> ikeyClass = (Class<INKEY>) key.getClass();
+      final Class<INVALUE> ivalueClass = (Class<INVALUE>) value.getClass();
+      final Class<OUTKEY> okeyClass = (Class<OUTKEY>) job.getOutputKeyClass();
+      final Class<OUTVALUE> ovalueClass = (Class<OUTVALUE>) job.getOutputValueClass();
+
+      final int numReduceTasks = job.getNumReduceTasks();
+      TaskContext context = new TaskContext(job, ikeyClass, ivalueClass, okeyClass, ovalueClass, reporter,  taskAttemptID);
+      
       if (numReduceTasks > 0) {
-        NativeMapAndCollectHandler<INKEY, INVALUE> processor = new NativeMapAndCollectHandler<INKEY, INVALUE>(
-            bufferCapacity, ikeyClass, ivalueClass, job, taskAttemptID);
+        
+        final NativeMapAndCollectorHandler<INKEY, INVALUE, OUTKEY, OUTVALUE> processor = NativeMapAndCollectorHandler
+            .create(context);
 
-        processor.init(job);
         try {
           while (rawIn.next(key, value)) {
-            processor.process(key, value);
+            processor.collect(key, value);
           }
         } finally {
           processor.close();
         }
       } else {
-        String finalName = OutputPathUtil.getOutputName(taskAttemptID
-            .getTaskID().getId());
-        FileSystem fs = FileSystem.get(job);
+        NativeTaskOutput output = OutputUtil.createNativeTaskOutput(job, taskAttemptID.toString());
+        final String finalName = output.getOutputName(taskAttemptID.getTaskID().getId());
+        final FileSystem fs = FileSystem.get(job);
+        final RecordWriter writer = job.getOutputFormat().getRecordWriter(fs, job, finalName,
+            reporter);
 
-        @SuppressWarnings("unchecked")
-        RecordWriter<OUTKEY, OUTVALUE> writer = job.getOutputFormat()
-            .getRecordWriter(fs, job, finalName, reporter);
-
-        @SuppressWarnings("unchecked")
-        Class<OUTKEY> okeyClass = (Class<OUTKEY>) job.getOutputKeyClass();
-
-        @SuppressWarnings("unchecked")
-        Class<OUTVALUE> ovalueClass = (Class<OUTVALUE>) job
-            .getOutputValueClass();
-        NativeMapOnlyHandler<INKEY, INVALUE, OUTKEY, OUTVALUE> processor = new NativeMapOnlyHandler<INKEY, INVALUE, OUTKEY, OUTVALUE>(
-            bufferCapacity, bufferCapacity, ikeyClass, ivalueClass, okeyClass,
-            ovalueClass, job, writer);
-        processor.init(job);
+        final NativeMapOnlyHandlerNoReducer processor = NativeMapOnlyHandlerNoReducer
+            .create(context, writer);
 
         try {
           while (rawIn.next(key, value)) {
-            processor.process(key, value);
+            processor.collect(key, value);
           }
           writer.close(reporter);
         } finally {
@@ -160,8 +149,8 @@ public class NativeMapTaskDelegator<INKEY, INVALUE, OUTKEY, OUTVALUE>
     }
 
     try {
-      updater.stopUpdater();
-    } catch (InterruptedException e) {
+      statusChecker.stop();
+    } catch (final InterruptedException e) {
       throw new IOException(e);
     }
     // final update

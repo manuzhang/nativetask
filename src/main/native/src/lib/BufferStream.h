@@ -44,7 +44,6 @@ public:
   virtual int32_t read(void * buff, uint32_t length);
 };
 
-
 class BufferedOutputStream : public FilterOutputStream {
 protected:
   char * _buff;
@@ -64,32 +63,26 @@ public:
 
 };
 
-
 class InputBuffer : public InputStream {
 protected:
   const char * _buff;
   uint32_t _position;
   uint32_t _capacity;
 public:
-  InputBuffer() :
-    _buff(NULL),
-    _position(0),
-    _capacity(0) {
+  InputBuffer()
+      : _buff(NULL), _position(0), _capacity(0) {
   }
 
-  InputBuffer(const char * buff, uint32_t capacity):
-    _buff(buff),
-    _position(0),
-    _capacity(capacity) {
+  InputBuffer(const char * buff, uint32_t capacity)
+      : _buff(buff), _position(0), _capacity(capacity) {
   }
 
-  InputBuffer(const string & src) :
-    _buff(src.data()),
-    _position(0),
-    _capacity(src.length()) {
+  InputBuffer(const string & src)
+      : _buff(src.data()), _position(0), _capacity(src.length()) {
   }
 
-  virtual ~InputBuffer() {}
+  virtual ~InputBuffer() {
+  }
 
   virtual void seek(uint64_t position) {
     if (position <= _capacity) {
@@ -128,19 +121,16 @@ protected:
   uint32_t _position;
   uint32_t _capacity;
 public:
-  OutputBuffer() :
-    _buff(NULL),
-    _position(0),
-    _capacity(0) {
+  OutputBuffer()
+      : _buff(NULL), _position(0), _capacity(0) {
   }
 
-  OutputBuffer(char * buff, uint32_t capacity):
-    _buff(buff),
-    _position(0),
-    _capacity(capacity) {
+  OutputBuffer(char * buff, uint32_t capacity)
+      : _buff(buff), _position(0), _capacity(capacity) {
   }
 
-  virtual ~OutputBuffer() {}
+  virtual ~OutputBuffer() {
+  }
 
   virtual uint64_t tell() {
     return _position;
@@ -167,12 +157,15 @@ class OutputStringStream : public OutputStream {
 protected:
   string * _dest;
 public:
-  OutputStringStream() :
-    _dest(NULL) {
+  OutputStringStream()
+      : _dest(NULL) {
   }
 
-  OutputStringStream(string & dest) :_dest(&dest) {}
-  virtual ~OutputStringStream() {}
+  OutputStringStream(string & dest)
+      : _dest(&dest) {
+  }
+  virtual ~OutputStringStream() {
+  }
 
   virtual uint64_t tell() {
     return _dest->length();
@@ -196,6 +189,5 @@ public:
 };
 
 } // namespace NativeTask
-
 
 #endif /* BUFFERSTREAM_H_ */

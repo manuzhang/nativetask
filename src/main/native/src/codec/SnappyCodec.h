@@ -26,8 +26,7 @@ namespace NativeTask {
 
 class SnappyCompressStream : public BlockCompressStream {
 public:
-  SnappyCompressStream(OutputStream * stream,
-                       uint32_t bufferSizeHint);
+  SnappyCompressStream(OutputStream * stream, uint32_t bufferSizeHint);
 protected:
   virtual uint64_t maxCompressedLength(uint64_t origLength);
   virtual void compressOneBlock(const void * buff, uint32_t length);
@@ -35,13 +34,11 @@ protected:
 
 class SnappyDecompressStream : public BlockDecompressStream {
 public:
-  SnappyDecompressStream(InputStream * stream,
-                         uint32_t bufferSizeHint);
+  SnappyDecompressStream(InputStream * stream, uint32_t bufferSizeHint);
 
 protected:
   virtual uint64_t maxCompressedLength(uint64_t origLength);
-  virtual uint32_t decompressOneBlock(uint32_t compressedSize, void * buff,
-                                      uint32_t length);
+  virtual uint32_t decompressOneBlock(uint32_t compressedSize, void * buff, uint32_t length);
 };
 
 } // namespace NativeTask

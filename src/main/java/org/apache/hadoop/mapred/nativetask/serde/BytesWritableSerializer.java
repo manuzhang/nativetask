@@ -25,8 +25,7 @@ import java.io.IOException;
 import org.apache.hadoop.io.BytesWritable;
 import org.apache.hadoop.mapred.nativetask.INativeComparable;
 
-public class BytesWritableSerializer implements INativeComparable,
-    INativeSerializer<BytesWritable> {
+public class BytesWritableSerializer implements INativeComparable, INativeSerializer<BytesWritable> {
 
   @Override
   public int getLength(BytesWritable w) throws IOException {
@@ -39,8 +38,7 @@ public class BytesWritableSerializer implements INativeComparable,
   }
 
   @Override
-  public void deserialize(BytesWritable w, int length, DataInput in)
-      throws IOException {
+  public void deserialize(DataInput in, int length, BytesWritable w) throws IOException {
     w.setSize(length);
     in.readFully(w.getBytes(), 0, length);
   }

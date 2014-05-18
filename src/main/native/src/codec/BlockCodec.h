@@ -19,7 +19,6 @@
 #ifndef BLOCKCODEC_H_
 #define BLOCKCODEC_H_
 
-
 #include "Compressions.h"
 
 namespace NativeTask {
@@ -28,12 +27,11 @@ class BlockCompressStream : public CompressStream {
 protected:
   uint32_t _hint;
   uint32_t _blockMax;
-  char *   _tempBuffer;
+  char * _tempBuffer;
   uint32_t _tempBufferSize;
   uint64_t _compressedBytesWritten;
 public:
-  BlockCompressStream(OutputStream * stream,
-                       uint32_t bufferSizeHint);
+  BlockCompressStream(OutputStream * stream, uint32_t bufferSizeHint);
 
   virtual ~BlockCompressStream();
 
@@ -47,28 +45,30 @@ public:
 
   virtual uint64_t compressedBytesWritten();
 
+  void init();
+
 protected:
   virtual uint64_t maxCompressedLength(uint64_t origLength) {
     return origLength;
   }
 
-  virtual void compressOneBlock(const void * buff, uint32_t length) {}
+  virtual void compressOneBlock(const void * buff, uint32_t length) {
+  }
 };
 
 class BlockDecompressStream : public DecompressStream {
 protected:
   uint32_t _hint;
   uint32_t _blockMax;
-  char *   _tempBuffer;
+  char * _tempBuffer;
   uint32_t _tempBufferSize;
-  char *   _tempDecompressBuffer;
+  char * _tempDecompressBuffer;
   uint32_t _tempDecompressBufferSize;
   uint32_t _tempDecompressBufferUsed;
   uint32_t _tempDecompressBufferCapacity;
   uint64_t _compressedBytesRead;
 public:
-  BlockDecompressStream(InputStream * stream,
-                         uint32_t bufferSizeHint);
+  BlockDecompressStream(InputStream * stream, uint32_t bufferSizeHint);
 
   virtual ~BlockDecompressStream();
 
@@ -80,16 +80,19 @@ public:
 
   virtual uint64_t compressedBytesRead();
 
+  void init();
+
 protected:
   virtual uint64_t maxCompressedLength(uint64_t origLength) {
     return origLength;
   }
 
-  virtual uint32_t decompressOneBlock(uint32_t compressedSize, void * buff,
-                                      uint32_t length) {}
+  virtual uint32_t decompressOneBlock(uint32_t compressedSize, void * buff, uint32_t length) {
+    //TODO: add implementation
+    return 0;
+  }
 };
 
 } // namespace NativeTask
-
 
 #endif /* BLOCKCODEC_H_ */

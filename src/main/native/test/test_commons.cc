@@ -30,7 +30,7 @@ const char * GenerateChoice = "generate.choice";
 const char * GenerateLen = "generate.len";
 const char * GenerateKeyLen = "generate.key.len";
 const char * GenerateValueLen = "generate.value.len";
-const char * GenerateRange= "generate.range";
+const char * GenerateRange = "generate.range";
 const char * GenerateKeyRange = "generate.key.range";
 const char * GenerateValueRange = "generate.value.range";
 
@@ -39,7 +39,7 @@ vector<string> & MakeStringArray(vector<string> & dest, ...) {
   va_start(al, dest);
   while (true) {
     const char * s = va_arg(al, const char *);
-    if (s==NULL) {
+    if (s == NULL) {
       break;
     }
     dest.push_back(s);
@@ -60,27 +60,27 @@ GenerateType GetGenerateType(const string & type) {
   }
 }
 
-string & GenerateOne(string & dest, Random & r, GenerateType gtype,
-                     int64_t choice, int64_t len, int64_t range) {
+string & GenerateOne(string & dest, Random & r, GenerateType gtype, int64_t choice, int64_t len,
+    int64_t range) {
   switch (gtype) {
   case GenWord:
     r.nextWord(dest, choice);
     break;
   case GenNumber:
     uint64_t v;
-    if (choice>0) {
+    if (choice > 0) {
       v = r.next_int32(choice);
     } else {
       v = r.next_uint64();
     }
-    if (len>0) {
+    if (len > 0) {
       dest = StringUtil::ToString(v, '0', len);
     } else {
       dest = StringUtil::ToString(v);
     }
     break;
   case GenBytes:
-    if (range<2) {
+    if (range < 2) {
       if (len > 0) {
         dest = r.nextBytes(len, "ABCDEFGHIJKLMNOPQRSTUVWXYZ");
       } else {
@@ -88,8 +88,8 @@ string & GenerateOne(string & dest, Random & r, GenerateType gtype,
       }
     } else {
       if (len > 0) {
-        int64_t nlen = len - range/2 + r.next_int32(range);
-        if (nlen>0) {
+        int64_t nlen = len - range / 2 + r.next_int32(range);
+        if (nlen > 0) {
           dest = r.nextBytes(nlen, "ABCDEFGHIJKLMNOPQRSTUVWXYZ");
         } else {
           dest = "";
@@ -111,10 +111,9 @@ string & GenerateOne(string & dest, Random & r, GenerateType gtype,
  * @param size output array size
  * @param type string type (word|number|bytes|tera)
  */
-vector<string> & Generate(vector<string> & dest, uint64_t size,
-                          const string & type) {
-  if (type=="tera") {
-    TeraGen tera = TeraGen(size,1,0);
+vector<string> & Generate(vector<string> & dest, uint64_t size, const string & type) {
+  if (type == "tera") {
+    TeraGen tera = TeraGen(size, 1, 0);
     string temp;
     while (tera.next(temp)) {
       dest.push_back(temp);
@@ -122,8 +121,8 @@ vector<string> & Generate(vector<string> & dest, uint64_t size,
     return dest;
   }
   Random r;
-  if (TestConfig.get(GenerateSeed)!=NULL) {
-    r.setSeed(TestConfig.getInt(GenerateSeed,0));
+  if (TestConfig.get(GenerateSeed) != NULL) {
+    r.setSeed(TestConfig.getInt(GenerateSeed, 0));
   }
   GenerateType gtype = GetGenerateType(type);
   int64_t choice = TestConfig.getInt(GenerateChoice, -1);
@@ -142,19 +141,19 @@ vector<string> & Generate(vector<string> & dest, uint64_t size,
  * @param size output array size
  * @param type string type (word|number|bytes|tera)
  */
-vector<pair<string, string> > & Generate(vector<pair<string, string> > & dest,
-                                         uint64_t size, const string & type) {
-  if (type=="tera") {
-    TeraGen tera = TeraGen(size,1,0);
-    string k,v;
-    while (tera.next(k,v)) {
-      dest.push_back(std::make_pair(k,v));
+vector<pair<string, string> > & Generate(vector<pair<string, string> > & dest, uint64_t size,
+    const string & type) {
+  if (type == "tera") {
+    TeraGen tera = TeraGen(size, 1, 0);
+    string k, v;
+    while (tera.next(k, v)) {
+      dest.push_back(std::make_pair(k, v));
     }
     return dest;
   }
   Random r;
-  if (TestConfig.get(GenerateSeed)!=NULL) {
-    r.setSeed(TestConfig.getInt(GenerateSeed,0));
+  if (TestConfig.get(GenerateSeed) != NULL) {
+    r.setSeed(TestConfig.getInt(GenerateSeed, 0));
   }
   GenerateType gtype = GetGenerateType(type);
   int64_t choice = TestConfig.getInt(GenerateChoice, -1);
@@ -178,19 +177,19 @@ vector<pair<string, string> > & Generate(vector<pair<string, string> > & dest,
  * @param type string type (word|number|bytes|tera)
  */
 vector<pair<string, string> > & GenerateLength(vector<pair<string, string> > & dest,
-                                               uint64_t length, const string & type) {
-  if (type=="tera") {
-    TeraGen tera = TeraGen(length/100,1,0);
-    dest.reserve(length/100+2);
-    string k,v;
-    while (tera.next(k,v)) {
-      dest.push_back(std::make_pair(k,v));
+    uint64_t length, const string & type) {
+  if (type == "tera") {
+    TeraGen tera = TeraGen(length / 100, 1, 0);
+    dest.reserve(length / 100 + 2);
+    string k, v;
+    while (tera.next(k, v)) {
+      dest.push_back(std::make_pair(k, v));
     }
     return dest;
   }
   Random r;
-  if (TestConfig.get(GenerateSeed)!=NULL) {
-    r.setSeed(TestConfig.getInt(GenerateSeed,0));
+  if (TestConfig.get(GenerateSeed) != NULL) {
+    r.setSeed(TestConfig.getInt(GenerateSeed, 0));
   }
   GenerateType gtype = GetGenerateType(type);
   int64_t choice = TestConfig.getInt(GenerateChoice, -1);
@@ -199,8 +198,8 @@ vector<pair<string, string> > & GenerateLength(vector<pair<string, string> > & d
   int64_t keyRange = TestConfig.getInt(GenerateKeyRange, 1);
   int64_t valueRange = TestConfig.getInt(GenerateValueRange, 1);
   string key, value;
-  dest.reserve((size_t)(length/(keylen+valuelen)*1.2));
-  for (uint64_t i = 0; i < length; ) {
+  dest.reserve((size_t)(length / (keylen + valuelen) * 1.2));
+  for (uint64_t i = 0; i < length;) {
     GenerateOne(key, r, gtype, choice, keylen, keyRange);
     GenerateOne(value, r, gtype, choice, valuelen, valueRange);
     dest.push_back(std::make_pair(key, value));
@@ -219,9 +218,9 @@ vector<pair<string, string> > & GenerateLength(vector<pair<string, string> > & d
  * @param type string type (word|number|bytes|tera)
  */
 string & GenerateKVText(string & dest, uint64_t size, const string & type) {
-  if (type=="tera") {
-    TeraGen tera = TeraGen(size,1,0);
-    dest.reserve(100*size);
+  if (type == "tera") {
+    TeraGen tera = TeraGen(size, 1, 0);
+    dest.reserve(100 * size);
     string line;
     while (tera.nextLine(line)) {
       dest.append(line);
@@ -229,8 +228,8 @@ string & GenerateKVText(string & dest, uint64_t size, const string & type) {
     return dest;
   }
   Random r;
-  if (TestConfig.get(GenerateSeed)!=NULL) {
-    r.setSeed(TestConfig.getInt(GenerateSeed,0));
+  if (TestConfig.get(GenerateSeed) != NULL) {
+    r.setSeed(TestConfig.getInt(GenerateSeed, 0));
   }
   GenerateType gtype = GetGenerateType(type);
   int64_t choice = TestConfig.getInt(GenerateChoice, -1);
@@ -259,12 +258,11 @@ string & GenerateKVText(string & dest, uint64_t size, const string & type) {
  * @param length output string length
  * @param type string type (word|number|bytes)
  */
-string & GenerateKVTextLength(string & dest, uint64_t length,
-                              const string & type) {
-  if (type=="tera") {
-    uint64_t size = length/100;
-    TeraGen tera = TeraGen(size,1,0);
-    dest.reserve(100*size);
+string & GenerateKVTextLength(string & dest, uint64_t length, const string & type) {
+  if (type == "tera") {
+    uint64_t size = length / 100;
+    TeraGen tera = TeraGen(size, 1, 0);
+    dest.reserve(100 * size);
     string line;
     while (tera.nextLine(line)) {
       dest.append(line);
@@ -272,8 +270,8 @@ string & GenerateKVTextLength(string & dest, uint64_t length,
     return dest;
   }
   Random r;
-  if (TestConfig.get(GenerateSeed)!=NULL) {
-    r.setSeed(TestConfig.getInt(GenerateSeed,0));
+  if (TestConfig.get(GenerateSeed) != NULL) {
+    r.setSeed(TestConfig.getInt(GenerateSeed, 0));
   }
   GenerateType gtype = GetGenerateType(type);
   int64_t choice = TestConfig.getInt(GenerateChoice, -1);
@@ -293,7 +291,6 @@ string & GenerateKVTextLength(string & dest, uint64_t length,
   return dest;
 }
 
-
 /**
  * File <-> String utilities
  */
@@ -302,10 +299,10 @@ string & ReadFile(string & dest, const string & path) {
   if (NULL == fin) {
     THROW_EXCEPTION(IOException, "file not found or can not open for read");
   }
-  char buff[1024*16];
+  char buff[1024 * 16];
   while (true) {
-    size_t rd = fread(buff, 1, 1024*16, fin);
-    if (rd<=0) {
+    size_t rd = fread(buff, 1, 1024 * 16, fin);
+    if (rd <= 0) {
       break;
     }
     dest.append(buff, rd);
@@ -333,18 +330,17 @@ bool FileEqual(const string & lh, const string & rh) {
   return lhs == rhs;
 }
 
-
-KVGenerator::KVGenerator(uint32_t keylen, uint32_t vallen, bool unique) :
-    keylen(keylen), vallen(vallen), unique(unique) {
+KVGenerator::KVGenerator(uint32_t keylen, uint32_t vallen, bool unique)
+    : keylen(keylen), vallen(vallen), unique(unique) {
   factor = 2999999;
-  keyb = new char[keylen+32];
-  valb = new char[vallen+32];
+  keyb = new char[keylen + 32];
+  valb = new char[vallen + 32];
   snprintf(keyformat, 32, "%%0%ulx", keylen);
 }
 
 KVGenerator::~KVGenerator() {
-  delete [] keyb;
-  delete [] valb;
+  delete[] keyb;
+  delete[] valb;
 }
 
 char * KVGenerator::key(uint32_t & kl) {
@@ -357,11 +353,10 @@ char * KVGenerator::key(uint32_t & kl) {
         break;
       }
     }
-  }
-  else {
+  } else {
     v = lrand48();
   }
-  snprintf(keyb, keylen+32, keyformat, v);
+  snprintf(keyb, keylen + 32, keyformat, v);
   kl = keylen;
   return keyb;
 }
@@ -370,8 +365,8 @@ char * KVGenerator::value(uint32_t & vl) {
   uint32_t off = 0;
   while (off < vallen) {
     long v = lrand48();
-    v = (v/factor) * factor;
-    uint32_t wn = snprintf(valb+off, vallen+32-off, "%09lx\t", v);
+    v = (v / factor) * factor;
+    uint32_t wn = snprintf(valb + off, vallen + 32 - off, "%09lx\t", v);
     off += wn;
   }
   vl = vallen;
@@ -380,14 +375,14 @@ char * KVGenerator::value(uint32_t & vl) {
 
 void KVGenerator::write(FILE * fout, int64_t totallen) {
   while (totallen > 0) {
-    uint32_t kl,vl;
+    uint32_t kl, vl;
     char * key = this->key(kl);
     char * value = this->value(vl);
     fwrite(key, kl, 1, fout);
-    fputc('\t',fout);
+    fputc('\t', fout);
     fwrite(value, vl, 1, fout);
-    fputc('\n',fout);
-    totallen -= (kl+vl+2);
+    fputc('\n', fout);
+    totallen -= (kl + vl + 2);
   }
   fflush(fout);
 }

@@ -63,56 +63,53 @@ public class TeraSort implements Tool {
 
   @Override
   public int run(String[] args) throws Exception {
-    JobConf job = getConf() == null ? new JobConf() : new JobConf(getConf());
+    final JobConf job = getConf() == null ? new JobConf() : new JobConf(getConf());
 
-    GenericOptionsParser genericParser = new GenericOptionsParser(job, args);
+    final GenericOptionsParser genericParser = new GenericOptionsParser(job, args);
 
-    String[] remains = genericParser.getRemainingArgs();
+    final String[] remains = genericParser.getRemainingArgs();
     setConf(job);
 
-    Path inputpath = new Path(remains[0]);
-    Path outputpath = new Path(remains[1]);
-    Path partitionFile = new Path(inputpath, PARTITION_FILENAME);
-    URI partitionUri = new URI(partitionFile.toString() + "#"
-        + PARTITION_FILENAME);
+    final Path inputpath = new Path(remains[0]);
+    final Path outputpath = new Path(remains[1]);
+    final Path partitionFile = new Path(inputpath, PARTITION_FILENAME);
+    final URI partitionUri = new URI(partitionFile.toString() + "#" + PARTITION_FILENAME);
     FileInputFormat.setInputPaths(job, inputpath);
     FileOutputFormat.setOutputPath(job, outputpath);
     job.setJobName("NativeTeraSort");
     job.setOutputKeyClass(Text.class);
     job.setOutputValueClass(Text.class);
     job.set(Constants.NATIVE_RECORDREADER_CLASS, "NativeTask.TeraRecordReader");
-    job.set("native.recordwriter.class", "NativeTask.TeraRecordWriter");
-    job.set("native.partitioner.class", "NativeTask.TotalOrderPartitioner");
+    job.set(Constants.NATIVE_RECORDWRITER_CLASS, "NativeTask.TeraRecordWriter");
+    job.set(Constants.NATIVE_PARTITIONER_CLASS, "NativeTask.TotalOrderPartitioner");
     writePartitionFile(job, partitionFile);
     DistributedCache.addCacheFile(partitionUri, job);
     DistributedCache.createSymlink(job);
     job.setInt("dfs.replication", 1);
     Submitter.setupNativeJob(job);
     JobClient.runJob(job);
-    LOG.info("done");
     return 0;
   }
 
   static final String SAMPLE_SIZE = "terasort.partitions.sample";
 
-  private void writePartitionFile(JobConf conf, Path partFile)
-      throws IOException {
-    TextInputFormat inFormat = new TextInputFormat();
+  private void writePartitionFile(JobConf conf, Path partFile) throws IOException {
+    final TextInputFormat inFormat = new TextInputFormat();
     inFormat.configure(conf);
-    LongWritable key = new LongWritable();
-    Text value = new Text();
-    int partitions = conf.getNumReduceTasks();
-    long sampleSize = conf.getLong(SAMPLE_SIZE, 100000);
-    InputSplit[] splits = inFormat.getSplits(conf, conf.getNumMapTasks());
-    int samples = Math.min(10, splits.length);
-    long recordsPerSample = sampleSize / samples;
-    int sampleStep = splits.length / samples;
+    final LongWritable key = new LongWritable();
+    final Text value = new Text();
+    final int partitions = conf.getNumReduceTasks();
+    final long sampleSize = conf.getLong(SAMPLE_SIZE, 100000);
+    final InputSplit[] splits = inFormat.getSplits(conf, conf.getNumMapTasks());
+    final int samples = Math.min(10, splits.length);
+    final long recordsPerSample = sampleSize / samples;
+    final int sampleStep = splits.length / samples;
     long records = 0;
-    ArrayList<Text> sampleArray = new ArrayList<Text>();
+    final ArrayList<Text> sampleArray = new ArrayList<Text>();
     // take N samples from different parts of the input
     for (int i = 0; i < samples; ++i) {
-      RecordReader<LongWritable, Text> reader = inFormat.getRecordReader(
-          splits[sampleStep * i], conf, Reporter.NULL);
+      final RecordReader<LongWritable, Text> reader = inFormat.getRecordReader(splits[sampleStep * i], conf,
+          Reporter.NULL);
       while (reader.next(key, value)) {
         sampleArray.add(new Text(value.toString().substring(0, 10)));
         records += 1;
@@ -122,25 +119,23 @@ public class TeraSort implements Tool {
       }
     }
     Collections.sort(sampleArray);
-    FileSystem outFs = partFile.getFileSystem(conf);
+    final FileSystem outFs = partFile.getFileSystem(conf);
     if (outFs.exists(partFile)) {
       outFs.delete(partFile, false);
     }
-    int numRecords = sampleArray.size();
-    System.out.println("Making " + partitions + " from " + numRecords
-        + " records");
+    final int numRecords = sampleArray.size();
+    System.out.println("Making " + partitions + " from " + numRecords + " records");
     if (partitions > numRecords) {
-      throw new IllegalArgumentException(
-          "Requested more partitions than input keys (" + partitions + " > "
-              + numRecords + ")");
+      throw new IllegalArgumentException("Requested more partitions than input keys (" + partitions + " > "
+          + numRecords + ")");
     }
-    float stepSize = numRecords / (float) partitions;
+    final float stepSize = numRecords / (float) partitions;
     System.out.println("Step size is " + stepSize);
-    FSDataOutputStream fout = outFs.create(partFile);
+    final FSDataOutputStream fout = outFs.create(partFile);
     new IntWritable(partitions).write(fout);
     for (int i = 1; i < partitions; ++i) {
-      int current = Math.round(stepSize * i);
-      Text w = sampleArray.get(current);
+      final int current = Math.round(stepSize * i);
+      final Text w = sampleArray.get(current);
       w.write(fout);
     }
     fout.close();
@@ -157,7 +152,7 @@ public class TeraSort implements Tool {
    * @param args
    */
   public static void main(String[] args) throws Exception {
-    int exitCode = new TeraSort().run(args);
+    final int exitCode = new TeraSort().run(args);
     System.exit(exitCode);
   }
 }

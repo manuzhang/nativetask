@@ -20,27 +20,32 @@
 #define MCOLLECTOROUTPUTHANDLER_H_
 
 #include "BatchHandler.h"
+#include "lib/SpillOutputService.h"
+#include "AbstractMapHandler.h"
 
 namespace NativeTask {
 class MapOutputCollector;
 
-class MCollectorOutputHandler:
-    public NativeTask::BatchHandler {
+class MCollectorOutputHandler : public AbstractMapHandler {
 private:
+
+  FixSizeContainer _kvContainer;
+
   MapOutputCollector * _collector;
   // state info for large KV pairs
   char * _dest;
+
+  Endium _endium;
 
 public:
   MCollectorOutputHandler();
   virtual ~MCollectorOutputHandler();
 
-  virtual void configure(Config & config);
+  virtual void configure(Config * config);
   virtual void finish();
-  virtual void handleInput(char * buff, uint32_t length);
-
+  virtual void handleInput(ByteBuffer & byteBuffer);
 private:
-  void reset();
+  KVBuffer * allocateKVBuffer(uint32_t partition, uint32_t kvlength);
 };
 
 }

@@ -31,8 +31,7 @@ protected:
   void * _zstream;
   bool _finished;
 public:
-  GzipCompressStream(OutputStream * stream,
-                       uint32_t bufferSizeHint);
+  GzipCompressStream(OutputStream * stream, uint32_t bufferSizeHint);
 
   virtual ~GzipCompressStream();
 
@@ -41,6 +40,12 @@ public:
   virtual void flush();
 
   virtual void close();
+
+  virtual void finish() {
+    flush();
+  }
+
+  virtual void resetState();
 
   virtual void writeDirect(const void * buff, uint32_t length);
 
@@ -57,8 +62,7 @@ protected:
   void * _zstream;
   bool _eof;
 public:
-  GzipDecompressStream(InputStream * stream,
-                         uint32_t bufferSizeHint);
+  GzipDecompressStream(InputStream * stream, uint32_t bufferSizeHint);
 
   virtual ~GzipDecompressStream();
 

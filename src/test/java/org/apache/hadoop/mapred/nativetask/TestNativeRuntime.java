@@ -15,19 +15,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.hadoop.mapred.nativetask;
 
-import org.apache.hadoop.mapred.JobConf;
 import junit.framework.TestCase;
 
 public class TestNativeRuntime extends TestCase {
-  public void testLoad() {
-    JobConf conf = new JobConf();
-    NativeRuntime.configure(conf);
-    assertTrue(NativeRuntime.isNativeLibraryLoaded());
-    long obj = NativeRuntime.createNativeObject("NativeTask.MCollectorOutputHandler");
-    assertTrue(obj != 0);
-    NativeRuntime.releaseNativeObject(obj);    
+  public void testXX() {
+    //TODO add implementation
   }
 }

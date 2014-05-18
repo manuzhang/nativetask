@@ -16,7 +16,6 @@
  * limitations under the License.
  */
 
-
 #include "FileSystem.h"
 #include "test_commons.h"
 
@@ -33,13 +32,13 @@ TEST(FileSystem, RawFileSystem) {
   FileInputStream * input = (FileInputStream*)fs.open(temppath);
   char buff[1024];
   int64_t total = 0;
-  while(true) {
+  while (true) {
     int rd = input->read(buff, 1024);
-    if (rd<=0) {
+    if (rd <= 0) {
       break;
     }
-    ASSERT_EQ(content.substr(total, rd), string(buff,rd));
-    total+=rd;
+    ASSERT_EQ(content.substr(total, rd), string(buff, rd));
+    total += rd;
   }
   ASSERT_EQ(content.length(), total);
   delete input;

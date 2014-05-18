@@ -19,6 +19,7 @@
 #include "commons.h"
 #include "util/StringUtil.h"
 #include "WordCount.h"
+#include "Log.h"
 
 namespace NativeTask {
 
@@ -32,7 +33,8 @@ WordCountMapper::WordCountMapper() {
 }
 
 void WordCountMapper::wordCount(const char * buff, uint32_t length) {
-  uint32_t count = 1;
+  //reverse  to big endium
+  uint32_t count = bswap(1);
   uint8_t * pos = (uint8_t*)buff;
   uint8_t * end = (uint8_t*)buff + length;
   uint8_t * start = NULL;
@@ -46,7 +48,7 @@ void WordCountMapper::wordCount(const char * buff, uint32_t length) {
         len++;
       }
     } else {
-      if (_spaces[*pos]==0) {
+      if (_spaces[*pos] == 0) {
         start = pos;
         len = 1;
       }
@@ -58,29 +60,29 @@ void WordCountMapper::wordCount(const char * buff, uint32_t length) {
   }
 }
 
-void WordCountMapper::map(const char * key, uint32_t keyLen,
-                          const char * value, uint32_t valueLen) {
-  if (valueLen>0) {
+void WordCountMapper::map(const char * key, uint32_t keyLen, const char * value,
+    uint32_t valueLen) {
+  if (valueLen > 0) {
     wordCount(value, valueLen);
   }
 }
 
-void IntSumReducer::reduce(KeyGroup & input) {
+void IntSumReducer::reduce(KeyGroupIterator & input) {
   const char * key;
   const char * value;
   uint32_t keyLen;
   uint32_t valueLen;
   uint32_t count = 0;
   key = input.getKey(keyLen);
-  while (NULL != (value=input.nextValue(valueLen))) {
-    count += *(uint32_t*)value;
+  while (NULL != (value = input.nextValue(valueLen))) {
+    uint32_t current = bswap(*(uint32_t*)value);
+    count += current;
   }
   collect(key, keyLen, &count, 4);
 }
 
-void IntSumMapper::map(const char * key, uint32_t keyLen,
-                           const char * value, uint32_t valueLen) {
-  if (_count>0) {
+void IntSumMapper::map(const char * key, uint32_t keyLen, const char * value, uint32_t valueLen) {
+  if (_count > 0) {
     if (!frmemeq(_key.data(), key, _key.length(), keyLen)) {
       collect(_key.data(), _key.length(), &_count, 4);
       _key.assign(key, keyLen);
@@ -90,18 +92,18 @@ void IntSumMapper::map(const char * key, uint32_t keyLen,
     }
   } else {
     _key.assign(key, keyLen);
-    _count=1;
+    _count = 1;
   }
 }
 
 void IntSumMapper::close() {
-  if (_count>0) {
+  if (_count > 0) {
     collect(_key.data(), _key.length(), &_count, 4);
   }
 }
 
-void TextIntRecordWriter::collect(const void * key, uint32_t keyLen,
-                                    const void * value, uint32_t valueLen) {
+void TextIntRecordWriter::collect(const void * key, uint32_t keyLen, const void * value,
+    uint32_t valueLen) {
   _appendBuffer.write(key, keyLen);
   _appendBuffer.write(_keyValueSeparator.data(), _keyValueSeparator.length());
   string s = StringUtil::ToString(*(uint32_t*)value);

@@ -21,7 +21,7 @@
 namespace NativeTask {
 
 bool Path::IsAbsolute(const string & path) {
-  if (path.length()>0 && path[0]=='/') {
+  if (path.length() > 0 && path[0] == '/') {
     return true;
   }
   return false;
@@ -32,7 +32,7 @@ string Path::GetParent(const string & path) {
   if (lastSlash == path.npos) {
     return ".";
   }
-  if (lastSlash == 0 && path.length()==1) {
+  if (lastSlash == 0 && path.length() == 1) {
     return "";
   }
   if (lastSlash == 0) {
@@ -46,7 +46,7 @@ string Path::GetName(const string & path) {
   if (lastSlash == path.npos) {
     return path;
   }
-  return path.substr(lastSlash+1);
+  return path.substr(lastSlash + 1);
 }
 
 } // namespace NativeTask

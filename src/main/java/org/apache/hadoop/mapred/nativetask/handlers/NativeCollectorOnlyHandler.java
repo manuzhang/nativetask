@@ -18,78 +18,142 @@
 
 package org.apache.hadoop.mapred.nativetask.handlers;
 
+import java.io.Closeable;
 import java.io.IOException;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.io.Writable;
-import org.apache.hadoop.mapred.JobConf;
-import org.apache.hadoop.mapred.nativetask.Constants;
+import org.apache.hadoop.mapred.TaskAttemptID;
+import org.apache.hadoop.mapred.nativetask.Command;
+import org.apache.hadoop.mapred.nativetask.CommandDispatcher;
+import org.apache.hadoop.mapred.nativetask.DataChannel;
+import org.apache.hadoop.mapred.nativetask.ICombineHandler;
+import org.apache.hadoop.mapred.nativetask.INativeHandler;
 import org.apache.hadoop.mapred.nativetask.NativeBatchProcessor;
-import org.apache.hadoop.mapred.nativetask.util.BytesUtil;
-import org.apache.hadoop.mapred.nativetask.util.OutputPathUtil;
+import org.apache.hadoop.mapred.nativetask.TaskContext;
+import org.apache.hadoop.mapred.nativetask.util.NativeTaskOutput;
+import org.apache.hadoop.mapred.nativetask.util.OutputUtil;
+import org.apache.hadoop.mapred.nativetask.util.ReadWriteBuffer;
 
 /**
- * 
  * Java Record Reader + Java Mapper + Native Collector
- * 
- * @param <K>
- * @param <V>
  */
-public class NativeCollectorOnlyHandler<K extends Writable, V extends Writable>
-    extends NativeBatchProcessor<K, V, Writable, Writable>  {
+@SuppressWarnings("unchecked")
+public class NativeCollectorOnlyHandler<K, V> implements CommandDispatcher, Closeable {
+
+  public static String NAME = "NativeTask.MCollectorOutputHandler";
   private static Log LOG = LogFactory.getLog(NativeCollectorOnlyHandler.class);
-
-  private OutputPathUtil outputFileUtil = null;
+  public static Command GET_OUTPUT_PATH = new Command(100, "GET_OUTPUT_PATH");
+  public static Command GET_OUTPUT_INDEX_PATH = new Command(101, "GET_OUTPUT_INDEX_PATH");
+  public static Command GET_SPILL_PATH = new Command(102, "GET_SPILL_PATH");
+  public static Command GET_COMBINE_HANDLER = new Command(103, "GET_COMBINE_HANDLER");
+  
+  private NativeTaskOutput output;
   private int spillNumber = 0;
+  private ICombineHandler combinerHandler = null;
+  private final BufferPusher<K, V> kvPusher;
+  private final INativeHandler nativeHandler;
+  private boolean closed = false;
 
+  public static <K, V> NativeCollectorOnlyHandler<K, V> create(TaskContext context) throws IOException {
 
-  @SuppressWarnings("unchecked")
-  public NativeCollectorOnlyHandler(JobConf jobConf)
-      throws IOException {
-    super((Class<K>)jobConf.getMapOutputKeyClass(), 
-        (Class<V>)(jobConf.getMapOutputValueClass()),
-        null, 
-        null, 
-        "NativeTask.MCollectorOutputHandler", 
-        jobConf.getInt(Constants.NATIVE_PROCESSOR_BUFFER_KB, 1024) * 1024, 
-        0);
     
-    this.outputFileUtil = new OutputPathUtil();
-    outputFileUtil.setConf(jobConf);
+    ICombineHandler combinerHandler = null;
+    try {
+      final TaskContext combineContext = context.copyOf();
+      combineContext.setInputKeyClass(context.getOuputKeyClass());
+      combineContext.setInputValueClass(context.getOutputValueClass());
+
+      combinerHandler = CombinerHandler.create(combineContext);
+    } catch (final ClassNotFoundException e) {
+      throw new IOException(e);
+    }
+    
+    if (null != combinerHandler) {
+      LOG.info("[NativeCollectorOnlyHandler] combiner is not null");
+    }
+
+    final INativeHandler nativeHandler = NativeBatchProcessor.create(NAME, context.getConf(), DataChannel.OUT);
+    final BufferPusher<K, V> kvPusher = new BufferPusher<K, V>(context.getOuputKeyClass(), context.getOutputValueClass(),
+        nativeHandler);
+
+    return new NativeCollectorOnlyHandler<K, V>(context, nativeHandler, kvPusher, combinerHandler);
   }
-  
-  public void collect(K key, V value, int partition) throws IOException,
-      InterruptedException {
-    serializer.serializeKV(nativeWriter, key, value);
-    nativeWriter.writeInt(partition);
+
+  protected NativeCollectorOnlyHandler(TaskContext context, INativeHandler nativeHandler,
+      BufferPusher<K, V> kvPusher, ICombineHandler combiner) throws IOException {
+    Configuration conf = context.getConf();
+    TaskAttemptID id = context.getTaskAttemptId();
+    if (null == id) {
+      this.output = OutputUtil.createNativeTaskOutput(conf, "");
+    } else {
+      this.output = OutputUtil.createNativeTaskOutput(context.getConf(), context.getTaskAttemptId()
+        .toString());
+    }
+    this.combinerHandler = combiner;
+    this.kvPusher = kvPusher;
+    this.nativeHandler = nativeHandler;
+    nativeHandler.setCommandDispatcher(this);
+  }
+
+  public void collect(K key, V value, int partition) throws IOException {
+    kvPusher.collect(key, value, partition);
   };
-  
-  public void flush() throws IOException, InterruptedException {
-    nativeWriter.flush();
+
+  public void flush() throws IOException {
   }
 
   @Override
   public void close() throws IOException {
-    super.close();
+    if (closed) {
+      return;
+    }
+
+    if (null != kvPusher) {
+      kvPusher.close();
+    }
+
+    if (null != combinerHandler) {
+      combinerHandler.close();
+    }
+
+    if (null != nativeHandler) {
+      nativeHandler.close();
+    }
+    closed = true;
   }
 
   @Override
-  protected byte[] sendCommandToJava(byte[] data) throws IOException {
-    String cmd = BytesUtil.fromBytes(data);
+  public ReadWriteBuffer onCall(Command command, ReadWriteBuffer parameter) throws IOException {
     Path p = null;
-    if (cmd.equals("GetOutputPath")) {
-      p = outputFileUtil.getOutputFileForWrite(-1);
-    } else if (cmd.equals("GetOutputIndexPath")) {
-      p = outputFileUtil.getOutputIndexFileForWrite(-1);
-    } else if (cmd.equals("GetSpillPath")) {
-      p = outputFileUtil.getSpillFileForWrite(spillNumber++, -1);
+    if (null == command) {
+      return null;
+    }
+        
+    if (command.equals(GET_OUTPUT_PATH)) {
+      p = output.getOutputFileForWrite(-1);
+    } else if (command.equals(GET_OUTPUT_INDEX_PATH)) {
+      p = output.getOutputIndexFileForWrite(-1);
+    } else if (command.equals(GET_SPILL_PATH)) {
+      p = output.getSpillFileForWrite(spillNumber++, -1);
+      
+    } else if (command.equals(GET_COMBINE_HANDLER)) {
+      if (null == combinerHandler) {
+        return null;
+      }
+      final ReadWriteBuffer result = new ReadWriteBuffer(8);
+      
+      result.writeLong(combinerHandler.getId());
+      return result;
     } else {
-      LOG.warn("Illegal command: " + cmd);
+      throw new IOException("Illegal command: " + command.toString());
     }
     if (p != null) {
-      return BytesUtil.toBytes(p.toUri().getPath());
+      final ReadWriteBuffer result = new ReadWriteBuffer();
+      result.writeString(p.toUri().getPath());
+      return result;
     } else {
       throw new IOException("MapOutputFile can't allocate spill/output file");
     }

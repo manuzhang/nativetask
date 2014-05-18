@@ -28,7 +28,7 @@ public class BytesUtil {
     }
     try {
       return str.getBytes("utf-8");
-    } catch (UnsupportedEncodingException e) {
+    } catch (final UnsupportedEncodingException e) {
       throw new RuntimeException(e.getMessage());
     }
   }
@@ -39,31 +39,44 @@ public class BytesUtil {
     }
     try {
       return new String(data, "utf-8");
-    } catch (UnsupportedEncodingException e) {
+    } catch (final UnsupportedEncodingException e) {
       throw new RuntimeException(e.getMessage());
     }
+  }
+
+  public static int toInt(byte[] bytes) {
+    return toInt(bytes, 0, 4);
   }
 
   public static int toInt(byte[] bytes, int offset, final int length) {
     final int SIZEOF_INT = 4;
     if (length != SIZEOF_INT || offset + length > bytes.length) {
-      throw new RuntimeException(
-          "toInt exception. length not equals to SIZE of Int or buffer overflow");
+      throw new RuntimeException("toInt exception. length not equals to SIZE of Int or buffer overflow");
     }
-    int ch1 = bytes[0] & 0xff;
-    int ch2 = bytes[1] & 0xff;
-    int ch3 = bytes[2] & 0xff;
-    int ch4 = bytes[3] & 0xff;
+    final int ch1 = bytes[offset] & 0xff;
+    final int ch2 = bytes[offset + 1] & 0xff;
+    final int ch3 = bytes[offset + 2] & 0xff;
+    final int ch4 = bytes[offset + 3] & 0xff;
     return ((ch1 << 24) + (ch2 << 16) + (ch3 << 8) + (ch4 << 0));
 
   }
 
   // same rule as DataOutputStream
-  public static byte[] toBytes(int v, byte[] b) {
+  public static void toBytes(int v, byte[] b) {
     b[0] = (byte) ((v >>> 24) & 0xFF);
     b[1] = (byte) ((v >>> 16) & 0xFF);
     b[2] = (byte) ((v >>> 8) & 0xFF);
     b[3] = (byte) ((v >>> 0) & 0xFF);
-    return b;
+    return;
   }
+
+  // same rule as DataOutputStream
+  public static void toBytes(int v, byte[] b, int offset, int length) {
+    b[offset] = (byte) ((v >>> 24) & 0xFF);
+    b[offset + 1] = (byte) ((v >>> 16) & 0xFF);
+    b[offset + 2] = (byte) ((v >>> 8) & 0xFF);
+    b[offset + 3] = (byte) ((v >>> 0) & 0xFF);
+    return;
+  }
+
 }

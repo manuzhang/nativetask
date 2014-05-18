@@ -32,18 +32,16 @@ protected:
   uint64_t _length;
   vector<string> _locations;
 public:
-  FileSplit() :
-    _start(0),
-    _length(0) {
+  FileSplit()
+      : _start(0), _length(0) {
   }
 
-  FileSplit(const string & file, uint64_t start, uint64_t length) :
-    _file(file),
-    _start(start),
-    _length(length) {
+  FileSplit(const string & file, uint64_t start, uint64_t length)
+      : _file(file), _start(start), _length(length) {
   }
 
-  virtual ~FileSplit() {}
+  virtual ~FileSplit() {
+  }
 
   const string & file() {
     return _file;

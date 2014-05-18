@@ -21,101 +21,77 @@
 #include "MCollectorOutputHandler.h"
 #include "NativeObjectFactory.h"
 #include "MapOutputCollector.h"
-
-namespace NativeTask {
+#include "CombineHandler.h"
 
 using std::string;
 using std::vector;
 
-MCollectorOutputHandler::MCollectorOutputHandler() :
-    _collector(NULL),
-    _dest(NULL) {
+namespace NativeTask {
+
+MCollectorOutputHandler::MCollectorOutputHandler()
+    : _collector(NULL), _dest(NULL), _endium(LARGE_ENDIUM) {
 }
 
 MCollectorOutputHandler::~MCollectorOutputHandler() {
-  reset();
-}
-
-void MCollectorOutputHandler::reset() {
   _dest = NULL;
   delete _collector;
   _collector = NULL;
 }
 
-void MCollectorOutputHandler::configure(Config & config) {
-  uint32_t partition = config.getInt("mapred.reduce.tasks", 1);
-  _collector = new MapOutputCollector(partition);
+void MCollectorOutputHandler::configure(Config * config) {
+  if (NULL == config) {
+    return;
+  }
+
+  uint32_t partition = config->getInt(MAPRED_NUM_REDUCES, 1);
+
+  _collector = new MapOutputCollector(partition, this);
   _collector->configure(config);
 }
 
 void MCollectorOutputHandler::finish() {
-  string outputpath = this->sendCommand("GetOutputPath");
-  string indexpath = this->sendCommand("GetOutputIndexPath");
-  if ((outputpath.length() == 0) || (indexpath.length() == 0)) {
-    THROW_EXCEPTION(IOException, "Illegal(empty) map output file/index path");
-  }
-  vector<string> pathes;
-  StringUtil::Split(outputpath, ";", pathes);
-  _collector->final_merge_and_spill(pathes, indexpath, _collector->getMapOutputSpec(), NULL);
-  reset();
+  _collector->close();
   BatchHandler::finish();
 }
 
-void MCollectorOutputHandler::handleInput(char * buff, uint32_t length) {
+void MCollectorOutputHandler::handleInput(ByteBuffer & in) {
+  char * buff = in.current();
+  uint32_t length = in.remain();
 
-  while (length>0) {
-    if (unlikely(length<2*sizeof(uint32_t))) {
+  const char * end = buff + length;
+  char * pos = buff;
+  if (_kvContainer.remain() > 0) {
+    uint32_t filledLength = _kvContainer.fill(pos, length);
+    pos += filledLength;
+  }
+
+  while (end - pos > 0) {
+    KVBufferWithParititionId * kvBuffer = (KVBufferWithParititionId *)pos;
+
+    if (unlikely(end - pos < KVBuffer::headerLength())) {
       THROW_EXCEPTION(IOException, "k/v meta information incomplete");
     }
 
-    // key value format
-    // keyLength(4 byte) + key + valueLength(4 byte) + value + partitionId(4 byte)
-
-    //convert to little endium
-    char * pos = buff;
-    uint32_t keyLength = bswap(*((uint32_t*)pos));
-    *((uint32_t*)pos) = keyLength;
-
-    pos += keyLength + sizeof(uint32_t);
-    uint32_t valueLength = bswap(*((uint32_t*)pos));
-    *((uint32_t*)pos) = valueLength;
-
-    pos += valueLength + sizeof(uint32_t);
-    uint32_t partition = bswap(*((uint32_t*)pos));
-
-    uint32_t kvlength = pos - buff;
-
-    //LOG("key length %d, value length: %d, partion id: %d", keyLength, valueLength, partition);
-
-
-    char * dest = _collector->get_buffer_to_put(kvlength, partition);
-    if (NULL == dest) {
-      string spillpath = this->sendCommand("GetSpillPath");
-      if (spillpath.length() == 0) {
-        THROW_EXCEPTION(IOException, "Illegal(empty) spill files path");
-      }
-      vector<string> pathes;
-      StringUtil::Split(spillpath, ";", pathes);
-      _collector->mid_spill(pathes, "", _collector->getMapOutputSpec(), NULL);
-      dest = _collector->get_buffer_to_put(kvlength, partition);
-      if (NULL == dest) {
-        // io.sort.mb too small, cann't proceed
-        // should not get here, cause get_buffer_to_put can throw OOM exception
-        THROW_EXCEPTION(OutOfMemoryException, "key/value pair larger than io.sort.mb");
-      }
+    if (_endium == LARGE_ENDIUM) {
+      kvBuffer->partitionId = bswap(kvBuffer->partitionId);
+      kvBuffer->buffer.keyLength = bswap(kvBuffer->buffer.keyLength);
+      kvBuffer->buffer.valueLength = bswap(kvBuffer->buffer.valueLength);
     }
 
-    if (unlikely(kvlength > length)) {
-      //key and value must be able to flushed together.
-	  THROW_EXCEPTION(IOException, "k/v data incomplete");
-    }
+    uint32_t kvLength = kvBuffer->buffer.length();
 
-    simple_memcpy(dest, buff, kvlength);
+    KVBuffer * dest = allocateKVBuffer(kvBuffer->partitionId, kvLength);
+    _kvContainer.wrap((char *)dest, kvLength);
 
-    //4 bytes for the partition id
-    buff += kvlength + sizeof(uint32_t);
-    length -= kvlength + sizeof(uint32_t);
+    pos += 4; //skip the partition length
+    uint32_t filledLength = _kvContainer.fill(pos, end - pos);
+    pos += filledLength;
   }
 }
 
+KVBuffer * MCollectorOutputHandler::allocateKVBuffer(uint32_t partitionId, uint32_t kvlength) {
+  KVBuffer * dest = _collector->allocateKVBuffer(partitionId, kvlength);
+  return dest;
 }
+
+}      //namespace

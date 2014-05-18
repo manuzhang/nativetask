@@ -19,39 +19,38 @@
 #include "commons.h"
 #include "util/StringUtil.h"
 #include "IFile.h"
+#include "Compressions.h"
+#include "lib/FileSystem.h"
 
 namespace NativeTask {
 
 ///////////////////////////////////////////////////////////
 
-IFileReader::IFileReader(InputStream * stream, ChecksumType checksumType,
-                           KeyValueType ktype, KeyValueType vtype,
-                           IndexRange * spill_infos, const string & codec) :
-    _stream(stream),
-    _source(NULL),
-    _checksumType(checksumType),
-    _kType(ktype),
-    _vType(vtype),
-    _codec(codec),
-    _segmentIndex(-1),
-    _spillInfo(spill_infos),
-    _valuePos(NULL),
-    _valueLen(0) {
+IFileReader::IFileReader(InputStream * stream, SingleSpillInfo * spill, bool deleteInputStream)
+    : _deleteSourceStream(deleteInputStream), _stream(stream), _source(NULL),
+        _checksumType(spill->checkSumType), _kType(spill->keyType), _vType(spill->valueType),
+        _codec(spill->codec), _segmentIndex(-1), _spillInfo(spill), _valuePos(NULL), _valueLen(0) {
   _source = new ChecksumInputStream(_stream, _checksumType);
   _source->setLimit(0);
-  _reader.init(128*1024, _source, _codec);
+  _reader.init(128 * 1024, _source, _codec);
 }
 
 IFileReader::~IFileReader() {
+
   delete _source;
   _source = NULL;
+
+  if (_deleteSourceStream) {
+    delete _stream;
+    _stream = NULL;
+  }
 }
 
 /**
  * 0 if success
  * 1 if end
  */
-int IFileReader::nextPartition() {
+bool IFileReader::nextPartition() {
   if (0 != _source->getLimit()) {
     THROW_EXCEPTION(IOException, "bad ifile segment length");
   }
@@ -64,14 +63,15 @@ int IFileReader::nextPartition() {
     uint32_t actual = bswap(chsum);
     uint32_t expect = _source->getChecksum();
     if (actual != expect) {
-      THROW_EXCEPTION_EX(IOException, "read ifile checksum not match, actual %x expect %x", actual, expect);
+      THROW_EXCEPTION_EX(IOException, "read ifile checksum not match, actual %x expect %x", actual,
+          expect);
     }
   }
   _segmentIndex++;
   if (_segmentIndex < (int)(_spillInfo->length)) {
-    int64_t end_pos = (int64_t)_spillInfo->segments[_spillInfo->start + _segmentIndex].realEndPosition;
+    int64_t end_pos = (int64_t)_spillInfo->segments[_segmentIndex].realEndOffset;
     if (_segmentIndex > 0) {
-      end_pos -= (int64_t)_spillInfo->segments[_spillInfo->start + _segmentIndex - 1].realEndPosition;
+      end_pos -= (int64_t)_spillInfo->segments[_segmentIndex - 1].realEndOffset;
     }
     if (end_pos < 0) {
       THROW_EXCEPTION(IOException, "bad ifile format");
@@ -79,53 +79,67 @@ int IFileReader::nextPartition() {
     // exclude checksum
     _source->setLimit(end_pos - 4);
     _source->resetChecksum();
-    return 0;
-  }
-  else {
-    return 1;
+    return true;
+  } else {
+    return false;
   }
 }
 
-
 ///////////////////////////////////////////////////////////
 
-IFileWriter::IFileWriter(OutputStream * stream, ChecksumType checksumType,
-                           KeyValueType ktype, KeyValueType vtype,
-                           const string & codec) :
-    _stream(stream),
-    _dest(NULL),
-    _checksumType(checksumType),
-    _kType(ktype),
-    _vType(vtype),
-    _codec(codec) {
+IFileWriter * IFileWriter::create(const std::string & filepath, const MapOutputSpec & spec,
+    Counter * spilledRecords) {
+  OutputStream * fout = FileSystem::getLocal().create(filepath, true);
+  IFileWriter * writer = new IFileWriter(fout, spec.checksumType, spec.keyType, spec.valueType,
+      spec.codec, spilledRecords, true);
+  return writer;
+}
+
+IFileWriter::IFileWriter(OutputStream * stream, ChecksumType checksumType, KeyValueType ktype,
+    KeyValueType vtype, const string & codec, Counter * counter, bool deleteTargetStream)
+    : _deleteTargetStream(deleteTargetStream), _stream(stream), _dest(NULL),
+        _checksumType(checksumType), _kType(ktype), _vType(vtype), _codec(codec),
+        _recordCounter(counter) {
   _dest = new ChecksumOutputStream(_stream, _checksumType);
-  _appendBuffer.init(128*1024, _dest, _codec);
+  _appendBuffer.init(128 * 1024, _dest, _codec);
 }
 
 IFileWriter::~IFileWriter() {
   delete _dest;
   _dest = NULL;
+
+  if (_deleteTargetStream) {
+    delete _stream;
+    _stream = NULL;
+  }
 }
 
 void IFileWriter::startPartition() {
-  _spillInfo.push_back(IndexEntry());
+  _spillFileSegments.push_back(IFileSegment());
   _dest->resetChecksum();
 }
 
 void IFileWriter::endPartition() {
-  char EOFMarker[2] = {-1,-1};
+  char EOFMarker[2] = {-1, -1};
   _appendBuffer.write(EOFMarker, 2);
   _appendBuffer.flush();
+
+  CompressStream * compressionStream = _appendBuffer.getCompressionStream();
+  if (NULL != compressionStream) {
+    compressionStream->finish();
+    compressionStream->resetState();
+  }
+
   uint32_t chsum = _dest->getChecksum();
   chsum = bswap(chsum);
   _stream->write(&chsum, sizeof(chsum));
   _stream->flush();
-  IndexEntry * info = &(_spillInfo[_spillInfo.size()-1]);
-  info->endPosition = _appendBuffer.getCounter();
-  info->realEndPosition = _stream->tell();
+  IFileSegment * info = &(_spillFileSegments[_spillFileSegments.size() - 1]);
+  info->uncompressedEndOffset = _appendBuffer.getCounter();
+  info->realEndOffset = _stream->tell();
 }
 
-void IFileWriter::writeKey(const char * key, uint32_t keyLen, uint32_t valueLen) {
+void IFileWriter::write(const char * key, uint32_t keyLen, const char * value, uint32_t valueLen) {
   // append KeyLength ValueLength KeyBytesLength
   uint32_t keyBuffLen = keyLen;
   uint32_t valBuffLen = valueLen;
@@ -136,15 +150,23 @@ void IFileWriter::writeKey(const char * key, uint32_t keyLen, uint32_t valueLen)
   case BytesType:
     keyBuffLen += 4;
     break;
+  default:
+    break;
   }
+
   switch (_vType) {
   case TextType:
     valBuffLen += WritableUtils::GetVLongSize(valueLen);
     break;
   case BytesType:
     valBuffLen += 4;
+    break;
+  default:
+    break;
   }
+
   _appendBuffer.write_vuint2(keyBuffLen, valBuffLen);
+
   switch (_kType) {
   case TextType:
     _appendBuffer.write_vuint(keyLen);
@@ -152,13 +174,18 @@ void IFileWriter::writeKey(const char * key, uint32_t keyLen, uint32_t valueLen)
   case BytesType:
     _appendBuffer.write_uint32_be(keyLen);
     break;
+  default:
+    break;
   }
-  if (keyLen>0) {
+
+  if (keyLen > 0) {
     _appendBuffer.write(key, keyLen);
   }
-}
 
-void IFileWriter::writeValue(const char * value, uint32_t valueLen) {
+  if (NULL != _recordCounter) {
+    _recordCounter->increase();
+  }
+
   switch (_vType) {
   case TextType:
     _appendBuffer.write_vuint(valueLen);
@@ -166,26 +193,33 @@ void IFileWriter::writeValue(const char * value, uint32_t valueLen) {
   case BytesType:
     _appendBuffer.write_uint32_be(valueLen);
     break;
+  default:
+    break;
   }
-  if (valueLen>0) {
+  if (valueLen > 0) {
     _appendBuffer.write(value, valueLen);
   }
 }
 
-
-IndexRange * IFileWriter::getIndex(uint32_t start) {
-  IndexEntry * segs = new IndexEntry[_spillInfo.size()];
-  for (size_t i = 0; i < _spillInfo.size(); i++) {
-    segs[i] = _spillInfo[i];
+IFileSegment * IFileWriter::toArray(std::vector<IFileSegment> *segments) {
+  IFileSegment * segs = new IFileSegment[segments->size()];
+  for (size_t i = 0; i < segments->size(); i++) {
+    segs[i] = segments->at(i);
   }
-  return new IndexRange(start, (uint32_t) _spillInfo.size(), "", segs);
+  return segs;
+}
+
+SingleSpillInfo * IFileWriter::getSpillInfo() {
+  const uint32_t size = _spillFileSegments.size();
+  return new SingleSpillInfo(toArray(&_spillFileSegments), size, "", _checksumType, _kType, _vType,
+      _codec);
 }
 
 void IFileWriter::getStatistics(uint64_t & offset, uint64_t & realOffset) {
-  if (_spillInfo.size()>0) {
-    offset = _spillInfo[_spillInfo.size()-1].endPosition;
-    realOffset = _spillInfo[_spillInfo.size()-1].realEndPosition;
-  } else{
+  if (_spillFileSegments.size() > 0) {
+    offset = _spillFileSegments[_spillFileSegments.size() - 1].uncompressedEndOffset;
+    realOffset = _spillFileSegments[_spillFileSegments.size() - 1].realEndOffset;
+  } else {
     offset = 0;
     realOffset = 0;
   }

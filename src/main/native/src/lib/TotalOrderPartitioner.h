@@ -21,6 +21,7 @@
 
 #include "NativeTask.h"
 #include "Streams.h"
+#include "MapOutputSpec.h"
 
 namespace NativeTask {
 
@@ -37,24 +38,24 @@ private:
 public:
   TotalOrderPartitioner();
 
-  virtual void configure(Config & config);
+  virtual void configure(Config * config);
 
-  virtual uint32_t getPartition(const char * key, uint32_t & keyLen,
-                                uint32_t numPartition);
+  virtual uint32_t getPartition(const char * key, uint32_t & keyLen, uint32_t numPartition);
 
-  static uint32_t SearchTrie(vector<string> & splits, string & trie,
-                             const char * key, uint32_t keyLen);
-  static void MakeTrie(vector<string> & splits, string & trie,
-                       uint32_t maxDepth);
-  static void PrintTrie(vector<string> & splits, string & trie,
-                        uint32_t pos = 0, uint32_t indent = 0);
+  static uint32_t SearchTrie(vector<string> & splits, string & trie, const char * key,
+      uint32_t keyLen);
+  static void MakeTrie(vector<string> & splits, string & trie, uint32_t maxDepth);
+  static void PrintTrie(vector<string> & splits, string & trie, uint32_t pos = 0,
+      uint32_t indent = 0);
   static void LoadPartitionFile(vector<string> & splits, InputStream * is);
 
 protected:
   uint32_t binarySearchPartition(vector<string> & splits, const char * key, uint32_t keyLen);
+
+private:
+  ComparatorPtr get_comparator(Config * config, MapOutputSpec & spec);
 };
 
 } // namespace NativeTask
-
 
 #endif /* TOTALORDERPARTITIONER_H_ */

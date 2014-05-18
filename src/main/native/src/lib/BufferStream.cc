@@ -16,22 +16,17 @@
  * limitations under the License.
  */
 
-
 #include "commons.h"
 #include "BufferStream.h"
 
 namespace NativeTask {
 
-BufferedInputStream::BufferedInputStream(InputStream * stream,
-                                         uint32_t bufferSize) :
-    FilterInputStream(stream),
-    _buff(NULL),
-    _position(0),
-    _limit(0),
-    _capacity(0) {
-  _buff = (char*) malloc(bufferSize);
+BufferedInputStream::BufferedInputStream(InputStream * stream, uint32_t bufferSize)
+    : FilterInputStream(stream), _buff(NULL), _position(0), _limit(0), _capacity(0) {
+  _buff = (char*)malloc(bufferSize);
   if (NULL != _buff) {
-    LOG("malloc failed when create BufferedInputStream with buffersize %u", bufferSize);
+    LOG("[BuferStream] malloc failed when create BufferedInputStream with buffersize %u",
+        bufferSize);
     _capacity = bufferSize;
   }
 }
@@ -47,14 +42,14 @@ BufferedInputStream::~BufferedInputStream() {
 }
 
 void BufferedInputStream::seek(uint64_t position) {
-  if (_limit-_position>0) {
+  if (_limit - _position > 0) {
     THROW_EXCEPTION(IOException, "temporary buffered data exists when fseek()");
   }
   _stream->seek(position);
 }
 
 uint64_t BufferedInputStream::tell() {
-  return _stream->tell() - (_limit-_position);
+  return _stream->tell() - (_limit - _position);
 }
 
 int32_t BufferedInputStream::read(void * buff, uint32_t length) {
@@ -65,18 +60,18 @@ int32_t BufferedInputStream::read(void * buff, uint32_t length) {
     memcpy(buff, _buff + _position, cp);
     _position += cp;
     return cp;
-  } else if (length >= _capacity/2) {
+  } else if (length >= _capacity / 2) {
     // dest buffer big enough, read to dest buffer directly
     return _stream->read(buff, length);
   } else {
     // read to buffer first, then copy part of it to dest
     _limit = 0;
     do {
-      int32_t rd = _stream->read(_buff+_limit, _capacity-_limit);
+      int32_t rd = _stream->read(_buff + _limit, _capacity - _limit);
       if (rd <= 0) {
         break;
       }
-    } while (_limit < _capacity/2);
+    } while (_limit < _capacity / 2);
     if (_limit == 0) {
       return -1;
     }
@@ -89,14 +84,12 @@ int32_t BufferedInputStream::read(void * buff, uint32_t length) {
 
 /////////////////////////////////////////////////////////////////
 
-BufferedOutputStream::BufferedOutputStream(InputStream * stream, uint32_t bufferSize) :
-    FilterOutputStream(_stream),
-    _buff(NULL),
-    _position(0),
-    _capacity(0) {
-  _buff = (char*) malloc(bufferSize+sizeof(uint64_t));
+BufferedOutputStream::BufferedOutputStream(InputStream * stream, uint32_t bufferSize)
+    : FilterOutputStream(_stream), _buff(NULL), _position(0), _capacity(0) {
+  _buff = (char*)malloc(bufferSize + sizeof(uint64_t));
   if (NULL != _buff) {
-    LOG("malloc failed when create BufferedOutputStream with buffersize %u", bufferSize);
+    LOG("[BuferStream] malloc failed when create BufferedOutputStream with buffersize %u",
+        bufferSize);
     _capacity = bufferSize;
   }
 }
@@ -115,10 +108,10 @@ uint64_t BufferedOutputStream::tell() {
 }
 
 void BufferedOutputStream::write(const void * buff, uint32_t length) {
-  if (length < _capacity/2) {
+  if (length < _capacity / 2) {
     uint32_t rest = _capacity - _position;
     if (length < rest) {
-      simple_memcpy(_buff+_position, buff, length);
+      simple_memcpy(_buff + _position, buff, length);
       _position += length;
     } else {
       flush();
@@ -141,9 +134,7 @@ void BufferedOutputStream::flush() {
 ///////////////////////////////////////////////////////////
 
 int32_t InputBuffer::read(void * buff, uint32_t length) {
-  uint32_t rd = _capacity - _position < length
-      ? _capacity - _position
-      : length;
+  uint32_t rd = _capacity - _position < length ? _capacity - _position : length;
   if (rd > 0) {
     memcpy(buff, _buff + _position, rd);
     _position += rd;
@@ -154,7 +145,7 @@ int32_t InputBuffer::read(void * buff, uint32_t length) {
 
 void OutputBuffer::write(const void * buff, uint32_t length) {
   if (_position + length <= _capacity) {
-    memcpy(_buff+_position, buff, length);
+    memcpy(_buff + _position, buff, length);
     _position += length;
   } else {
     THROW_EXCEPTION(IOException, "OutputBuffer too small to write");

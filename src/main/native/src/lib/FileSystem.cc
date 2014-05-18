@@ -42,8 +42,7 @@ FileInputStream::FileInputStream(const string & path) {
     _fd = -1;
     THROW_EXCEPTION_EX(IOException, "Can't open raw file: [%s]", path.c_str());
   }
-  _bytesRead = NativeObjectFactory::GetCounter(
-      TaskCounters::FILESYSTEM_COUNTER_GROUP,
+  _bytesRead = NativeObjectFactory::GetCounter(TaskCounters::FILESYSTEM_COUNTER_GROUP,
       TaskCounters::FILE_BYTES_READ);
 }
 
@@ -61,7 +60,7 @@ uint64_t FileInputStream::tell() {
 
 int32_t FileInputStream::read(void * buff, uint32_t length) {
   int32_t ret = ::read(_fd, buff, length);
-  if (ret>0) {
+  if (ret > 0) {
     _bytesRead->increase(ret);
   }
   return ret;
@@ -86,8 +85,7 @@ FileOutputStream::FileOutputStream(const string & path, bool overwite) {
     _fd = -1;
     THROW_EXCEPTION_EX(IOException, "Open raw file failed: [%s]", path.c_str());
   }
-  _bytesWrite = NativeObjectFactory::GetCounter(
-      TaskCounters::FILESYSTEM_COUNTER_GROUP,
+  _bytesWrite = NativeObjectFactory::GetCounter(TaskCounters::FILESYSTEM_COUNTER_GROUP,
       TaskCounters::FILE_BYTES_WRITTEN);
 }
 
@@ -117,7 +115,6 @@ void FileOutputStream::close() {
   }
 }
 
-
 /////////////////////////////////////////////////////////////
 
 class RawFileSystem : public FileSystem {
@@ -136,7 +133,7 @@ public:
   OutputStream * create(const string & path, bool overwrite) {
     string np = getRealPath(path);
     string parent = Path::GetParent(np);
-    if (parent.length()>0) {
+    if (parent.length() > 0) {
       if (!exists(parent)) {
         mkdirs(parent);
       }
@@ -149,8 +146,8 @@ public:
     if (::stat(getRealPath(path).c_str(), &st) != 0) {
       char buff[256];
       strerror_r(errno, buff, 256);
-      THROW_EXCEPTION(IOException, StringUtil::Format(
-          "stat path %s failed, %s", path.c_str(), buff));
+      THROW_EXCEPTION(IOException,
+          StringUtil::Format("stat path %s failed, %s", path.c_str(), buff));
     }
     return st.st_size;
   }
@@ -177,7 +174,7 @@ public:
 
   void remove(const string & path) {
     if (!exists(path)) {
-      LOG("remove file %s not exists, ignore", path.c_str());
+      LOG("[FileSystem] remove file %s not exists, ignore", path.c_str());
       return;
     }
     if (::remove(getRealPath(path).c_str()) != 0) {
@@ -187,8 +184,8 @@ public:
       }
       char buff[256];
       strerror_r(err, buff, 256);
-      THROW_EXCEPTION(IOException, StringUtil::Format(
-          "remove path %s failed, %s", path.c_str(), buff));
+      THROW_EXCEPTION(IOException,
+          StringUtil::Format("FileSystem: remove path %s failed, %s", path.c_str(), buff));
     }
   }
 
@@ -219,14 +216,13 @@ public:
     while (*p == '/')
       p++;
 
-    while (p = strchr(p, '/')) {
+    while (NULL != (p = strchr(p, '/'))) {
       *p = '\0';
       if (stat(npath, &sb) != 0) {
         if (mkdir(npath, nmode)) {
           return 1;
         }
-      }
-      else if (S_ISDIR (sb.st_mode) == 0) {
+      } else if (S_ISDIR (sb.st_mode) == 0) {
         return 1;
       }
       *p++ = '/'; /* restore slash */
@@ -267,7 +263,6 @@ public:
   static jmethodID IGetPosMethodID;
   static jmethodID ICloseMethodID;
 
-
   static jclass FSDataOutputStreamClass;
   static jmethodID WriteMethodID;
   static jmethodID OGetPosMethodID;
@@ -278,12 +273,14 @@ public:
     JNIEnv * env = JNU_GetJNIEnv();
     jclass cls = env->FindClass("org/apache/hadoop/mapred/nativetask/NativeRuntime");
     if (cls == NULL) {
-      LOG("Can not found class org/apache/hadoop/mapred/nativetask/NativeRuntime");
+      LOG("[FileSystem] Can not found class org/apache/hadoop/mapred/nativetask/NativeRuntime");
       return false;
     }
     NativeRuntimeClass = (jclass)env->NewGlobalRef(cls);
-    OpenFileMethodID = env->GetStaticMethodID(cls, "openFile", "([B)Lorg/apache/hadoop/fs/FSDataInputStream;");
-    CreateFileMethodID = env->GetStaticMethodID(cls, "createFile", "([BZ)Lorg/apache/hadoop/fs/FSDataOutputStream;");
+    OpenFileMethodID = env->GetStaticMethodID(cls, "openFile",
+        "([B)Lorg/apache/hadoop/fs/FSDataInputStream;");
+    CreateFileMethodID = env->GetStaticMethodID(cls, "createFile",
+        "([BZ)Lorg/apache/hadoop/fs/FSDataOutputStream;");
     GetFileLengthMethodID = env->GetStaticMethodID(cls, "getFileLength", "([B)J");
     ExistsMethodID = env->GetStaticMethodID(cls, "exists", "([B)Z");
     RemoveMethodID = env->GetStaticMethodID(cls, "remove", "([B)Z");
@@ -292,7 +289,7 @@ public:
 
     jclass fsincls = env->FindClass("org/apache/hadoop/fs/FSDataInputStream");
     if (fsincls == NULL) {
-      LOG("Can not found class org/apache/hadoop/fs/FSDataInputStream");
+      LOG("[FileSystem] Can not found class org/apache/hadoop/fs/FSDataInputStream");
       return false;
     }
     FSDataInputStreamClass = (jclass)env->NewGlobalRef(fsincls);
@@ -304,7 +301,7 @@ public:
 
     jclass fsoutcls = env->FindClass("org/apache/hadoop/fs/FSDataOutputStream");
     if (fsoutcls == NULL) {
-      LOG("Can not found class org/apache/hadoop/fs/FSDataOutputStream");
+      LOG("[FileSystem] Can not found class org/apache/hadoop/fs/FSDataOutputStream");
       return false;
     }
     FSDataOutputStreamClass = (jclass)env->NewGlobalRef(fsincls);
@@ -354,8 +351,8 @@ public:
     JNIEnv * env = JNU_GetJNIEnv();
     jbyteArray pathobject = env->NewByteArray(path.length());
     env->SetByteArrayRegion(pathobject, 0, path.length(), (jbyte*)path.c_str());
-    jobject ret = env->CallStaticObjectMethod(NativeRuntimeClass, CreateFileMethodID,
-                                        pathobject, (jboolean) overwrite);
+    jobject ret = env->CallStaticObjectMethod(NativeRuntimeClass, CreateFileMethodID, pathobject,
+        (jboolean)overwrite);
     env->DeleteLocalRef(pathobject);
     if (env->ExceptionCheck()) {
       env->ExceptionDescribe();
@@ -372,8 +369,7 @@ public:
     JNIEnv * env = JNU_GetJNIEnv();
     jbyteArray pathobject = env->NewByteArray(path.length());
     env->SetByteArrayRegion(pathobject, 0, path.length(), (jbyte*)path.c_str());
-    jlong ret = env->CallStaticLongMethod(NativeRuntimeClass, GetFileLengthMethodID,
-                                        pathobject);
+    jlong ret = env->CallStaticLongMethod(NativeRuntimeClass, GetFileLengthMethodID, pathobject);
     env->DeleteLocalRef(pathobject);
     if (env->ExceptionCheck()) {
       env->ExceptionDescribe();
@@ -392,8 +388,7 @@ public:
     JNIEnv * env = JNU_GetJNIEnv();
     jbyteArray pathobject = env->NewByteArray(path.length());
     env->SetByteArrayRegion(pathobject, 0, path.length(), (jbyte*)path.c_str());
-    jboolean ret = env->CallStaticBooleanMethod(NativeRuntimeClass, RemoveMethodID,
-                                        pathobject);
+    jboolean ret = env->CallStaticBooleanMethod(NativeRuntimeClass, RemoveMethodID, pathobject);
     env->DeleteLocalRef(pathobject);
     if (env->ExceptionCheck()) {
       env->ExceptionDescribe();
@@ -410,8 +405,7 @@ public:
     JNIEnv * env = JNU_GetJNIEnv();
     jbyteArray pathobject = env->NewByteArray(path.length());
     env->SetByteArrayRegion(pathobject, 0, path.length(), (jbyte*)path.c_str());
-    jboolean ret = env->CallStaticBooleanMethod(NativeRuntimeClass, ExistsMethodID,
-                                        pathobject);
+    jboolean ret = env->CallStaticBooleanMethod(NativeRuntimeClass, ExistsMethodID, pathobject);
     env->DeleteLocalRef(pathobject);
     if (env->ExceptionCheck()) {
       env->ExceptionDescribe();
@@ -426,8 +420,7 @@ public:
     JNIEnv * env = JNU_GetJNIEnv();
     jbyteArray pathobject = env->NewByteArray(path.length());
     env->SetByteArrayRegion(pathobject, 0, path.length(), (jbyte*)path.c_str());
-    jboolean ret = env->CallStaticBooleanMethod(NativeRuntimeClass, MkdirsMethodID,
-                                        pathobject);
+    jboolean ret = env->CallStaticBooleanMethod(NativeRuntimeClass, MkdirsMethodID, pathobject);
     env->DeleteLocalRef(pathobject);
     if (env->ExceptionCheck()) {
       env->ExceptionDescribe();
@@ -455,7 +448,6 @@ jmethodID JavaFileSystem::SeekMethodID = NULL;
 jmethodID JavaFileSystem::IGetPosMethodID = NULL;
 jmethodID JavaFileSystem::ICloseMethodID = NULL;
 
-
 jclass JavaFileSystem::FSDataOutputStreamClass = NULL;
 jmethodID JavaFileSystem::WriteMethodID = NULL;
 jmethodID JavaFileSystem::OGetPosMethodID = NULL;
@@ -464,8 +456,8 @@ jmethodID JavaFileSystem::OCloseMethodID = NULL;
 
 /////////////////////////////////////////////////////////////
 
-FSDataInputStream::FSDataInputStream(void * jobject) :
-    _jobject(jobject) {
+FSDataInputStream::FSDataInputStream(void * jobject)
+    : _jobject(jobject) {
 }
 
 FSDataInputStream::~FSDataInputStream() {
@@ -493,10 +485,9 @@ int32_t FSDataInputStream::read(void * buff, uint32_t length) {
   JNIEnv * env = JNU_GetJNIEnv();
   jbyteArray ba = env->NewByteArray(length);
   env->SetByteArrayRegion(ba, 0, length, (jbyte*)buff);
-  jint rd = env->CallIntMethod((jobject) _jobject,
-                               JavaFileSystem::ReadMethodID, ba, (jint) 0,
-                               (jint) length);
-  if (rd>0) {
+  jint rd = env->CallIntMethod((jobject)_jobject, JavaFileSystem::ReadMethodID, ba, (jint)0,
+      (jint)length);
+  if (rd > 0) {
     env->GetByteArrayRegion(ba, 0, rd, (jbyte*)buff);
   }
   env->DeleteLocalRef(ba);
@@ -517,11 +508,10 @@ void FSDataInputStream::close() {
   }
 }
 
-
 ///////////////////////////////////////////////////////////
 
-FSDataOutputStream::FSDataOutputStream(void * jobject) :
-    _jobject(jobject) {
+FSDataOutputStream::FSDataOutputStream(void * jobject)
+    : _jobject(jobject) {
 
 }
 
@@ -542,8 +532,7 @@ void FSDataOutputStream::write(const void * buff, uint32_t length) {
   JNIEnv * env = JNU_GetJNIEnv();
   jbyteArray ba = env->NewByteArray(length);
   env->SetByteArrayRegion(ba, 0, length, (jbyte*)buff);
-  env->CallVoidMethod((jobject) _jobject, JavaFileSystem::WriteMethodID, ba,
-                      (jint) 0, (jint) length);
+  env->CallVoidMethod((jobject)_jobject, JavaFileSystem::WriteMethodID, ba, (jint)0, (jint)length);
   env->DeleteLocalRef(ba);
   if (env->ExceptionCheck()) {
     THROW_EXCEPTION(HadoopException, "write throw exception in java side");
@@ -570,7 +559,6 @@ void FSDataOutputStream::close() {
   }
 }
 
-
 ///////////////////////////////////////////////////////////
 
 extern RawFileSystem RawFileSystemInstance;
@@ -579,10 +567,10 @@ extern JavaFileSystem JavaFileSystemInstance;
 RawFileSystem RawFileSystemInstance = RawFileSystem();
 JavaFileSystem JavaFileSystemInstance = JavaFileSystem();
 
-string FileSystem::getDefaultFsUri(Config & config) {
-  const char * nm = config.get(FS_DEFAULT_NAME);
+string FileSystem::getDefaultFsUri(Config * config) {
+  const char * nm = config->get(FS_DEFAULT_NAME);
   if (nm == NULL) {
-    nm = config.get("fs.defaultFS");
+    nm = config->get("fs.defaultFS");
   }
   if (nm == NULL) {
     return string("file:///");
@@ -595,11 +583,11 @@ FileSystem & FileSystem::getLocal() {
   return RawFileSystemInstance;
 }
 
-FileSystem & FileSystem::getJava(Config & config) {
+FileSystem & FileSystem::getJava(Config * config) {
   return JavaFileSystemInstance;
 }
 
-FileSystem & FileSystem::get(Config & config) {
+FileSystem & FileSystem::get(Config * config) {
   string uri = getDefaultFsUri(config);
   if (uri == "file:///") {
     return RawFileSystemInstance;

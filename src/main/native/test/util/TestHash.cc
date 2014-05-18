@@ -25,15 +25,15 @@ static uint64_t test_length(int64_t len, size_t size, size_t loopTime) {
   Generate(data, size, "bytes");
   Timer t;
   uint64_t ret;
-  for (size_t m = 0;m<loopTime;m++) {
-    for (size_t i =0;i<data.size();i++) {
+  for (size_t m = 0; m < loopTime; m++) {
+    for (size_t i = 0; i < data.size(); i++) {
       ret += Hash::BytesHash(data[i].c_str(), data[i].length());
     }
   }
   LOG("%s", t.getInterval(StringUtil::Format("Bytes%3lld", len).c_str()).c_str());
   t.reset();
-  for (size_t m = 0;m<loopTime;m++) {
-    for (size_t i =0;i<data.size();i++) {
+  for (size_t m = 0; m < loopTime; m++) {
+    for (size_t i = 0; i < data.size(); i++) {
       ret += Hash::CityHash(data[i].c_str(), data[i].length());
     }
   }
@@ -41,13 +41,12 @@ static uint64_t test_length(int64_t len, size_t size, size_t loopTime) {
   return ret;
 }
 
-
 TEST(Perf, Hash) {
-  uint64_t ret=0;
-  ret+=test_length(1, 100, 4000);
-  ret+=test_length(17, 100, 4000);
-  ret+=test_length(64, 100, 4000);
-  ret+=test_length(128, 100, 4000);
-  ret+=test_length(513, 100, 4000);
-  fprintf(stderr, "%llu\n", ret);
+  uint64_t ret = 0;
+  ret += test_length(1, 100, 4000);
+  ret += test_length(17, 100, 4000);
+  ret += test_length(64, 100, 4000);
+  ret += test_length(128, 100, 4000);
+  ret += test_length(513, 100, 4000);
+  fprintf(stderr, "%llu\n", (long long unsigned int)ret);
 }

@@ -20,22 +20,17 @@
 #include "util/StringUtil.h"
 #include "KVFile.h"
 
-
 namespace NativeTask {
 
 ///////////////////////////////////////////////////////////
 
 KVFileReader::KVFileReader(InputStream * stream, ChecksumType checksumType,
-                           IndexRange * spill_infos, const string & codec) :
-    _stream(stream),
-    _source(NULL),
-    _checksumType(checksumType),
-    _codec(codec),
-    _segmentIndex(-1),
-    _spillInfo(spill_infos) {
+    SingleSpillInfo * spill_infos, const string & codec)
+    : _stream(stream), _source(NULL), _checksumType(checksumType), _codec(codec), _segmentIndex(-1),
+        _spillInfo(spill_infos) {
   _source = new ChecksumInputStream(_stream, _checksumType);
   _source->setLimit(0);
-  _reader.init(128*1024, _source, _codec);
+  _reader.init(128 * 1024, _source, _codec);
 }
 
 KVFileReader::~KVFileReader() {
@@ -47,7 +42,7 @@ KVFileReader::~KVFileReader() {
  * 0 if success
  * 1 if end
  */
-int KVFileReader::nextPartition() {
+bool KVFileReader::nextPartition() {
   if (0 != _source->getLimit()) {
     THROW_EXCEPTION(IOException, "bad ifile segment length");
   }
@@ -60,14 +55,15 @@ int KVFileReader::nextPartition() {
     uint32_t actual = bswap(chsum);
     uint32_t expect = _source->getChecksum();
     if (actual != expect) {
-      THROW_EXCEPTION_EX(IOException, "read ifile checksum not match, actual %x expect %x", actual, expect);
+      THROW_EXCEPTION_EX(IOException, "read ifile checksum not match, actual %x expect %x", actual,
+          expect);
     }
   }
   _segmentIndex++;
   if (_segmentIndex < (int)(_spillInfo->length)) {
-    int64_t end_pos = (int64_t)_spillInfo->segments[_spillInfo->start + _segmentIndex].realEndPosition;
+    int64_t end_pos = (int64_t)_spillInfo->segments[_segmentIndex].realEndOffset;
     if (_segmentIndex > 0) {
-      end_pos -= (int64_t)_spillInfo->segments[_spillInfo->start + _segmentIndex - 1].realEndPosition;
+      end_pos -= (int64_t)_spillInfo->segments[_segmentIndex - 1].realEndOffset;
     }
     if (end_pos < 0) {
       THROW_EXCEPTION(IOException, "bad ifile format");
@@ -75,24 +71,18 @@ int KVFileReader::nextPartition() {
     // exclude checksum
     _source->setLimit(end_pos - 4);
     _source->resetChecksum();
-    return 0;
-  }
-  else {
-    return 1;
+    return true;
+  } else {
+    return false;
   }
 }
 
-
 ///////////////////////////////////////////////////////////
 
-KVFileWriter::KVFileWriter(OutputStream * stream, ChecksumType checksumType,
-                           const string & codec) :
-    _stream(stream),
-    _dest(NULL),
-    _checksumType(checksumType),
-    _codec(codec) {
+KVFileWriter::KVFileWriter(OutputStream * stream, ChecksumType checksumType, const string & codec)
+    : _stream(stream), _dest(NULL), _checksumType(checksumType), _codec(codec) {
   _dest = new ChecksumOutputStream(_stream, _checksumType);
-  _appendBuffer.init(128*1024, _dest, _codec);
+  _appendBuffer.init(128 * 1024, _dest, _codec);
 }
 
 KVFileWriter::~KVFileWriter() {
@@ -101,7 +91,7 @@ KVFileWriter::~KVFileWriter() {
 }
 
 void KVFileWriter::startPartition() {
-  _spillInfo.push_back(IndexEntry());
+  _spillInfo.push_back(IFileSegment());
   _dest->resetChecksum();
 }
 
@@ -111,39 +101,39 @@ void KVFileWriter::endPartition() {
   chsum = bswap(chsum);
   _stream->write(&chsum, sizeof(chsum));
   _stream->flush();
-  IndexEntry * info = &(_spillInfo[_spillInfo.size()-1]);
-  info->endPosition = _appendBuffer.getCounter();
-  info->realEndPosition = _stream->tell();
+  IFileSegment * info = &(_spillInfo[_spillInfo.size() - 1]);
+  info->uncompressedEndOffset = _appendBuffer.getCounter();
+  info->realEndOffset = _stream->tell();
 }
 
 void KVFileWriter::writeKey(const char * key, uint32_t key_len, uint32_t value_len) {
   _appendBuffer.write_uint32_le(key_len);
-  if (key_len>0) {
+  if (key_len > 0) {
     _appendBuffer.write(key, key_len);
   }
 }
 
 void KVFileWriter::writeValue(const char * value, uint32_t value_len) {
   _appendBuffer.write_uint32_le(value_len);
-  if (value_len>0) {
+  if (value_len > 0) {
     _appendBuffer.write(value, value_len);
   }
 }
 
-
-IndexRange * KVFileWriter::getIndex(uint32_t start) {
-  IndexEntry * segs = new IndexEntry[_spillInfo.size()];
+SingleSpillInfo * KVFileWriter::getIndex(uint32_t start) {
+  IFileSegment * segs = new IFileSegment[_spillInfo.size()];
   for (size_t i = 0; i < _spillInfo.size(); i++) {
     segs[i] = _spillInfo[i];
   }
-  return new IndexRange(start, (uint32_t) _spillInfo.size(), "", segs);
+  return new SingleSpillInfo(segs, (uint32_t)_spillInfo.size(), "", _checksumType, UnknownType,
+      UnknownType, _codec);
 }
 
 void KVFileWriter::getStatistics(uint64_t & offset, uint64_t & realoffset) {
-  if (_spillInfo.size()>0) {
-    offset = _spillInfo[_spillInfo.size()-1].endPosition;
-    realoffset = _spillInfo[_spillInfo.size()-1].realEndPosition;
-  } else{
+  if (_spillInfo.size() > 0) {
+    offset = _spillInfo[_spillInfo.size() - 1].uncompressedEndOffset;
+    realoffset = _spillInfo[_spillInfo.size() - 1].realEndOffset;
+  } else {
     offset = 0;
     realoffset = 0;
   }

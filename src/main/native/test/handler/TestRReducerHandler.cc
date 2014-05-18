@@ -23,57 +23,67 @@
 namespace NativeTask {
 
 class RReducerHandlerTester : public RReducerHandler {
-  static const uint32_t BUFFSIZE = 16*1024;
+  static const uint32_t BUFFSIZE = 16 * 1024;
+
+private:
   string _inputData;
   string _outputData;
   uint32_t _inputDataUsed;
   uint32_t _inputKeyGroup;
 public:
   void initBuffers() {
-    _ib.reset(new char[BUFFSIZE], BUFFSIZE);
-    _ob.reset(new char[BUFFSIZE], BUFFSIZE-8);
+    _in.reset(new char[BUFFSIZE], BUFFSIZE);
+    _out.reset(new char[BUFFSIZE], BUFFSIZE);
+    _out.rewind(0, BUFFSIZE);
   }
   void makeInputData(int cnt) {
     _inputData = "";
-    _inputData.reserve(1024*1024);
-    _outputData.reserve(1024*1024);
+    _inputData.reserve(1024 * 1024);
+    _outputData.reserve(1024 * 1024);
     char buff[128];
-    for (int i=0;i<cnt;i++) {
+    for (int32_t i = 0; i < cnt; i++) {
       // make every 10 value a group
-      snprintf(buff,128,"%010d", i);
-      uint32_t len = strlen(buff)-1;
-      _inputData.append((const char*)(&len), 4);
-      len+=1;
-      _inputData.append((const char*)(&len), 4);
-      _inputData.append(buff,len-1);
-      _inputData.append(buff,len);
+      snprintf(buff, 128, "%010d", i);
+      uint32_t keyLength = strlen(buff) - 1;
+      uint32_t keyLengthBigEndium = bswap(keyLength);
+      _inputData.append((const char*)(&keyLengthBigEndium), 4);
+
+      uint32_t valueLength = keyLength + 1;
+      uint32_t valueLengthBigEndium = bswap(valueLength);
+      _inputData.append((const char*)(&valueLengthBigEndium), 4);
+
+      _inputData.append(buff, keyLength);
+      _inputData.append(buff, valueLength);
     }
     _inputDataUsed = 0;
-    _inputKeyGroup = (cnt+9)/10;
+    _inputKeyGroup = (cnt + 9) / 10;
   }
 
-  virtual void flushOutput(uint32_t length) {
-    _outputData.append(_ob.buff, length);
+  virtual void flushOutput() {
+    _outputData.append(_out.base(), _out.position());
+    _out.position(0);
   }
 
   virtual void finish() {
-    flush();
+    flushOutput();
   }
 
   virtual int32_t refill() {
+
     uint32_t rest = _inputData.length() - _inputDataUsed;
+    LOG("REFILL, %d, %d", _inputDataUsed, rest);
+
     uint32_t cp = 13500 < rest ? 13500 : rest;
-    if (cp>0) {
-      memcpy(_ib.buff, _inputData.c_str()+_inputDataUsed, cp);
+    _in.rewind(0, cp);
+    if (cp > 0) {
+      memcpy(_in.current(), _inputData.c_str() + _inputDataUsed, cp);
     }
     _inputDataUsed += cp;
-    _ib.position = cp;
-    _current = _ib.buff;
-    _remain = cp;
+    _in.rewind(0, cp);
     return cp;
   }
 
-  void varifyData() {
+  void verifyData() {
     ASSERT_EQ(_inputData.length(), _outputData.length());
     //ASSERT_EQ(_inputData, _outputData);
   }
@@ -89,9 +99,9 @@ public:
 TEST(RReducerHandler, ReducerOnly) {
   Config jobconf;
   RReducerHandlerTester t = RReducerHandlerTester();
-  t.configure(jobconf);
+  t.configure(&jobconf);
   t.prepare();
-  t.command("run");
-  t.varifyData();
+  t.onCall(t.RUN, NULL);
+  t.verifyData();
 }
 

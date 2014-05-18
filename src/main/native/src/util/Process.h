@@ -29,7 +29,7 @@ using std::string;
 class PipeInputStream : public InputStream {
 private:
   uint64_t _read;
-  int    _fd;
+  int _fd;
 public:
   int getFd() {
     return _fd;
@@ -38,9 +38,8 @@ public:
     _fd = fd;
   }
 
-  PipeInputStream(int fd=-1) :
-    _read(0),
-    _fd(fd) {
+  PipeInputStream(int fd = -1)
+      : _read(0), _fd(fd) {
   }
 
   virtual ~PipeInputStream() {
@@ -61,7 +60,7 @@ public:
 class PipeOutputStream : public OutputStream {
 private:
   uint64_t _written;
-  int    _fd;
+  int _fd;
 public:
   int getFd() {
     return _fd;
@@ -70,9 +69,8 @@ public:
     _fd = fd;
   }
 
-  PipeOutputStream(int fd=-1) :
-    _written(0),
-    _fd(fd) {
+  PipeOutputStream(int fd = -1)
+      : _written(0), _fd(fd) {
   }
 
   virtual ~PipeOutputStream() {
@@ -93,25 +91,16 @@ public:
    * Popen with stdin,stdout,stderr
    * @return subprocess pid
    */
-  static int Popen(const string & cmd,
-                   int & fdstdin,
-                   int & fdstdout,
-                   int & fdstderr);
+  static int Popen(const string & cmd, int & fdstdin, int & fdstdout, int & fdstderr);
 
-  static int Popen(const string & cmd,
-                   FILE *& fstdin,
-                   FILE *& fstdout,
-                   FILE *& fstderr);
+  static int Popen(const string & cmd, FILE *& fstdin, FILE *& fstdout, FILE *& fstderr);
 
-  static int Popen(const string & cmd,
-                   PipeOutputStream & pstdin,
-                   PipeInputStream & pstdout,
-                   PipeInputStream & pstderr);
+  static int Popen(const string & cmd, PipeOutputStream & pstdin, PipeInputStream & pstdout,
+      PipeInputStream & pstderr);
 
   static int Run(const string & cmd, string * out, string * err);
 };
 
 } // namespace NativeTask
-
 
 #endif /* PROCESS_H_ */

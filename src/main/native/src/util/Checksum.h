@@ -44,6 +44,7 @@ public:
     case CHECKSUM_CRC32C:
       return 0xffffffff;
     }
+    return 0;
   }
 
   static void update(ChecksumType type, uint32_t & value, const void * buff, uint32_t length) {
@@ -57,6 +58,7 @@ public:
       value = crc32c_sb8(value, (const uint8_t *)buff, length);
       return;
     }
+    return;
   }
 
   static uint32_t getValue(ChecksumType type, uint32_t value) {
@@ -67,10 +69,10 @@ public:
     case CHECKSUM_CRC32C:
       return ~value;
     }
+    return 0;
   }
 };
 
 } // namespace NativeTask
-
 
 #endif /* CHECKSUM_H_ */

@@ -46,8 +46,7 @@ public:
 
 class StreamingWriter : public LineRecordWriter {
 public:
-  virtual void collect(const void * key, uint32_t keyLen,
-                       const void * value, uint32_t valueLen) {
+  virtual void collect(const void * key, uint32_t keyLen, const void * value, uint32_t valueLen) {
     _appendBuffer.write(value, valueLen);
   }
 };
@@ -58,14 +57,13 @@ protected:
   FILE * fstdin;
   FILE * fstdout;
   FILE * fstderr;
-  Runnable * handleStdoutTask;
   Runnable * handleStderrTask;
+  Runnable * handleStdoutTask;
   Thread stdoutThread;
   Thread stderrThread;
 public:
-  StreamingMapper() :
-    handleStderrTask(NULL),
-    handleStdoutTask(NULL) {
+  StreamingMapper()
+      : handleStderrTask(NULL), handleStdoutTask(NULL) {
   }
 
   virtual ~StreamingMapper() {
@@ -84,9 +82,7 @@ public:
       THROW_EXCEPTION(IOException, "waitpid failed");
     }
     if (retcode != 0) {
-      THROW_EXCEPTION_EX(IOException,
-                         "streaming sub-process return %d",
-                         retcode);
+      THROW_EXCEPTION_EX(IOException, "streaming sub-process return %d", retcode);
     }
   }
 
@@ -105,10 +101,10 @@ class MStreamingMapper : public StreamingMapper {
 protected:
   string mapOutputSeparator;
 public:
-  virtual void configure(Config & config) {
-    mapOutputSeparator = config.get("native.stream.map.output.separator", "\t");
-    string cmd = config.get("native.map.processor", "cat");
-    LOG("Streaming map processor: [%s]", cmd.c_str());
+  virtual void configure(Config * config) {
+    mapOutputSeparator = config->get("native.stream.map.output.separator", "\t");
+    string cmd = config->get("native.map.processor", "cat");
+    LOG("[Streaming] Streaming map processor: [%s]", cmd.c_str());
     pid = Process::Popen(cmd, fstdin, fstdout, fstderr);
     if (pid <= 0) {
       THROW_EXCEPTION_EX(IOException, "Create subprocess failed, cmd: %s", cmd.c_str());
@@ -121,12 +117,10 @@ public:
     stderrThread.start();
   }
 
-  virtual void map(const char * key, uint32_t keyLen,
-                   const char * value, uint32_t valueLen) {
+  virtual void map(const char * key, uint32_t keyLen, const char * value, uint32_t valueLen) {
     if (valueLen > 0) {
       if (1 != ::fwrite(value, valueLen, 1, fstdin)) {
-        THROW_EXCEPTION_EX(IOException, "fwrite to pipe error: %s",
-                           strerror(errno));
+        THROW_EXCEPTION_EX(IOException, "fwrite to pipe error: %s", strerror(errno));
       }
     }
   }
@@ -138,9 +132,8 @@ public:
     lineBuffer.reserve(4096);
     Buffer line;
     while (true) {
-      uint32_t len = LineRecordReader::ReadLine(&inputStream, lineBuffer, line,
-                                                4096, false);
-      if (len<=0) {
+      uint32_t len = LineRecordReader::ReadLine(&inputStream, lineBuffer, line, 4096, false);
+      if (len <= 0) {
         break;
       }
       uint32_t i = 0;
@@ -161,16 +154,13 @@ class RStreamingMapper : public StreamingMapper {
 protected:
   string reduceInputSeparator;
 public:
-  virtual void configure(Config & config) {
-    reduceInputSeparator = config.get("native.stream.reduce.input.separator",
-                                      "\t");
-    string cmd = config.get("native.reduce.processor", "cat");
-    LOG("Streaming reduce processor: [%s]", cmd.c_str());
+  virtual void configure(Config * config) {
+    reduceInputSeparator = config->get("native.stream.reduce.input.separator", "\t");
+    string cmd = config->get("native.reduce.processor", "cat");
+    LOG("[Streaming] Streaming reduce processor: [%s]", cmd.c_str());
     pid = Process::Popen(cmd, fstdin, fstdout, fstderr);
     if (pid <= 0) {
-      THROW_EXCEPTION_EX(IOException,
-                         "Create subprocess failed, cmd: %s",
-                         cmd.c_str());
+      THROW_EXCEPTION_EX(IOException, "Create subprocess failed, cmd: %s", cmd.c_str());
     }
     handleStdoutTask = BindNew(*this, &RStreamingMapper::handleStdout);
     stdoutThread.setTask(*handleStdoutTask);
@@ -180,29 +170,24 @@ public:
     stderrThread.start();
   }
 
-  virtual void map(const char * key, uint32_t keyLen,
-                   const char * value, uint32_t valueLen) {
+  virtual void map(const char * key, uint32_t keyLen, const char * value, uint32_t valueLen) {
     if (keyLen > 0) {
       if (1 != ::fwrite(key, keyLen, 1, fstdin)) {
-        THROW_EXCEPTION_EX(IOException, "fwrite to pipe error: %s",
-                           strerror(errno));
+        THROW_EXCEPTION_EX(IOException, "fwrite to pipe error: %s", strerror(errno));
       }
     }
     if (valueLen > 0) {
-      if (keyLen>0) {
+      if (keyLen > 0) {
         if (EOF == fputc(reduceInputSeparator[0], fstdin)) {
-          THROW_EXCEPTION_EX(IOException, "fwrite to pipe error: %s",
-                             strerror(errno));
+          THROW_EXCEPTION_EX(IOException, "fwrite to pipe error: %s", strerror(errno));
         }
       }
       if (1 != ::fwrite(value, valueLen, 1, fstdin)) {
-        THROW_EXCEPTION_EX(IOException, "fwrite to pipe error: %s",
-                           strerror(errno));
+        THROW_EXCEPTION_EX(IOException, "fwrite to pipe error: %s", strerror(errno));
       }
     }
     if (EOF == fputc('\n', fstdin)) {
-      THROW_EXCEPTION_EX(IOException, "fwrite to pipe error: %s",
-                         strerror(errno));
+      THROW_EXCEPTION_EX(IOException, "fwrite to pipe error: %s", strerror(errno));
     }
   }
 
@@ -214,10 +199,7 @@ public:
       ssize_t rd = ::read(fd, buff, 4096);
       if (rd <= 0) {
         if (rd < 0) {
-          THROW_EXCEPTION_EX(
-              IOException,
-              "Read from pipe failed, error: %s",
-              strerror(errno));
+          THROW_EXCEPTION_EX(IOException, "Read from pipe failed, error: %s", strerror(errno));
         }
         break;
       }

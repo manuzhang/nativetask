@@ -43,15 +43,14 @@ int32_t DecompressStream::readDirect(void * buff, uint32_t length) {
 
 ///////////////////////////////////////////////////////////
 
-const Compressions::Codec Compressions::GzipCodec =
-    Compressions::Codec("org.apache.hadoop.io.compress.GzipCodec", ".gz");
-const Compressions::Codec Compressions::SnappyCodec =
-    Compressions::Codec("org.apache.hadoop.io.compress.SnappyCodec", ".snappy");
-const Compressions::Codec Compressions::Lz4Codec =
-    Compressions::Codec("org.apache.hadoop.io.compress.Lz4Codec", ".lz4");
+const Compressions::Codec Compressions::GzipCodec = Compressions::Codec(
+    "org.apache.hadoop.io.compress.GzipCodec", ".gz");
+const Compressions::Codec Compressions::SnappyCodec = Compressions::Codec(
+    "org.apache.hadoop.io.compress.SnappyCodec", ".snappy");
+const Compressions::Codec Compressions::Lz4Codec = Compressions::Codec(
+    "org.apache.hadoop.io.compress.Lz4Codec", ".lz4");
 
 vector<Compressions::Codec> Compressions::SupportedCodecs = vector<Compressions::Codec>();
-
 
 void Compressions::initCodecs() {
   static Lock lock;
@@ -97,17 +96,15 @@ const string Compressions::getCodecByFile(const string & file) {
   initCodecs();
   for (size_t i = 0; i < SupportedCodecs.size(); i++) {
     const string & extension = SupportedCodecs[i].extension;
-    if ((file.length()>extension.length()) &&
-        (file.substr(file.length() - extension.length()) == extension)) {
+    if ((file.length() > extension.length())
+        && (file.substr(file.length() - extension.length()) == extension)) {
       return SupportedCodecs[i].name;
     }
   }
   return string();
 }
 
-CompressStream * Compressions::getCompressionStream(
-    const string & codec,
-    OutputStream * stream,
+CompressStream * Compressions::getCompressionStream(const string & codec, OutputStream * stream,
     uint32_t bufferSizeHint) {
   if (codec == GzipCodec.name) {
     return new GzipCompressStream(stream, bufferSizeHint);
@@ -121,9 +118,7 @@ CompressStream * Compressions::getCompressionStream(
   return NULL;
 }
 
-DecompressStream * Compressions::getDecompressionStream(
-    const string & codec,
-    InputStream * stream,
+DecompressStream * Compressions::getDecompressionStream(const string & codec, InputStream * stream,
     uint32_t bufferSizeHint) {
   if (codec == GzipCodec.name) {
     return new GzipDecompressStream(stream, bufferSizeHint);

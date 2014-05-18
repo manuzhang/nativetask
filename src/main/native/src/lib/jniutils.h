@@ -54,5 +54,4 @@ void JNU_ThrowByName(JNIEnv *jenv, const char *name, const char *msg);
  */
 std::string JNU_ByteArrayToString(JNIEnv * jenv, jbyteArray src);
 
-
 #endif /* JNIUTILS_H_ */

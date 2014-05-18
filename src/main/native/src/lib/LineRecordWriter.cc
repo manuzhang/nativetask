@@ -24,11 +24,8 @@
 
 namespace NativeTask {
 
-LineRecordWriter::LineRecordWriter() :
-  _stream(NULL),
-  _bufferHint(128*1024),
-  _hasStream(false),
-  _keyValueSeparator("\t") {
+LineRecordWriter::LineRecordWriter()
+    : _stream(NULL), _bufferHint(128 * 1024), _hasStream(false), _keyValueSeparator("\t") {
 }
 
 void LineRecordWriter::init(OutputStream * stream, const string & codec) {
@@ -38,7 +35,7 @@ void LineRecordWriter::init(OutputStream * stream, const string & codec) {
   _appendBuffer.init(_bufferHint, stream, codec);
 }
 
-void LineRecordWriter::init(const string & file, Config & config) {
+void LineRecordWriter::init(const string & file, Config * config) {
   close();
   _stream = FileSystem::get(config).create(file);
   _hasStream = true;
@@ -50,19 +47,19 @@ LineRecordWriter::~LineRecordWriter() {
   close();
 }
 
-void LineRecordWriter::configure(Config & config) {
-  _keyValueSeparator = config.get(MAPRED_TEXTOUTPUT_FORMAT_SEPERATOR, "\t");
-  bool isCompress = config.getBool("mapred.output.compress", false);
-  const char * workdir = config.get(MAPRED_WORK_OUT_DIR);
+void LineRecordWriter::configure(Config * config) {
+  _keyValueSeparator = config->get(MAPRED_TEXTOUTPUT_FORMAT_SEPERATOR, "\t");
+  bool isCompress = config->getBool(MAPRED_COMPRESS_OUTPUT, false);
+  const char * workdir = config->get(MAPRED_WORK_OUT_DIR);
   if (workdir == NULL) {
     THROW_EXCEPTION(IOException, "Can not find mapred.work.output.dir for LineRecordWriter");
   }
-  const char * outputname = config.get(NATIVE_OUTPUT_FILE_NAME);
+  const char * outputname = config->get(NATIVE_OUTPUT_FILE_NAME);
   if (outputname == NULL) {
     THROW_EXCEPTION(IOException, "Can not find native.output.file.name for LineRecordWriter");
   }
   if (isCompress) {
-    string codec = config.get(MAPRED_OUTPUT_COMPRESSION_CODEC, Compressions::GzipCodec.name);
+    string codec = config->get(MAPRED_OUTPUT_COMPRESSION_CODEC, Compressions::GzipCodec.name);
     string ext = Compressions::getExtension(codec);
     string outputpath = StringUtil::Format("%s/%s%s", workdir, outputname, ext.c_str());
     init(outputpath, config);
@@ -72,18 +69,17 @@ void LineRecordWriter::configure(Config & config) {
   }
 }
 
-void LineRecordWriter::collect(const void * key, uint32_t keyLen,
-                             const void * value, uint32_t valueLen) {
+void LineRecordWriter::collect(const void * key, uint32_t keyLen, const void * value,
+    uint32_t valueLen) {
   if (keyLen > 0) {
     _appendBuffer.write(key, keyLen);
     if (valueLen > 0) {
       if (_keyValueSeparator.length() > 0) {
-        _appendBuffer.write(_keyValueSeparator.c_str(),
-                            _keyValueSeparator.length());
+        _appendBuffer.write(_keyValueSeparator.c_str(), _keyValueSeparator.length());
       }
       _appendBuffer.write(value, valueLen);
     }
-  } else if (valueLen>0) {
+  } else if (valueLen > 0) {
     _appendBuffer.write(value, valueLen);
   }
   _appendBuffer.write('\n');

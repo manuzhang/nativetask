@@ -16,15 +16,17 @@
  * limitations under the License.
  */
 
-
 #include <signal.h>
+
+#ifndef __CYGWIN__
 #include <execinfo.h>
+#endif
+
 #include <stdexcept>
 #include "commons.h"
 #include "Buffers.h"
 #include "FileSystem.h"
 #include "test_commons.h"
-
 
 extern "C" {
 
@@ -38,10 +40,9 @@ void handler(int sig) {
   // print out all the frames to stderr
   fprintf(stderr, "Error: signal %d:\n", sig);
 
-#ifdef _EXECINFO_H
+#ifndef __CYGWIN__
   // get void*'s for all entries on the stack
   size = backtrace(array, 10);
-
 
   backtrace_symbols_fd(array, size, 2);
 #endif
@@ -56,11 +57,11 @@ typedef char * CString;
 
 int main(int argc, char ** argv) {
   signal(SIGSEGV, handler);
-  CString * newArgv = new CString[argc+1];
+  CString * newArgv = new CString[argc + 1];
   memcpy(newArgv, argv, argc * sizeof(CString));
 
   bool gen = false;
-  if (argc>1) {
+  if (argc > 1) {
     if (string("perf") == newArgv[1]) {
       newArgv[1] = (char *)"--gtest_filter=Perf.*";
     } else if (string("noperf") == newArgv[1]) {
@@ -70,9 +71,9 @@ int main(int argc, char ** argv) {
     }
   }
   testing::InitGoogleTest(&argc, newArgv);
-  if (argc>0) {
+  if (argc > 0) {
     int skip = gen ? 2 : 1;
-    TestConfig.parse(argc-skip, (const char **)(newArgv+skip));
+    TestConfig.parse(argc - skip, (const char **)(newArgv + skip));
   }
   try {
     if (gen == true) {
@@ -81,12 +82,12 @@ int main(int argc, char ** argv) {
       int64_t len = TestConfig.getInt("generate.length", 1024);
       string temp;
       GenerateKVTextLength(temp, len, type);
-      if (codec.length()==0) {
+      if (codec.length() == 0) {
         fprintf(stdout, "%s", temp.c_str());
       } else {
         OutputStream * fout = FileSystem::getLocal().create("/dev/stdout");
         AppendBuffer app = AppendBuffer();
-        app.init(128*1024, fout, codec);
+        app.init(128 * 1024, fout, codec);
         app.write(temp.data(), temp.length());
         fout->close();
         delete fout;

@@ -16,7 +16,6 @@
  * limitations under the License.
  */
 
-
 #ifndef COMMONS_H_
 #define COMMONS_H_
 
@@ -33,6 +32,7 @@
 #include <limits>
 #include <string>
 #include <vector>
+#include <list>
 #include <set>
 #include <map>
 #include <algorithm>
@@ -40,5 +40,10 @@
 #include "primitives.h"
 #include "Log.h"
 #include "NativeTask.h"
+
+#include "Constants.h"
+
+#include "Iterator.h"
+#include "TrackingCollector.h"
 
 #endif /* COMMONS_H_ */

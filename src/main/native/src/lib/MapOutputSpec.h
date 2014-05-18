@@ -31,12 +31,11 @@ using std::string;
 /**
  * internal sort method
  */
-enum SortType {
+enum SortAlgorithm {
   CQSORT = 0,
   CPPSORT = 1,
   DUALPIVOTSORT = 2,
 };
-
 
 /**
  * spill file type
@@ -54,8 +53,8 @@ enum OutputFileType {
  * GROUPBY:  same key are grouped together, but not in order
  * NOSORT:   no order at all
  */
-enum RecordOrderType {
-  FULLSORT = 0,
+enum SortOrder {
+  FULLORDER = 0,
   GROUPBY = 1,
   NOSORT = 2,
 };
@@ -69,15 +68,14 @@ class MapOutputSpec {
 public:
   KeyValueType keyType;
   KeyValueType valueType;
-  RecordOrderType orderType;
-  SortType sortType;
+  SortOrder sortOrder;
+  SortAlgorithm sortAlgorithm;
   string codec;
   ChecksumType checksumType;
 
-  static void getSpecFromConfig(Config & config, MapOutputSpec & spec);
+  static void getSpecFromConfig(Config * config, MapOutputSpec & spec);
 };
 
 } // namespace NativeTask
-
 
 #endif /* MAPOUTPUTSPEC_H_ */

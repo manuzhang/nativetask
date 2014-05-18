@@ -15,8 +15,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
+#ifndef __CYGWIN__
 #include <execinfo.h>
+#endif
 #include "commons.h"
 #include "util/Hash.h"
 #include "util/StringUtil.h"
@@ -24,7 +25,6 @@
 #include "NativeObjectFactory.h"
 
 namespace NativeTask {
-
 
 //////////////////////////////////////////////////////////////////
 // NativeObjectType methods
@@ -77,23 +77,23 @@ NativeObjectType NativeObjectTypeFromString(const string type) {
 HadoopException::HadoopException(const string & what) {
   // remove long path prefix
   size_t n = 0;
-  if (what[0]=='/') {
+  if (what[0] == '/') {
     size_t p = what.find(':');
-    if (p!=what.npos) {
+    if (p != what.npos) {
       while (true) {
-        size_t np = what.find('/', n+1);
-        if (np==what.npos || np>=p) {
+        size_t np = what.find('/', n + 1);
+        if (np == what.npos || np >= p) {
           break;
         }
         n = np;
       }
     }
   }
-  _reason.append(what.c_str()+n, what.length()-n);
+  _reason.append(what.c_str() + n, what.length() - n);
   void *array[64];
   size_t size;
 
-#ifdef _EXECINFO_H
+#ifndef __CYGWIN__
   size = backtrace(array, 64);
   char ** traces = backtrace_symbols(array, size);
   for (size_t i = 0; i< size;i++) {
@@ -111,15 +111,15 @@ void Config::load(const string & path) {
     THROW_EXCEPTION(IOException, "file not found or can not open for read");
   }
   char buff[256];
-  while (fgets(buff,256,fin)!=NULL) {
-    if (buff[0]=='#') {
+  while (fgets(buff, 256, fin) != NULL) {
+    if (buff[0] == '#') {
       continue;
     }
     std::string key = buff;
-    if (key[key.length()-1] == '\n') {
+    if (key[key.length() - 1] == '\n') {
       size_t br = key.find('=');
-      if (br!=key.npos) {
-        set(key.substr(0,br), StringUtil::Trim(key.substr(br+1)));
+      if (br != key.npos) {
+        set(key.substr(0, br), StringUtil::Trim(key.substr(br + 1)));
       }
     }
   }
@@ -142,11 +142,11 @@ void Config::parse(int32_t argc, const char ** argv) {
   for (int32_t i = 0; i < argc; i++) {
     const char * equ = strchr(argv[i], '=');
     if (NULL == equ) {
-      LOG("config argument not recognized: %s", argv[i]);
+      LOG("[NativeTask] config argument not recognized: %s", argv[i]);
       continue;
     }
     if (argv[i][0] == '-') {
-      LOG("config argument with '-' prefix ignored: %s", argv[i]);
+      LOG("[NativeTask] config argument with '-' prefix ignored: %s", argv[i]);
       continue;
     }
     string key(argv[i], equ - argv[i]);
@@ -154,8 +154,7 @@ void Config::parse(int32_t argc, const char ** argv) {
     map<string, string>::iterator itr = _configs.find(key);
     if (itr == _configs.end()) {
       _configs[key] = value;
-    }
-    else {
+    } else {
       itr->second.append(",");
       itr->second.append(value);
     }
@@ -166,8 +165,7 @@ const char * Config::get(const string & name) {
   map<string, string>::iterator itr = _configs.find(name);
   if (itr == _configs.end()) {
     return NULL;
-  }
-  else {
+  } else {
     return itr->second.c_str();
   }
 }
@@ -176,8 +174,7 @@ string Config::get(const string & name, const string & defaultValue) {
   map<string, string>::iterator itr = _configs.find(name);
   if (itr == _configs.end()) {
     return defaultValue;
-  }
-  else {
+  } else {
     return itr->second;
   }
 }
@@ -186,8 +183,7 @@ int64_t Config::getInt(const string & name, int64_t defaultValue) {
   map<string, string>::iterator itr = _configs.find(name);
   if (itr == _configs.end()) {
     return defaultValue;
-  }
-  else {
+  } else {
     return StringUtil::toInt(itr->second);
   }
 }
@@ -196,8 +192,7 @@ bool Config::getBool(const string & name, bool defaultValue) {
   map<string, string>::iterator itr = _configs.find(name);
   if (itr == _configs.end()) {
     return defaultValue;
-  }
-  else {
+  } else {
     return StringUtil::toBool(itr->second);
   }
 }
@@ -206,8 +201,7 @@ float Config::getFloat(const string & name, float defaultValue) {
   map<string, string>::iterator itr = _configs.find(name);
   if (itr == _configs.end()) {
     return defaultValue;
-  }
-  else {
+  } else {
     return StringUtil::toFloat(itr->second);
   }
 }
@@ -222,7 +216,7 @@ void Config::getStrings(const string & name, vector<string> & dest) {
 void Config::getInts(const string & name, vector<int64_t> & dest) {
   vector<string> sdest;
   getStrings(name, sdest);
-  for (size_t i =0;i<sdest.size();i++) {
+  for (size_t i = 0; i < sdest.size(); i++) {
     dest.push_back(StringUtil::toInt(sdest[i]));
   }
 }
@@ -230,42 +224,24 @@ void Config::getInts(const string & name, vector<int64_t> & dest) {
 void Config::getFloats(const string & name, vector<float> & dest) {
   vector<string> sdest;
   getStrings(name, sdest);
-  for (size_t i =0;i<sdest.size();i++) {
+  for (size_t i = 0; i < sdest.size(); i++) {
     dest.push_back(StringUtil::toFloat(sdest[i]));
   }
 }
 
-
 ///////////////////////////////////////////////////////////
-
 
 Counter * ProcessorBase::getCounter(const string & group, const string & name) {
   return NULL;
 }
 
-
 uint32_t Partitioner::getPartition(const char * key, uint32_t & keyLen, uint32_t numPartition) {
-  if (numPartition==1) {
+  if (numPartition == 1) {
     return 0;
   }
   return (Hash::BytesHash(key, keyLen) & 0x7fffffff) % numPartition;
 }
 
 ///////////////////////////////////////////////////////////
-
-bool KeyGroupIterator::nextKey() {
-  // TODO: impl
-  return false;
-}
-
-const char * KeyGroupIterator::getKey(uint32_t & len) {
-  // TODO: impl
-  return NULL;
-}
-
-const char * KeyGroupIterator::nextValue(uint32_t & len) {
-  // TODO: impl
-  return NULL;
-}
 
 }

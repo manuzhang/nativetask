@@ -26,23 +26,47 @@
 namespace NativeTask {
 
 class MMapTaskHandlerTest : public MMapTaskHandler {
+
 protected:
   string outputfile;
   int spillCount;
 public:
-  MMapTaskHandlerTest() : spillCount(0) {}
+  MMapTaskHandlerTest()
+      : spillCount(0) {
+  }
 
-  virtual ~MMapTaskHandlerTest() {}
+  virtual ~MMapTaskHandlerTest() {
+  }
 
-  virtual string sendCommand(const string & cmd) {
-    if (cmd == "GetSpillPath") {
-      return StringUtil::Format("spill_%d", spillCount++);
-    } else if (cmd == "GetOutputPath") {
-      return outputfile.length()>0?outputfile:string("map.output");
-    } else if (cmd == "GetOutputIndexPath") {
-      return string("map.output.index");
+  virtual ResultBuffer * call(const Command & cmd, ParameterBuffer * param) {
+
+    LOG("[MMapTaskHandlerTest::call] Command Id: %d, output file: %s", cmd.id(), outputfile.c_str());
+
+    if (cmd.equals(GET_SPILL_PATH)) {
+      LOG("[MMapTaskHandlerTest::call] Command Id: GET_SPILL_PATH");
+
+      string str = StringUtil::Format("spill_%d", spillCount++);
+      ResultBuffer * result = new ResultBuffer();
+      result->writeString(&str);
+      LOG("[MMapTaskHandlerTest::call] Command Id: GET_SPILL_PATH, %s", str.c_str());
+      return result;
+    } else if (cmd.equals(GET_OUTPUT_PATH)) {
+      LOG("[MMapTaskHandlerTest::call] Command Id: GET_OUTPUT_PATH");
+
+      string str = outputfile.length() > 0 ? outputfile : string("map.output");
+      ResultBuffer * result = new ResultBuffer();
+      result->writeString(&str);
+      LOG("[MMapTaskHandlerTest::call] Command Id: GET_OUTPUT_PATH, %s", str.c_str());
+      return result;
+    } else if (cmd.equals(GET_OUTPUT_INDEX_PATH)) {
+      LOG("[MMapTaskHandlerTest::call] Command Id: GET_OUTPUT_INDEX_PATH");
+      string str = string("map.output.index");
+      ResultBuffer * result = new ResultBuffer();
+      result->writeString(&str);
+      LOG("[MMapTaskHandlerTest::call] Command Id: GET_OUTPUT_INDEX_PATH, %s", str.c_str());
+      return result;
     } else {
-      THROW_EXCEPTION_EX(UnsupportException, "Unknown command %s", cmd.c_str());
+      THROW_EXCEPTION_EX(UnsupportException, "Unknown command %d", cmd.id());
     }
   }
 
@@ -59,7 +83,7 @@ TEST(Perf, MMapTaskTeraSort) {
   bool sortFirst = TestConfig.getBool("native.spill.sort.first", true);
   string inputtype = TestConfig.get("maptask.inputtype", "tera");
   int64_t inputLength = TestConfig.getInt("maptask.inputlength", 250000000);
-  int64_t iosortmb = TestConfig.getInt("io.sort.mb", 300);
+  int64_t iosortmb = TestConfig.getInt(MAPRED_IO_SORT_MB, 300);
   bool isTeraInput = inputtype == "tera";
   uint64_t inputFileLength = 0;
   Timer timer;
@@ -70,7 +94,7 @@ TEST(Perf, MMapTaskTeraSort) {
     OutputStream * fout = FileSystem::getLocal().create(inputfile, true);
     AppendBuffer appendBuffer = AppendBuffer();
     appendBuffer.init(128 * 1024, fout, inputcodec);
-    for (size_t i=0;i<inputdata.size();i++) {
+    for (size_t i = 0; i < inputdata.size(); i++) {
       string & key = inputdata[i].first;
       string & value = inputdata[i].second;
       appendBuffer.write(key.data(), key.length());
@@ -89,8 +113,8 @@ TEST(Perf, MMapTaskTeraSort) {
 
   timer.reset();
   Config jobconf;
-  jobconf.setInt("mapred.reduce.tasks", 200);
-  jobconf.setInt("io.sort.mb", iosortmb);
+  jobconf.setInt(MAPRED_NUM_REDUCES, 200);
+  jobconf.setInt(MAPRED_IO_SORT_MB, iosortmb);
   jobconf.set(MAPRED_MAPOUTPUT_KEY_CLASS, "org.apache.hadoop.io.Text");
   jobconf.set(MAPRED_MAPOUTPUT_VALUE_CLASS, "org.apache.hadoop.io.Text");
   jobconf.setBool("native.spill.sort.first", sortFirst);
@@ -111,12 +135,11 @@ TEST(Perf, MMapTaskTeraSort) {
   }
   MMapTaskHandlerTest * mapRunner = new MMapTaskHandlerTest();
   mapRunner->setOutputFile(outputfile);
-  mapRunner->configure(jobconf);
-  mapRunner->command("run");
+  mapRunner->configure(&jobconf);
+  mapRunner->onCall(mapRunner->RUN, NULL);
   LOG("%s", timer.getInterval("Map Task").c_str());
+  delete mapRunner;
 }
-
-
 
 TEST(Perf, MMapTaskWordCount) {
   string inputfile = TestConfig.get("maptask.inputfile", "word.input");
@@ -124,10 +147,10 @@ TEST(Perf, MMapTaskWordCount) {
   string inputcodec = Compressions::getCodecByFile(inputfile);
   string sorttype = TestConfig.get(NATIVE_SORT_TYPE, "DUALPIVOTSORT");
   bool sortFirst = TestConfig.getBool("native.spill.sort.first", true);
-  bool usecombiner = TestConfig.getBool("maptask.enable.combiner",true);
+  bool usecombiner = TestConfig.getBool("maptask.enable.combiner", true);
   string inputtype = TestConfig.get("maptask.inputtype", "word");
   int64_t inputLength = TestConfig.getInt("maptask.inputlength", 250000000);
-  int64_t iosortmb = TestConfig.getInt("io.sort.mb", 300);
+  int64_t iosortmb = TestConfig.getInt(MAPRED_IO_SORT_MB, 300);
   bool isTeraInput = inputtype == "tera";
   uint64_t inputFileLength = 0;
   Timer timer;
@@ -138,7 +161,7 @@ TEST(Perf, MMapTaskWordCount) {
     OutputStream * fout = FileSystem::getLocal().create(inputfile, true);
     AppendBuffer appendBuffer = AppendBuffer();
     appendBuffer.init(128 * 1024, fout, inputcodec);
-    for (size_t i=0;i<inputdata.size();i++) {
+    for (size_t i = 0; i < inputdata.size(); i++) {
       string & key = inputdata[i].first;
       string & value = inputdata[i].second;
       appendBuffer.write(key.data(), key.length());
@@ -157,8 +180,8 @@ TEST(Perf, MMapTaskWordCount) {
 
   timer.reset();
   Config jobconf;
-  jobconf.setInt("mapred.reduce.tasks", 100);
-  jobconf.setInt("io.sort.mb", iosortmb);
+  jobconf.setInt(MAPRED_NUM_REDUCES, 100);
+  jobconf.setInt(MAPRED_IO_SORT_MB, iosortmb);
   jobconf.set(MAPRED_MAPOUTPUT_KEY_CLASS, "org.apache.hadoop.io.Text");
   jobconf.set(MAPRED_MAPOUTPUT_VALUE_CLASS, "org.apache.hadoop.io.Text");
   jobconf.setBool("native.spill.sort.first", sortFirst);
@@ -181,9 +204,10 @@ TEST(Perf, MMapTaskWordCount) {
   }
   MMapTaskHandlerTest * mapRunner = new MMapTaskHandlerTest();
   mapRunner->setOutputFile(outputfile);
-  mapRunner->configure(jobconf);
-  mapRunner->command("run");
+  mapRunner->configure(&jobconf);
+  mapRunner->onCall(mapRunner->RUN, NULL);
   LOG("%s", timer.getInterval("Map Task").c_str());
+  delete mapRunner;
 }
 
 } // namespace Hadoop

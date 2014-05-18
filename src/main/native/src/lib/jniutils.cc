@@ -45,11 +45,10 @@ JavaVM * JNU_GetJVM(void) {
           return NULL;
         }
         const char *hadoopClassPathVMArg = "-Djava.class.path=";
-        size_t optHadoopClassPathLen = strlen(hadoopClassPath)
-            + strlen(hadoopClassPathVMArg) + 1;
+        size_t optHadoopClassPathLen = strlen(hadoopClassPath) + strlen(hadoopClassPathVMArg) + 1;
         char *optHadoopClassPath = (char*)malloc(sizeof(char) * optHadoopClassPathLen);
-        snprintf(optHadoopClassPath, optHadoopClassPathLen, "%s%s",
-                 hadoopClassPathVMArg, hadoopClassPath);
+        snprintf(optHadoopClassPath, optHadoopClassPathLen, "%s%s", hadoopClassPathVMArg,
+            hadoopClassPath);
         int noArgs = 1;
         JavaVMOption options[noArgs];
         options[0].optionString = optHadoopClassPath;
@@ -61,7 +60,7 @@ JavaVM * JNU_GetJVM(void) {
         vm_args.nOptions = noArgs;
         vm_args.ignoreUnrecognized = 1;
         JNIEnv * jenv;
-        rv = JNI_CreateJavaVM(&gJVM, (void**) &jenv, &vm_args);
+        rv = JNI_CreateJavaVM(&gJVM, (void**)&jenv, &vm_args);
         if (rv != 0) {
           THROW_EXCEPTION(NativeTask::HadoopException, "JNI_CreateJavaVM failed");
           return NULL;
