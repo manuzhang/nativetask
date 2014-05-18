@@ -1,7 +1,8 @@
 #What is NativeTask?
 NativeTask is a **performance oriented** native engine for Hadoop MapReduce.
 
-NativeTask can be used transparently as a replacement of in-efficient Map Output Collector , or as a full native runtime which support native mapper and reducer written in C++. Please check paper for details [*NativeTask: A Hadoop Compatible Framework for High Performance*](http://prof.ict.ac.cn/bpoe2013/downloads/papers/S7201_5910.pdf).
+NativeTask can be used transparently as a replacement of in-efficient Map Output Collector , or as a full native runtime which support native mapper and reducer written in C++. Please check [wiki](https://github.com/intel-hadoop/nativetask/wiki) and this paper for details [*NativeTask: A Hadoop Compatible Framework for High Performance*](http://prof.ict.ac.cn/bpoe2013/downloads/papers/S7201_5910.pdf).
+
 
 Some early discussions of NativeTask can be found at [MAPREDUCE-2841](https://issues.apache.org/jira/browse/MAPREDUCE-2841).
 
@@ -11,7 +12,7 @@ Some early discussions of NativeTask can be found at [MAPREDUCE-2841](https://is
 **1. Superior Performance**
 
 For CPU intensive job like WordCount, we can provides **2.6x** performance boost transparently, or **5x** performance boost when running as full native runtime.
-![native MapOutputCollector mode](https://lh6.googleusercontent.com/-Cj1ojoRjKxk/U2w2LFGLz3I/AAAAAAAAC14/XnstsiUhPKA/w959-h558-no/hibench.PNG)
+![native MapOutputCollector mode](https://raw.githubusercontent.com/intel-hadoop/nativetask/master/doc/800px-Native-task-performance-overview.png)
 
 **2. Compatibility and Transparency**
 
@@ -101,13 +102,6 @@ Here is the steps to enable NativeTask in transparent collector mode:
 
 Please check wiki for how to run MRv1 over NativeTask and HBase, Hive, Pig and Mahout support
 
-
-## Contacts
-For questions and support, please contact 
-* [Sean Zhong](https://github.com/clockfly) (xiang.zhong@intel.com)
-* [Manu Zhang](https://github.com/manuzhang) (tianlun.zhang@intel.com)
-* [Jiang Weihua](https://github.com/whjiang) (weihua.jiang@intel.com)
-
 ## Contributors
 * [Binglin Chang](https://github.com/decster)     
 * [Yang Dong](https://github.com/GarfiedYang)    
@@ -116,11 +110,18 @@ For questions and support, please contact
 * [Zhongliang Zhu](https://github.com/zoken)    
 * [Vincent Wang](https://github.com/huafengw)     
 * [Yan Dong](https://github.com/sproblvem)
-* Fangqin Dai
-* Xusen Yin
-* Cheng Lian
+* [Fangqin Dai](https://github.com/soulmachine)
+* [Xusen Yin](https://github.com/yinxusen)
+* [Cheng Lian](https://github.com/liancheng)
 * [Jiang Weihua](https://github.com/whjiang) 
 * Gansha Wu
+* [Avik Dey](https://github.com/adey)
+
+## Contacts
+For questions and support, please contact 
+* [Sean Zhong](https://github.com/clockfly) (xiang.zhong@intel.com)
+* [Manu Zhang](https://github.com/manuzhang) (tianlun.zhang@intel.com)
+* [Jiang Weihua](https://github.com/whjiang) (weihua.jiang@intel.com)
 
 ## Further information
 For further documents, please check the [Wiki](https://github.com/intel-hadoop/nativetask/wiki) Page.
