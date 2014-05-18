@@ -102,13 +102,6 @@ Here is the steps to enable NativeTask in transparent collector mode:
 
 Please check wiki for how to run MRv1 over NativeTask and HBase, Hive, Pig and Mahout support
 
-
-## Contacts
-For questions and support, please contact 
-* [Sean Zhong](https://github.com/clockfly) (xiang.zhong@intel.com)
-* [Manu Zhang](https://github.com/manuzhang) (tianlun.zhang@intel.com)
-* [Jiang Weihua](https://github.com/whjiang) (weihua.jiang@intel.com)
-
 ## Contributors
 * [Binglin Chang](https://github.com/decster)     
 * [Yang Dong](https://github.com/GarfiedYang)    
@@ -117,12 +110,18 @@ For questions and support, please contact
 * [Zhongliang Zhu](https://github.com/zoken)    
 * [Vincent Wang](https://github.com/huafengw)     
 * [Yan Dong](https://github.com/sproblvem)
-* Fangqin Dai
-* Xusen Yin
-* Cheng Lian
+* [Fangqin Dai](https://github.com/soulmachine)
+* [Xusen Yin](https://github.com/yinxusen)
+* [Cheng Lian](https://github.com/liancheng)
 * [Jiang Weihua](https://github.com/whjiang) 
 * Gansha Wu
-* Avik Dey
+* [Avik Dey](https://github.com/adey)
+
+## Contacts
+For questions and support, please contact 
+* [Sean Zhong](https://github.com/clockfly) (xiang.zhong@intel.com)
+* [Manu Zhang](https://github.com/manuzhang) (tianlun.zhang@intel.com)
+* [Jiang Weihua](https://github.com/whjiang) (weihua.jiang@intel.com)
 
 ## Further information
 For further documents, please check the [Wiki](https://github.com/intel-hadoop/nativetask/wiki) Page.
