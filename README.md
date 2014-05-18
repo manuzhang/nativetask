@@ -11,7 +11,7 @@ Some early discussions of NativeTask can be found at [MAPREDUCE-2841](https://is
 **1. Superior Performance**
 
 For CPU intensive job like WordCount, we can provides **2.6x** performance boost transparently, or **5x** performance boost when running as full native runtime.
-![native MapOutputCollector mode](https://lh6.googleusercontent.com/-Cj1ojoRjKxk/U2w2LFGLz3I/AAAAAAAAC14/XnstsiUhPKA/w959-h558-no/hibench.PNG)
+![native MapOutputCollector mode](https://raw.githubusercontent.com/intel-hadoop/nativetask/master/doc/800px-Native-task-performance-overview.png)
 
 **2. Compatibility and Transparency**
 
