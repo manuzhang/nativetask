@@ -20,8 +20,19 @@ package org.apache.hadoop.mapred.nativetask;
 
 public class Constants {
 
+  public static String JOB_NAME = "mapred.job.name";
   public static String MAP_SORT_CLASS = "map.sort.class";
   public static String MAPRED_COMBINER_CLASS = "mapred.combiner.class";
+  public static String JT_IPC_ADDRESS = "mapred.job.tracker";
+  public static String MAP_OUTPUT_COMPRESS = "mapred.compress.map.output";
+  public static String MAP_OUTPUT_COMPRESS_CODEC = "mapred.map.output.compression.codec";
+  public static String MAP_OUTPUT_KEY_COMPARATOR = "mapred.output.key.comparator.class";
+  public static String COMBINE_CLASS_ATTR = "mapreduce.combine.class"; 
+  public static String OUTPUT_KEY_CLASS = "mapred.output.key.class";
+  public static String OUTPUT_VALUE_CLASS = "mapred.output.value.class";
+  public static String MAP_OUTPUT_KEY_CLASS = "mapred.mapoutput.key.class";
+  public static String MAP_OUTPUT_VALUE_CLASS = "mapred.mapoutput.value.class";
+  
 
   public static String MAPRED_MAPTASK_DELEGATOR_CLASS = "mapreduce.map.task.delegator.class";
   public static String MAPRED_REDUCETASK_DELEGATOR_CLASS = "mapreduce.reduce.task.delegator.class";

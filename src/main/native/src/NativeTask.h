@@ -19,7 +19,6 @@
 #ifndef NATIVETASK_H_
 #define NATIVETASK_H_
 
-#include "lib/jniutils.h"
 #include <stdint.h>
 #include <string>
 #include <vector>
@@ -66,12 +65,12 @@ enum Endium {
 #define NATIVE_HADOOP_VERSION "native.hadoop.version"
 
 #define NATIVE_INPUT_SPLIT "native.input.split"
-#define INPUT_LINE_KV_SEPERATOR "mapreduce.input.keyvaluelinerecordreader.key.value.separator"
-#define MAPRED_TEXTOUTPUT_FORMAT_SEPERATOR "mapreduce.output.textoutputformat.separator"
-#define MAPRED_WORK_OUT_DIR "mapreduce.task.output.dir"
+#define INPUT_LINE_KV_SEPERATOR "key.value.separator.in.input.line"
+#define MAPRED_TEXTOUTPUT_FORMAT_SEPERATOR "mapred.textoutputformat.separator"
+#define MAPRED_WORK_OUT_DIR "mapred.work.output.dir"
 #define NATIVE_OUTPUT_FILE_NAME "native.output.file.name"
-#define MAPRED_COMPRESS_OUTPUT "mapreduce.output.fileoutputformat.compress"
-#define MAPRED_OUTPUT_COMPRESSION_CODEC "mapreduce.output.fileoutputformat.compress.codec"
+#define MAPRED_COMPRESS_OUTPUT "mapred.output.compress"
+#define MAPRED_OUTPUT_COMPRESSION_CODEC "mapred.output.compression.codec"
 #define TOTAL_ORDER_PARTITIONER_PATH "total.order.partitioner.path"
 #define TOTAL_ORDER_PARTITIONER_MAX_TRIE_DEPTH "total.order.partitioner.max.trie.depth"
 #define FS_DEFAULT_NAME "fs.default.name"
@@ -80,14 +79,14 @@ enum Endium {
 #define NATIVE_SORT_TYPE "native.sort.type"
 #define MAPRED_SORT_AVOID "mapreduce.sort.avoidance"
 #define NATIVE_SORT_MAX_BLOCK_SIZE "native.sort.blocksize.max"
-#define MAPRED_COMPRESS_MAP_OUTPUT "mapreduce.map.output.compress"
-#define MAPRED_MAP_OUTPUT_COMPRESSION_CODEC "mapreduce.map.output.compress.codec"
-#define MAPRED_MAPOUTPUT_KEY_CLASS "mapreduce.map.output.key.class"
-#define MAPRED_OUTPUT_KEY_CLASS "mapreduce.job.output.key.class"
-#define MAPRED_MAPOUTPUT_VALUE_CLASS "mapreduce.map.output.value.class"
-#define MAPRED_OUTPUT_VALUE_CLASS "mapreduce.job.output.value.class"
-#define MAPRED_IO_SORT_MB "mapreduce.task.io.sort.mb"
-#define MAPRED_NUM_REDUCES "mapreduce.job.reduces"
+#define MAPRED_COMPRESS_MAP_OUTPUT "mapred.compress.map.output"
+#define MAPRED_MAP_OUTPUT_COMPRESSION_CODEC "mapred.map.output.compression.codec"
+#define MAPRED_MAPOUTPUT_KEY_CLASS "mapred.mapoutput.key.class"
+#define MAPRED_OUTPUT_KEY_CLASS "mapred.output.key.class"
+#define MAPRED_MAPOUTPUT_VALUE_CLASS "mapred.mapoutput.value.class"
+#define MAPRED_OUTPUT_VALUE_CLASS "mapred.output.value.class"
+#define MAPRED_IO_SORT_MB "io.sort.mb"
+#define MAPRED_NUM_REDUCES "mapred.reduce.tasks"
 #define MAPRED_COMBINE_CLASS_OLD "mapred.combiner.class"
 #define MAPRED_COMBINE_CLASS_NEW "mapreduce.job.combine.class"
 

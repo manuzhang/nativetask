@@ -23,9 +23,8 @@ import java.io.IOException;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.mapred.TaskAttemptID;
+import org.apache.hadoop.mapred.RecordWriter;
 import org.apache.hadoop.mapred.nativetask.Command;
 import org.apache.hadoop.mapred.nativetask.CommandDispatcher;
 import org.apache.hadoop.mapred.nativetask.DataChannel;
@@ -34,8 +33,7 @@ import org.apache.hadoop.mapred.nativetask.INativeHandler;
 import org.apache.hadoop.mapred.nativetask.NativeBatchProcessor;
 import org.apache.hadoop.mapred.nativetask.TaskContext;
 import org.apache.hadoop.mapred.nativetask.buffer.InputBuffer;
-import org.apache.hadoop.mapred.nativetask.util.NativeTaskOutput;
-import org.apache.hadoop.mapred.nativetask.util.OutputUtil;
+import org.apache.hadoop.mapred.nativetask.util.OutputPathUtil;
 import org.apache.hadoop.mapred.nativetask.util.ReadWriteBuffer;
 
 /**
@@ -57,12 +55,12 @@ public class NativeMapAndCollectorHandler<IK, IV, OK, OV> implements Closeable, 
   private final INativeHandler nativeHandler;
   private final ICombineHandler combinerHandler;
 
+  private final OutputPathUtil mapOutputFile;
   private int spillNumber = 0;
   private boolean closed = false;
   private final InputBuffer in;
 
   private final TaskContext context;
-  private NativeTaskOutput output;
 
   public static <IK, IV, OK, OV> NativeMapAndCollectorHandler<IK, IV, OK, OV> create(TaskContext context) throws IOException {
 
@@ -95,15 +93,9 @@ public class NativeMapAndCollectorHandler<IK, IV, OK, OV> implements Closeable, 
     this.nativeHandler = nativeHandler;
     nativeHandler.setCommandDispatcher(this);
     this.in = nativeHandler.getInputBuffer();
+    this.mapOutputFile = new OutputPathUtil();
     this.context = context;
-    Configuration conf = context.getConf();
-    TaskAttemptID id = context.getTaskAttemptId();
-    if (null == id) {
-      this.output = OutputUtil.createNativeTaskOutput(conf, "");
-    } else {
-      this.output = OutputUtil.createNativeTaskOutput(context.getConf(), context.getTaskAttemptId()
-        .toString());
-    }
+    this.mapOutputFile.setConf(context.getConf());
   }
 
   @Override
@@ -117,11 +109,11 @@ public class NativeMapAndCollectorHandler<IK, IV, OK, OV> implements Closeable, 
     Path p = null;
     
     if (command.equals(GET_OUTPUT_PATH)) {
-      p = output.getOutputFileForWrite(-1);
+      p = mapOutputFile.getOutputFileForWrite(-1);
     } else if (command.equals(GET_OUTPUT_INDEX_PATH)) {
-      p = output.getOutputIndexFileForWrite(-1);
+      p = mapOutputFile.getOutputIndexFileForWrite(-1);
     } else if (command.equals(GET_SPILL_PATH)) {
-      p = output.getSpillFileForWrite(spillNumber++, -1);
+      p = mapOutputFile.getSpillFileForWrite(spillNumber++, -1);
     } else if (command.equals(GET_COMBINE_HANDLER)) {
     
       if (null == combinerHandler) {
