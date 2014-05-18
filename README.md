@@ -123,4 +123,4 @@ For questions and support, please contact
 * Gansha Wu
 
 ## Further information
-For further documents, please check the Wiki Page.
+For further documents, please check the [Wiki](wiki) Page.
