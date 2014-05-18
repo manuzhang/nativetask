@@ -3,6 +3,7 @@ NativeTask is a **performance oriented** native engine for Hadoop MapReduce.
 
 NativeTask can be used transparently as a replacement of in-efficient Map Output Collector , or as a full native runtime which support native mapper and reducer written in C++. Please check paper for details [*NativeTask: A Hadoop Compatible Framework for High Performance*](http://prof.ict.ac.cn/bpoe2013/downloads/papers/S7201_5910.pdf).
 
+For more information, please check [Wiki](https://github.com/intel-hadoop/nativetask/wiki)
 Some early discussions of NativeTask can be found at [MAPREDUCE-2841](https://issues.apache.org/jira/browse/MAPREDUCE-2841).
 
 
