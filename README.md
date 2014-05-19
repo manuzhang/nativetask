@@ -110,9 +110,9 @@ Please check wiki for how to run MRv1 over NativeTask and HBase, Hive, Pig and M
 * [Zhongliang Zhu](https://github.com/zoken)    
 * [Vincent Wang](https://github.com/huafengw)     
 * [Yan Dong](https://github.com/sproblvem)
-* [Fangqin Dai](https://github.com/soulmachine)
-* [Xusen Yin](https://github.com/yinxusen)
 * [Cheng Lian](https://github.com/liancheng)
+* [Xusen Yin](https://github.com/yinxusen)
+* [Fangqin Dai](https://github.com/soulmachine)
 * [Jiang Weihua](https://github.com/whjiang) 
 * Gansha Wu
 * [Avik Dey](https://github.com/adey)
