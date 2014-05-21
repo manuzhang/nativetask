@@ -72,7 +72,6 @@ src/lib/TaskCounters.cc \
 src/util/Checksum.cc \
 src/util/Hash.cc \
 src/util/PigUtils.cc \
-src/util/Process.cc \
 src/util/Random.cc \
 src/util/StringUtil.cc \
 src/util/SyncUtils.cc \
@@ -83,7 +82,6 @@ src/util/WritableUtils.cc
 COMMONHEADERS = \
 src/util/Checksum.h                   \
 src/util/PigUtils.h                   \
-src/util/Process.h                    \
 src/util/StringUtil.h                 \
 src/util/SyncUtils.h                  \
 src/util/WritableUtils.h              \
@@ -110,7 +108,6 @@ test/handler/TestCombineHandler.cc   \
 test/handler/TestMCollectorOutputHandler.cc   \
 test/lib/TestByteArray.cc      \
 test/lib/TestByteBuffer.cc      \
-test/lib/TestTotalOrderPartitioner.cc \
 test/lib/TestCombineRunner.cc \
 test/lib/TestComparatorForDualPivotQuickSort.cc \
 test/lib/TestComparatorForStdSort.cc \
@@ -136,7 +133,6 @@ test/util/TestPigUtils.cc             \
 test/util/TestStringUtil.cc           \
 test/util/TestSyncUtils.cc            \
 test/util/TestWritableUtils.cc        \
-test/util/TestProcess.cc              \
 test/TestBuffer.cc                   \
 test/TestCommand.cc                   \
 test/TestConfig.cc                   \
@@ -153,17 +149,13 @@ test/TestMain.cc                      \
 test/test_commons.cc                  
 
 include_HEADERS = $(COMMONHEADERS)
-lib_LTLIBRARIES = libnativetask.la libstreaming.la
+lib_LTLIBRARIES = libnativetask.la 
 noinst_PROGRAMS = nttest
 noinst_SCRIPTS = test.sh
 
 libnativetask_la_SOURCES = $(COMMONSOURCES)
 libnativetask_la_CPPFLAGS = -g -O2 -DNDEBUG $(MACRO) -fPIC $(AM_CFLAGS)
 libnativetask_la_LDFLAGS =  -version-info 0:1:0 $(AM_LDFLAGS)
-
-libstreaming_la_SOURCES = examples/Streaming.cc
-libstreaming_la_CPPFLAGS = -g -O2 -DNDEBUG $(MACRO) -fPIC $(AM_CFLAGS)
-libstreaming_la_LDFLAGS = -version-info 0:1:0 $(AM_LDFLAGS)
 
 nttest_SOURCES = $(TESTSOURCES) gtest/gtest-all.cc
 nttest_LDADD = libnativetask.la

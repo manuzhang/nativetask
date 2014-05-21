@@ -73,47 +73,6 @@ public:
   virtual void close();
 };
 
-/**
- * Simple wrapper for java org.apache.hadoop.fs.FSDataInputstream
- */
-class FSDataInputStream : public InputStream {
-  friend class JavaFileSystem;
-private:
-  void * _jobject;
-
-  FSDataInputStream(void * jobject);
-public:
-  ~FSDataInputStream();
-
-  virtual void seek(uint64_t position);
-
-  virtual uint64_t tell();
-
-  virtual int32_t read(void * buff, uint32_t length);
-
-  virtual void close();
-};
-
-/**
- * Simple wrapper for java org.apache.hadoop.fs.FSDataOutputstream
- */
-class FSDataOutputStream : public OutputStream {
-  friend class JavaFileSystem;
-private:
-  void * _jobject;
-
-  FSDataOutputStream(void * jobject);
-public:
-  ~FSDataOutputStream();
-
-  virtual uint64_t tell();
-
-  virtual void write(const void * buff, uint32_t length);
-
-  virtual void flush();
-
-  virtual void close();
-};
 
 class FileEntry {
 public:

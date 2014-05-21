@@ -103,7 +103,7 @@ am__objects_1 = libnativetask_la-lz4.lo libnativetask_la-city.lo \
 	libnativetask_la-Combiner.lo libnativetask_la-TaskCounters.lo \
 	libnativetask_la-Checksum.lo \
 	libnativetask_la-Hash.lo libnativetask_la-PigUtils.lo \
-	libnativetask_la-Process.lo libnativetask_la-Random.lo \
+	libnativetask_la-Random.lo \
 	libnativetask_la-StringUtil.lo libnativetask_la-SyncUtils.lo \
 	libnativetask_la-Timer.lo libnativetask_la-WritableUtils.lo
 am_libnativetask_la_OBJECTS = $(am__objects_1)
@@ -136,7 +136,7 @@ am__objects_2 = nttest-TestBatchHandler.$(OBJEXT) \
 	nttest-TestPigUtils.$(OBJEXT) nttest-TestStringUtil.$(OBJEXT) \
 	nttest-TestSyncUtils.$(OBJEXT) \
 	nttest-TestWritableUtils.$(OBJEXT) \
-	nttest-TestProcess.$(OBJEXT) nttest-TestBuffer.$(OBJEXT) \
+	nttest-TestBuffer.$(OBJEXT) \
 	nttest-TestCommand.$(OBJEXT) nttest-TestConfig.$(OBJEXT) \
 	nttest-TestCounter.$(OBJEXT) nttest-TestInputSplit.$(OBJEXT) \
 	nttest-TestCompressions.$(OBJEXT) \
@@ -358,7 +358,6 @@ src/lib/TaskCounters.cc \
 src/util/Checksum.cc \
 src/util/Hash.cc \
 src/util/PigUtils.cc \
-src/util/Process.cc \
 src/util/Random.cc \
 src/util/StringUtil.cc \
 src/util/SyncUtils.cc \
@@ -368,7 +367,6 @@ src/util/WritableUtils.cc
 COMMONHEADERS = \
 src/util/Checksum.h                   \
 src/util/PigUtils.h                   \
-src/util/Process.h                    \
 src/util/StringUtil.h                 \
 src/util/SyncUtils.h                  \
 src/util/WritableUtils.h              \
@@ -419,7 +417,6 @@ test/util/TestPigUtils.cc             \
 test/util/TestStringUtil.cc           \
 test/util/TestSyncUtils.cc            \
 test/util/TestWritableUtils.cc        \
-test/util/TestProcess.cc              \
 test/TestBuffer.cc                   \
 test/TestCommand.cc                   \
 test/TestConfig.cc                   \
