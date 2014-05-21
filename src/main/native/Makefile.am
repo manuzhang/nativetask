@@ -54,8 +54,6 @@ src/lib/FileSystem.cc \
 src/lib/IFile.cc \
 src/lib/jniutils.cc \
 src/lib/KVFile.cc \
-src/lib/LineRecordReader.cc \
-src/lib/LineRecordWriter.cc \
 src/lib/Log.cc \
 src/lib/MapOutputCollector.cc \
 src/lib/MapOutputSpec.cc \
@@ -71,9 +69,6 @@ src/lib/Path.cc \
 src/lib/Streams.cc \
 src/lib/Combiner.cc \
 src/lib/TaskCounters.cc \
-src/lib/TeraSort.cc \
-src/lib/TotalOrderPartitioner.cc \
-src/lib/WordCount.cc \
 src/util/Checksum.cc \
 src/util/Hash.cc \
 src/util/PigUtils.cc \
@@ -92,8 +87,6 @@ src/util/Process.h                    \
 src/util/StringUtil.h                 \
 src/util/SyncUtils.h                  \
 src/util/WritableUtils.h              \
-src/lib/LineRecordReader.h            \
-src/lib/LineRecordWriter.h            \
 src/lib/commons.h                         \
 src/lib/Log.h                             \
 src/lib/primitives.h                      \
@@ -117,7 +110,6 @@ test/handler/TestCombineHandler.cc   \
 test/handler/TestMCollectorOutputHandler.cc   \
 test/lib/TestByteArray.cc      \
 test/lib/TestByteBuffer.cc      \
-test/lib/TestLineRecordReader.cc      \
 test/lib/TestTotalOrderPartitioner.cc \
 test/lib/TestCombineRunner.cc \
 test/lib/TestComparatorForDualPivotQuickSort.cc \
@@ -128,7 +120,6 @@ test/lib/TestHeap.cc \
 test/lib/TestMemoryPool.cc \
 test/lib/TestIterator.cc \
 test/lib/TestKVBuffer.cc \
-test/lib/TestLineRecordWriter.cc \
 test/lib/TestMapOutputCollector.cc \
 test/lib/TestMapOutputSpec.cc \
 test/lib/TestMemBlockIterator.cc \

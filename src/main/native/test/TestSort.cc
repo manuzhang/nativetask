@@ -19,7 +19,6 @@
 #include "commons.h"
 #include "Streams.h"
 #include "Buffers.h"
-#include "lib/TeraSort.h"
 #include "DualPivotQuickSort.h"
 #include "test_commons.h"
 
@@ -164,6 +163,7 @@ public:
   }
 };
 
+/*
 void makeInput(string & dest, vector<uint32_t> & offsets, uint64_t length) {
   TeraGen tera = TeraGen(length / 100, 1, 0);
   dest.reserve(length + 1024);
@@ -178,6 +178,7 @@ void makeInput(string & dest, vector<uint32_t> & offsets, uint64_t length) {
     dest.append(v.data(), v.length());
   }
 }
+*/
 
 void makeInputWord(string & dest, vector<uint32_t> & offsets, uint64_t length) {
   Random r;
