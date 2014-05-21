@@ -31,9 +31,6 @@
 #include "util/WritableUtils.h"
 #include "handler/BatchHandler.h"
 #include "handler/MCollectorOutputHandler.h"
-#include "handler/MMapperHandler.h"
-#include "handler/MMapTaskHandler.h"
-#include "handler/RReducerHandler.h"
 #include "handler/CombineHandler.h"
 #include "lib/LineRecordReader.h"
 #include "lib/LineRecordWriter.h"
@@ -66,9 +63,6 @@ DEFINE_NATIVE_LIBRARY(NativeTask) {
   REGISTER_CLASS(BatchHandler, NativeTask);
   REGISTER_CLASS(CombineHandler, NativeTask);
   REGISTER_CLASS(MCollectorOutputHandler, NativeTask);
-  REGISTER_CLASS(MMapperHandler, NativeTask);
-  REGISTER_CLASS(MMapTaskHandler, NativeTask);
-  REGISTER_CLASS(RReducerHandler, NativeTask);
   REGISTER_CLASS(Mapper, NativeTask);
   REGISTER_CLASS(Reducer, NativeTask);
   REGISTER_CLASS(Partitioner, NativeTask);

@@ -43,10 +43,6 @@ src/codec/Lz4Codec.cc \
 src/codec/SnappyCodec.cc \
 src/handler/BatchHandler.cc \
 src/handler/MCollectorOutputHandler.cc \
-src/handler/MMapperHandler.cc \
-src/handler/AbstractMapHandler.cc \
-src/handler/MMapTaskHandler.cc \
-src/handler/RReducerHandler.cc \
 src/handler/CombineHandler.cc \
 src/lib/Buffers.cc \
 src/lib/BufferStream.cc \
@@ -119,9 +115,6 @@ TESTSOURCES = \
 test/handler/TestBatchHandler.cc   \
 test/handler/TestCombineHandler.cc   \
 test/handler/TestMCollectorOutputHandler.cc   \
-test/handler/TestMMapperHandler.cc   \
-test/handler/TestRReducerHandler.cc   \
-test/handler/TestMMapTaskHandler.cc   \
 test/lib/TestByteArray.cc      \
 test/lib/TestByteBuffer.cc      \
 test/lib/TestLineRecordReader.cc      \
