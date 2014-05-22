@@ -43,10 +43,6 @@ src/codec/Lz4Codec.cc \
 src/codec/SnappyCodec.cc \
 src/handler/BatchHandler.cc \
 src/handler/MCollectorOutputHandler.cc \
-src/handler/MMapperHandler.cc \
-src/handler/AbstractMapHandler.cc \
-src/handler/MMapTaskHandler.cc \
-src/handler/RReducerHandler.cc \
 src/handler/CombineHandler.cc \
 src/lib/Buffers.cc \
 src/lib/BufferStream.cc \
@@ -57,9 +53,6 @@ src/lib/PartitionBucketIterator.cc \
 src/lib/FileSystem.cc \
 src/lib/IFile.cc \
 src/lib/jniutils.cc \
-src/lib/KVFile.cc \
-src/lib/LineRecordReader.cc \
-src/lib/LineRecordWriter.cc \
 src/lib/Log.cc \
 src/lib/MapOutputCollector.cc \
 src/lib/MapOutputSpec.cc \
@@ -75,13 +68,9 @@ src/lib/Path.cc \
 src/lib/Streams.cc \
 src/lib/Combiner.cc \
 src/lib/TaskCounters.cc \
-src/lib/TeraSort.cc \
-src/lib/TotalOrderPartitioner.cc \
-src/lib/WordCount.cc \
 src/util/Checksum.cc \
 src/util/Hash.cc \
 src/util/PigUtils.cc \
-src/util/Process.cc \
 src/util/Random.cc \
 src/util/StringUtil.cc \
 src/util/SyncUtils.cc \
@@ -92,12 +81,9 @@ src/util/WritableUtils.cc
 COMMONHEADERS = \
 src/util/Checksum.h                   \
 src/util/PigUtils.h                   \
-src/util/Process.h                    \
 src/util/StringUtil.h                 \
 src/util/SyncUtils.h                  \
 src/util/WritableUtils.h              \
-src/lib/LineRecordReader.h            \
-src/lib/LineRecordWriter.h            \
 src/lib/commons.h                         \
 src/lib/Log.h                             \
 src/lib/primitives.h                      \
@@ -116,31 +102,16 @@ src/NativeTask.h
 
 
 TESTSOURCES = \
-test/handler/TestBatchHandler.cc   \
-test/handler/TestCombineHandler.cc   \
-test/handler/TestMCollectorOutputHandler.cc   \
-test/handler/TestMMapperHandler.cc   \
-test/handler/TestRReducerHandler.cc   \
-test/handler/TestMMapTaskHandler.cc   \
 test/lib/TestByteArray.cc      \
 test/lib/TestByteBuffer.cc      \
-test/lib/TestLineRecordReader.cc      \
-test/lib/TestTotalOrderPartitioner.cc \
-test/lib/TestCombineRunner.cc \
 test/lib/TestComparatorForDualPivotQuickSort.cc \
 test/lib/TestComparatorForStdSort.cc \
-test/lib/TestDynamicBuffer.cc \
 test/lib/TestFixSizeContainer.cc \
-test/lib/TestHeap.cc \
 test/lib/TestMemoryPool.cc \
 test/lib/TestIterator.cc \
 test/lib/TestKVBuffer.cc \
-test/lib/TestLineRecordWriter.cc \
-test/lib/TestMapOutputCollector.cc \
-test/lib/TestMapOutputSpec.cc \
 test/lib/TestMemBlockIterator.cc \
 test/lib/TestMemoryBlock.cc \
-test/lib/TestMerger.cc \
 test/lib/TestPartitionBucket.cc \
 test/lib/TestReadBuffer.cc \
 test/lib/TestReadWriteBuffer.cc \
@@ -152,34 +123,25 @@ test/util/TestPigUtils.cc             \
 test/util/TestStringUtil.cc           \
 test/util/TestSyncUtils.cc            \
 test/util/TestWritableUtils.cc        \
-test/util/TestProcess.cc              \
-test/TestBuffer.cc                   \
 test/TestCommand.cc                   \
 test/TestConfig.cc                   \
 test/TestCounter.cc                   \
-test/TestInputSplit.cc                   \
 test/TestCompressions.cc              \
-test/TestException.cc                 \
 test/TestFileSystem.cc                \
 test/TestIFile.cc                     \
 test/TestPrimitives.cc                \
 test/TestSort.cc                      \
-test/TestStream.cc                    \
 test/TestMain.cc                      \
 test/test_commons.cc                  
 
 include_HEADERS = $(COMMONHEADERS)
-lib_LTLIBRARIES = libnativetask.la libstreaming.la
+lib_LTLIBRARIES = libnativetask.la 
 noinst_PROGRAMS = nttest
 noinst_SCRIPTS = test.sh
 
 libnativetask_la_SOURCES = $(COMMONSOURCES)
 libnativetask_la_CPPFLAGS = -g -O2 -DNDEBUG $(MACRO) -fPIC $(AM_CFLAGS)
 libnativetask_la_LDFLAGS =  -version-info 0:1:0 $(AM_LDFLAGS)
-
-libstreaming_la_SOURCES = examples/Streaming.cc
-libstreaming_la_CPPFLAGS = -g -O2 -DNDEBUG $(MACRO) -fPIC $(AM_CFLAGS)
-libstreaming_la_LDFLAGS = -version-info 0:1:0 $(AM_LDFLAGS)
 
 nttest_SOURCES = $(TESTSOURCES) gtest/gtest-all.cc
 nttest_LDADD = libnativetask.la

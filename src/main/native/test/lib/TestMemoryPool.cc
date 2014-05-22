@@ -17,7 +17,6 @@
  */
 
 #include "commons.h"
-#include "lib/LineRecordReader.h"
 #include "test_commons.h"
 #include "PartitionBucket.h"
 #include "PartitionBucketIterator.h"

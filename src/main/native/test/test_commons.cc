@@ -20,7 +20,6 @@
 #include "commons.h"
 #include "util/Random.h"
 #include "FileSystem.h"
-#include "lib/TeraSort.h"
 #include "test_commons.h"
 
 Config TestConfig = Config();
@@ -112,14 +111,6 @@ string & GenerateOne(string & dest, Random & r, GenerateType gtype, int64_t choi
  * @param type string type (word|number|bytes|tera)
  */
 vector<string> & Generate(vector<string> & dest, uint64_t size, const string & type) {
-  if (type == "tera") {
-    TeraGen tera = TeraGen(size, 1, 0);
-    string temp;
-    while (tera.next(temp)) {
-      dest.push_back(temp);
-    }
-    return dest;
-  }
   Random r;
   if (TestConfig.get(GenerateSeed) != NULL) {
     r.setSeed(TestConfig.getInt(GenerateSeed, 0));
@@ -143,14 +134,6 @@ vector<string> & Generate(vector<string> & dest, uint64_t size, const string & t
  */
 vector<pair<string, string> > & Generate(vector<pair<string, string> > & dest, uint64_t size,
     const string & type) {
-  if (type == "tera") {
-    TeraGen tera = TeraGen(size, 1, 0);
-    string k, v;
-    while (tera.next(k, v)) {
-      dest.push_back(std::make_pair(k, v));
-    }
-    return dest;
-  }
   Random r;
   if (TestConfig.get(GenerateSeed) != NULL) {
     r.setSeed(TestConfig.getInt(GenerateSeed, 0));
@@ -178,15 +161,6 @@ vector<pair<string, string> > & Generate(vector<pair<string, string> > & dest, u
  */
 vector<pair<string, string> > & GenerateLength(vector<pair<string, string> > & dest,
     uint64_t length, const string & type) {
-  if (type == "tera") {
-    TeraGen tera = TeraGen(length / 100, 1, 0);
-    dest.reserve(length / 100 + 2);
-    string k, v;
-    while (tera.next(k, v)) {
-      dest.push_back(std::make_pair(k, v));
-    }
-    return dest;
-  }
   Random r;
   if (TestConfig.get(GenerateSeed) != NULL) {
     r.setSeed(TestConfig.getInt(GenerateSeed, 0));
@@ -218,15 +192,6 @@ vector<pair<string, string> > & GenerateLength(vector<pair<string, string> > & d
  * @param type string type (word|number|bytes|tera)
  */
 string & GenerateKVText(string & dest, uint64_t size, const string & type) {
-  if (type == "tera") {
-    TeraGen tera = TeraGen(size, 1, 0);
-    dest.reserve(100 * size);
-    string line;
-    while (tera.nextLine(line)) {
-      dest.append(line);
-    }
-    return dest;
-  }
   Random r;
   if (TestConfig.get(GenerateSeed) != NULL) {
     r.setSeed(TestConfig.getInt(GenerateSeed, 0));
@@ -259,16 +224,6 @@ string & GenerateKVText(string & dest, uint64_t size, const string & type) {
  * @param type string type (word|number|bytes)
  */
 string & GenerateKVTextLength(string & dest, uint64_t length, const string & type) {
-  if (type == "tera") {
-    uint64_t size = length / 100;
-    TeraGen tera = TeraGen(size, 1, 0);
-    dest.reserve(100 * size);
-    string line;
-    while (tera.nextLine(line)) {
-      dest.append(line);
-    }
-    return dest;
-  }
   Random r;
   if (TestConfig.get(GenerateSeed) != NULL) {
     r.setSeed(TestConfig.getInt(GenerateSeed, 0));

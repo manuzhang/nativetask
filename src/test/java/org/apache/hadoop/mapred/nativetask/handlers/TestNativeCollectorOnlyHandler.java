@@ -64,11 +64,6 @@ public class TestNativeCollectorOnlyHandler extends TestCase {
     Mockito.when(nativeHandler.getInputBuffer()).thenReturn(new InputBuffer(BufferType.HEAP_BUFFER, 100));
   }
 
-  public void testCommandDispatcherSetting() throws IOException {
-    this.handler = new NativeCollectorOnlyHandler(taskContext, nativeHandler, pusher, combiner);
-    Mockito.verify(nativeHandler, Mockito.times(1)).setCommandDispatcher(Matchers.any(NativeMapAndCollectorHandler.class));
-  }
-
   public void testCollect() throws IOException {
     this.handler = new NativeCollectorOnlyHandler(taskContext, nativeHandler, pusher, combiner);
     handler.collect(new BytesWritable(), new BytesWritable(), 100);
