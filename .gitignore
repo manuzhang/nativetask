@@ -26,6 +26,13 @@ hs_err_pid*
 *.x86_64
 *.hex
 
+# CMake
+CMakeCache.txt
+CMakeFiles
+Makefile
+cmake_install.cmake
+install_manifest.txt
+
 # Eclipse
 *.pydevproject
 .metadata
@@ -104,3 +111,13 @@ $RECYCLE.BIN/
 *.msm
 *.msp
 
+# Maven
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+
+# Ant
+build/
