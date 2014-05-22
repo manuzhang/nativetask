@@ -112,21 +112,15 @@ libnativetask_la_LINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(AM_CXXFLAGS) \
 	$(CXXFLAGS) $(libnativetask_la_LDFLAGS) $(LDFLAGS) -o $@
 PROGRAMS = $(noinst_PROGRAMS)
-am__objects_2 = nttest-TestBatchHandler.$(OBJEXT) \
-	nttest-TestCombineHandler.$(OBJEXT) \
-	nttest-TestMCollectorOutputHandler.$(OBJEXT) \
+am__objects_2 = \
 	nttest-TestByteArray.$(OBJEXT) nttest-TestByteBuffer.$(OBJEXT) \
-	nttest-TestCombineRunner.$(OBJEXT) \
 	nttest-TestComparatorForDualPivotQuickSort.$(OBJEXT) \
 	nttest-TestComparatorForStdSort.$(OBJEXT) \
-	nttest-TestDynamicBuffer.$(OBJEXT) \
 	nttest-TestFixSizeContainer.$(OBJEXT) \
-	nttest-TestHeap.$(OBJEXT) nttest-TestMemoryPool.$(OBJEXT) \
+	nttest-TestMemoryPool.$(OBJEXT) \
 	nttest-TestIterator.$(OBJEXT) nttest-TestKVBuffer.$(OBJEXT) \
-	nttest-TestMapOutputCollector.$(OBJEXT) \
-	nttest-TestMapOutputSpec.$(OBJEXT) \
 	nttest-TestMemBlockIterator.$(OBJEXT) \
-	nttest-TestMemoryBlock.$(OBJEXT) nttest-TestMerger.$(OBJEXT) \
+	nttest-TestMemoryBlock.$(OBJEXT)  \
 	nttest-TestPartitionBucket.$(OBJEXT) \
 	nttest-TestReadBuffer.$(OBJEXT) \
 	nttest-TestReadWriteBuffer.$(OBJEXT) \
@@ -136,13 +130,12 @@ am__objects_2 = nttest-TestBatchHandler.$(OBJEXT) \
 	nttest-TestPigUtils.$(OBJEXT) nttest-TestStringUtil.$(OBJEXT) \
 	nttest-TestSyncUtils.$(OBJEXT) \
 	nttest-TestWritableUtils.$(OBJEXT) \
-	nttest-TestBuffer.$(OBJEXT) \
 	nttest-TestCommand.$(OBJEXT) nttest-TestConfig.$(OBJEXT) \
-	nttest-TestCounter.$(OBJEXT) nttest-TestInputSplit.$(OBJEXT) \
+	nttest-TestCounter.$(OBJEXT) \
 	nttest-TestCompressions.$(OBJEXT) \
-	nttest-TestException.$(OBJEXT) nttest-TestFileSystem.$(OBJEXT) \
+	nttest-TestFileSystem.$(OBJEXT) \
 	nttest-TestIFile.$(OBJEXT) nttest-TestPrimitives.$(OBJEXT) \
-	nttest-TestSort.$(OBJEXT) nttest-TestStream.$(OBJEXT) \
+	nttest-TestSort.$(OBJEXT) \
 	nttest-TestMain.$(OBJEXT) nttest-test_commons.$(OBJEXT)
 am_nttest_OBJECTS = $(am__objects_2) nttest-gtest-all.$(OBJEXT)
 nttest_OBJECTS = $(am_nttest_OBJECTS)
@@ -386,7 +379,6 @@ src/lib/NativeObjectFactory.h             \
 src/NativeTask.h                      
 
 TESTSOURCES = \
-test/handler/TestBatchHandler.cc   \
 test/handler/TestCombineHandler.cc   \
 test/handler/TestMCollectorOutputHandler.cc   \
 test/lib/TestByteArray.cc      \

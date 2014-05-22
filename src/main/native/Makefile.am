@@ -102,25 +102,16 @@ src/NativeTask.h
 
 
 TESTSOURCES = \
-test/handler/TestBatchHandler.cc   \
-test/handler/TestCombineHandler.cc   \
-test/handler/TestMCollectorOutputHandler.cc   \
 test/lib/TestByteArray.cc      \
 test/lib/TestByteBuffer.cc      \
-test/lib/TestCombineRunner.cc \
 test/lib/TestComparatorForDualPivotQuickSort.cc \
 test/lib/TestComparatorForStdSort.cc \
-test/lib/TestDynamicBuffer.cc \
 test/lib/TestFixSizeContainer.cc \
-test/lib/TestHeap.cc \
 test/lib/TestMemoryPool.cc \
 test/lib/TestIterator.cc \
 test/lib/TestKVBuffer.cc \
-test/lib/TestMapOutputCollector.cc \
-test/lib/TestMapOutputSpec.cc \
 test/lib/TestMemBlockIterator.cc \
 test/lib/TestMemoryBlock.cc \
-test/lib/TestMerger.cc \
 test/lib/TestPartitionBucket.cc \
 test/lib/TestReadBuffer.cc \
 test/lib/TestReadWriteBuffer.cc \
@@ -132,18 +123,14 @@ test/util/TestPigUtils.cc             \
 test/util/TestStringUtil.cc           \
 test/util/TestSyncUtils.cc            \
 test/util/TestWritableUtils.cc        \
-test/TestBuffer.cc                   \
 test/TestCommand.cc                   \
 test/TestConfig.cc                   \
 test/TestCounter.cc                   \
-test/TestInputSplit.cc                   \
 test/TestCompressions.cc              \
-test/TestException.cc                 \
 test/TestFileSystem.cc                \
 test/TestIFile.cc                     \
 test/TestPrimitives.cc                \
 test/TestSort.cc                      \
-test/TestStream.cc                    \
 test/TestMain.cc                      \
 test/test_commons.cc                  
 
