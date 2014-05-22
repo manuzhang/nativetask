@@ -39,8 +39,7 @@ import org.apache.hadoop.mapred.nativetask.handlers.NativeMapAndCollectorHandler
 import org.apache.hadoop.mapred.nativetask.handlers.NativeMapOnlyHandlerNoReducer;
 import org.apache.hadoop.mapred.nativetask.handlers.NativeMapTask;
 import org.apache.hadoop.mapred.nativetask.util.BytesUtil;
-import org.apache.hadoop.mapred.nativetask.util.NativeTaskOutput;
-import org.apache.hadoop.mapred.nativetask.util.OutputUtil;
+import org.apache.hadoop.mapred.nativetask.util.OutputPathUtil;
 
 @SuppressWarnings("unchecked")
 public class NativeMapTaskDelegator<INKEY, INVALUE, OUTKEY, OUTVALUE> implements TaskDelegation.MapTaskDelegator {
@@ -128,8 +127,7 @@ public class NativeMapTaskDelegator<INKEY, INVALUE, OUTKEY, OUTVALUE> implements
           processor.close();
         }
       } else {
-        NativeTaskOutput output = OutputUtil.createNativeTaskOutput(job, taskAttemptID.toString());
-        final String finalName = output.getOutputName(taskAttemptID.getTaskID().getId());
+        final String finalName = OutputPathUtil.getOutputName(taskAttemptID.getTaskID().getId());
         final FileSystem fs = FileSystem.get(job);
         final RecordWriter writer = job.getOutputFormat().getRecordWriter(fs, job, finalName,
             reporter);

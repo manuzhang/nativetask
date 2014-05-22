@@ -31,8 +31,7 @@ import org.apache.hadoop.mapred.nativetask.CommandDispatcher;
 import org.apache.hadoop.mapred.nativetask.DataChannel;
 import org.apache.hadoop.mapred.nativetask.INativeHandler;
 import org.apache.hadoop.mapred.nativetask.NativeBatchProcessor;
-import org.apache.hadoop.mapred.nativetask.util.NativeTaskOutput;
-import org.apache.hadoop.mapred.nativetask.util.OutputUtil;
+import org.apache.hadoop.mapred.nativetask.util.OutputPathUtil;
 import org.apache.hadoop.mapred.nativetask.util.ReadWriteBuffer;
 
 /**
@@ -48,23 +47,19 @@ public class NativeMapTask implements CommandDispatcher, Closeable {
 
   public static Command RUN = new Command(3, "RUN");
 
+  private final OutputPathUtil mapOutputFile;
   private int spillNumber = 0;
   private final INativeHandler nativeHandler;
   private boolean closed = false;
-  private NativeTaskOutput output;
 
   public static NativeMapTask create(Configuration conf, TaskAttemptID taskAttemptID) throws IOException {
     final INativeHandler nativeHandler = NativeBatchProcessor.create(NAME, conf, DataChannel.NONE);
-    return new NativeMapTask(conf, nativeHandler, taskAttemptID);
+    return new NativeMapTask(conf, nativeHandler);
   }
 
-  public NativeMapTask(Configuration conf, INativeHandler nativeHandler, TaskAttemptID taskAttemptID)
-      throws IOException {
-    if (null == taskAttemptID) {
-      this.output = OutputUtil.createNativeTaskOutput(conf, "");
-    } else {
-      this.output = OutputUtil.createNativeTaskOutput(conf, taskAttemptID.toString());
-    }
+  public NativeMapTask(Configuration conf, INativeHandler nativeHandler) throws IOException {
+    this.mapOutputFile = new OutputPathUtil();
+    this.mapOutputFile.setConf(conf);
     this.nativeHandler = nativeHandler;
   }
 
@@ -77,11 +72,11 @@ public class NativeMapTask implements CommandDispatcher, Closeable {
     }
     
     if (command.equals(GET_OUTPUT_PATH)) {
-      p = output.getOutputFileForWrite(-1);
+      p = mapOutputFile.getOutputFileForWrite(-1);
     } else if (command.equals(GET_OUTPUT_INDEX_PATH)) {
-      p = output.getOutputIndexFileForWrite(-1);
+      p = mapOutputFile.getOutputIndexFileForWrite(-1);
     } else if (command.equals(GET_SPILL_PATH)) {
-      p = output.getSpillFileForWrite(spillNumber++, -1);
+      p = mapOutputFile.getSpillFileForWrite(spillNumber++, -1);
     } else {
       throw new IOException("Illegal command: " + command.toString());
     }

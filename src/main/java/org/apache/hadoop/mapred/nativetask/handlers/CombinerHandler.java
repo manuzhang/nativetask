@@ -36,7 +36,6 @@ import org.apache.hadoop.mapred.nativetask.NativeBatchProcessor;
 import org.apache.hadoop.mapred.nativetask.TaskContext;
 import org.apache.hadoop.mapred.nativetask.serde.SerializationFramework;
 import org.apache.hadoop.mapred.nativetask.util.ReadWriteBuffer;
-import org.apache.hadoop.mapreduce.MRJobConfig;
 
 public class CombinerHandler<K, V> implements ICombineHandler, CommandDispatcher {
 
@@ -57,7 +56,7 @@ public class CombinerHandler<K, V> implements ICombineHandler, CommandDispatcher
         String.valueOf(SerializationFramework.WRITABLE_SERIALIZATION.getType()));
     String combinerClazz = conf.get(Constants.MAPRED_COMBINER_CLASS);
     if (null == combinerClazz) {
-      combinerClazz = conf.get(MRJobConfig.COMBINE_CLASS_ATTR);
+      combinerClazz = conf.get(Constants.COMBINE_CLASS_ATTR);
     }
 
     if (null == combinerClazz) {
