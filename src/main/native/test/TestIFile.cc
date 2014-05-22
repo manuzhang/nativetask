@@ -21,7 +21,6 @@
 #include "BufferStream.h"
 #include "FileSystem.h"
 #include "IFile.h"
-#include "KVFile.h"
 #include "test_commons.h"
 
 SingleSpillInfo * writeIFile(int partition, vector<pair<string, string> > & kvs,
@@ -129,41 +128,7 @@ void TestIFileWriteRead2(vector<pair<string, string> > & kvs, char * buff, size_
   delete info;
 }
 
-void TestKVFileWriteRead2(vector<pair<string, string> > & kvs, char * buff, size_t buffsize,
-    const string & codec, ChecksumType checksumType, KeyValueType type) {
-  int partition = TestConfig.getInt("ifile.partition", 50);
-  Timer timer;
-  OutputBuffer outputBuffer = OutputBuffer(buff, buffsize);
-  KVFileWriter * iw = new KVFileWriter(&outputBuffer, checksumType, codec);
-  timer.reset();
-  for (uint32_t i = 0; i < partition; i++) {
-    iw->startPartition();
-    for (size_t j = 0; j < kvs.size(); j++) {
-      iw->write(kvs[j].first.c_str(), kvs[j].first.length(), kvs[j].second.c_str(),
-          kvs[j].second.length());
-    }
-    iw->endPartition();
-  }
-  SingleSpillInfo * info = iw->getIndex(0);
-  LOG("%s",
-      timer.getSpeedM2("Write data", info->getEndPosition(), info->getRealEndPosition()).c_str());
-  delete iw;
 
-  InputBuffer inputBuffer = InputBuffer(buff, outputBuffer.tell());
-  KVFileReader * ir = new KVFileReader(&inputBuffer, checksumType, info, codec);
-  timer.reset();
-  while (ir->nextPartition()) {
-    const char * key, *value;
-    uint32_t keyLen, valueLen;
-    while (NULL != (key = ir->nextKey(keyLen))) {
-      value = ir->value(valueLen);
-    }
-  }
-  LOG("%s",
-      timer.getSpeedM2(" Read data", info->getEndPosition(), info->getRealEndPosition()).c_str());
-  delete ir;
-  delete info;
-}
 
 TEST(Perf, IFile) {
   int size = TestConfig.getInt("partition.size", 20000);
@@ -184,18 +149,12 @@ TEST(Perf, IFile) {
   TestIFileWriteRead2(kvs, buff, buffsize, codec, CHECKSUM_CRC32, BytesType);
   LOG("Test UnknownType CRC32");
   TestIFileWriteRead2(kvs, buff, buffsize, codec, CHECKSUM_CRC32, UnknownType);
-  LOG("Test KVFile CRC32");
-  TestKVFileWriteRead2(kvs, buff, buffsize, codec, CHECKSUM_CRC32, UnknownType);
-
   LOG("Test TextType CRC32C");
   TestIFileWriteRead2(kvs, buff, buffsize, codec, CHECKSUM_CRC32C, TextType);
   LOG("Test BytesType CRC32C");
   TestIFileWriteRead2(kvs, buff, buffsize, codec, CHECKSUM_CRC32C, BytesType);
   LOG("Test UnknownType CRC32C");
   TestIFileWriteRead2(kvs, buff, buffsize, codec, CHECKSUM_CRC32C, UnknownType);
-  LOG("Test KVFile CRC32C");
-  TestKVFileWriteRead2(kvs, buff, buffsize, codec, CHECKSUM_CRC32C, UnknownType);
-
   delete[] buff;
 }
 

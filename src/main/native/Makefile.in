@@ -90,7 +90,7 @@ am__objects_1 = libnativetask_la-lz4.lo libnativetask_la-city.lo \
 	libnativetask_la-PartitionBucket.lo \
 	libnativetask_la-PartitionBucketIterator.lo \
 	libnativetask_la-FileSystem.lo libnativetask_la-IFile.lo \
-	libnativetask_la-jniutils.lo libnativetask_la-KVFile.lo \
+	libnativetask_la-jniutils.lo \
 	libnativetask_la-Log.lo \
 	libnativetask_la-MapOutputCollector.lo \
 	libnativetask_la-MapOutputSpec.lo \
@@ -339,7 +339,6 @@ src/lib/PartitionBucketIterator.cc \
 src/lib/FileSystem.cc \
 src/lib/IFile.cc \
 src/lib/jniutils.cc \
-src/lib/KVFile.cc \
 src/lib/Log.cc \
 src/lib/MapOutputCollector.cc \
 src/lib/MapOutputSpec.cc \

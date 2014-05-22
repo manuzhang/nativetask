@@ -53,7 +53,6 @@ src/lib/PartitionBucketIterator.cc \
 src/lib/FileSystem.cc \
 src/lib/IFile.cc \
 src/lib/jniutils.cc \
-src/lib/KVFile.cc \
 src/lib/Log.cc \
 src/lib/MapOutputCollector.cc \
 src/lib/MapOutputSpec.cc \
