@@ -32,10 +32,10 @@ import org.apache.hadoop.io.FloatWritable;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
-import org.apache.hadoop.io.compress.snappy.LoadSnappy;
 import org.apache.hadoop.mapred.Task.TaskReporter;
 import org.apache.hadoop.mapred.nativetask.util.BytesUtil;
 import org.apache.hadoop.mapred.nativetask.util.ConfigUtil;
+import org.apache.hadoop.mapred.nativetask.util.SnappyUtil;
 import org.apache.hadoop.util.VersionInfo;
 
 /**
@@ -52,8 +52,10 @@ public class NativeRuntime {
 
   static {
     try {
-      if (false == LoadSnappy.isLoaded()) {
+      if (false == SnappyUtil.isNativeSnappyLoaded(conf)) {
         throw new IOException("Snappy library cannot be loaded");
+      } else {
+        LOG.info("Snappy native library is available");
       }
       System.loadLibrary("nativetask");
       LOG.info("Nativetask JNI library loaded.");

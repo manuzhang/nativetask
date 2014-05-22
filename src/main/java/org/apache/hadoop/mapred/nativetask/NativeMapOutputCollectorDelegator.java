@@ -22,26 +22,23 @@ import java.io.IOException;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.RawComparator;
 import org.apache.hadoop.mapred.InvalidJobConfException;
 import org.apache.hadoop.mapred.JobConf;
-import org.apache.hadoop.mapred.Task;
-import org.apache.hadoop.mapred.Task.TaskReporter;
-import org.apache.hadoop.mapred.TaskDelegation;
-import org.apache.hadoop.mapred.TaskUmbilicalProtocol;
+import org.apache.hadoop.mapred.MapOutputCollector;
+import org.apache.hadoop.mapred.TaskAttemptID;
 import org.apache.hadoop.mapred.nativetask.handlers.NativeCollectorOnlyHandler;
 import org.apache.hadoop.mapred.nativetask.serde.INativeSerializer;
 import org.apache.hadoop.mapred.nativetask.serde.NativeSerialization;
 import org.apache.hadoop.mapred.nativetask.util.ConfigUtil;
+import org.apache.hadoop.mapreduce.MRJobConfig;
+import org.apache.hadoop.mapreduce.server.jobtracker.JTConfig;
 import org.apache.hadoop.util.QuickSort;
 import org.apache.hadoop.util.RunJar;
 import org.apache.pig.impl.util.ObjectSerializer;
 
-
-public class NativeMapOutputCollectorDelegator<K, V> implements
-    TaskDelegation.MapOutputCollectorDelegator<K, V> {
+public class NativeMapOutputCollectorDelegator<K, V> implements MapOutputCollector<K, V> {
 
   private static Log LOG = LogFactory.getLog(NativeMapOutputCollectorDelegator.class);
   private JobConf job;
@@ -68,18 +65,18 @@ public class NativeMapOutputCollectorDelegator<K, V> implements
   }
 
   @Override
-  public void init(TaskUmbilicalProtocol umbilical, TaskReporter reporter, Configuration conf,
-      Task task) throws Exception {
-    this.job = new JobConf(conf);
+  public void init(Context context) throws IOException, ClassNotFoundException {
+    this.job = context.getJobConf();
 
-    Platforms.init(conf);
+    Platforms.init(job);
 
     if (job.getNumReduceTasks() == 0) {
-      throw new InvalidJobConfException(
-          "There is no reducer, no need to use native output collector");
+      String message = "There is no reducer, no need to use native output collector";
+      LOG.error(message);
+      throw new InvalidJobConfException(message);
     }
 
-    if (job.getClass(Constants.MAP_OUTPUT_KEY_COMPARATOR, null, RawComparator.class) != null) {
+    if (job.getClass(MRJobConfig.KEY_COMPARATOR, null, RawComparator.class) != null) {
       if (job.get(Constants.PIG_VERSION, null) != null) {
         String version = job.get(Constants.PIG_VERSION, null);
         if (version == null || !version.equals(job.get(Constants.EXPECTED_PIG_VERSION, null))) {
@@ -91,16 +88,16 @@ public class NativeMapOutputCollectorDelegator<K, V> implements
         }
       } else {
         String message = "Native output collector don't support customized java comparator "
-            + job.get(Constants.MAP_OUTPUT_KEY_COMPARATOR);
+            + job.get(MRJobConfig.KEY_COMPARATOR);
         LOG.error(message);
         throw new InvalidJobConfException(message);
       }
     }
 
-    if (job.getBoolean(Constants.MAP_OUTPUT_COMPRESS, false) == true) {
-      if (!isCodecSupported(job.get(Constants.MAP_OUTPUT_COMPRESS_CODEC))) {
+    if (job.getBoolean(MRJobConfig.MAP_OUTPUT_COMPRESS, false) == true) {
+      if (!isCodecSupported(job.get(MRJobConfig.MAP_OUTPUT_COMPRESS_CODEC))) {
         String message = "Native output collector don't support compression codec "
-            + job.get(Constants.MAP_OUTPUT_COMPRESS_CODEC) + ", We support Gzip, Lz4, snappy";
+            + job.get(MRJobConfig.MAP_OUTPUT_COMPRESS_CODEC) + ", We support Gzip, Lz4, snappy";
         LOG.error(message);
         throw new InvalidJobConfException(message);
       }
@@ -117,8 +114,9 @@ public class NativeMapOutputCollectorDelegator<K, V> implements
       @SuppressWarnings("rawtypes")
       final INativeSerializer serializer = NativeSerialization.getInstance().getSerializer(keyCls);
       if (null == serializer) {
-        throw new InvalidJobConfException("Key type not supported. Cannot find serializer for "
-            + keyCls.getName());
+        String message = "Key type not supported. Cannot find serializer for " + keyCls.getName();
+        LOG.error(message);
+        throw new InvalidJobConfException(message);
       }
 
       if (job.getBoolean(Constants.PIG_GROUP_ONLY, false)) {
@@ -138,12 +136,15 @@ public class NativeMapOutputCollectorDelegator<K, V> implements
           LOG.info("Pig key types: set secondary sort order");
         }
       } else {
-        throw new InvalidJobConfException(
-            "Native output collector don't support this key, this key is not comparable in native "
-                + keyCls.getName());
+        String message = "Native output collector don't support this key, this key is not comparable in native "
+            + keyCls.getName();
+        LOG.error(message);
+        throw new InvalidJobConfException(message);
       }
     } catch (final IOException e) {
-      throw new IOException("Cannot find serializer for ) " + keyCls.getName());
+      String message = "Cannot find serializer for " + keyCls.getName();
+      LOG.error(message);
+      throw new IOException(message);
     }
 
     final boolean ret = NativeRuntime.isNativeLibraryLoaded();
@@ -152,50 +153,53 @@ public class NativeMapOutputCollectorDelegator<K, V> implements
 
       final long updateInterval = job.getLong(Constants.NATIVE_STATUS_UPDATE_INTERVAL,
           Constants.NATIVE_STATUS_UPDATE_INTERVAL_DEFVAL);
-      updater = new StatusReportChecker(reporter, updateInterval);
+      updater = new StatusReportChecker(context.getReporter(), updateInterval);
       updater.start();
 
     } else {
-      throw new InvalidJobConfException(
-          "Nativeruntime cannot be loaded, please check the libnativetask.so is in hadoop library dir");
+      String message = "Nativeruntime cannot be loaded, please check the libnativetask.so is in hadoop library dir";
+      LOG.error(message);
+      throw new InvalidJobConfException(message);
     }
 
     String path = job.getJar();
     if (null != path) {
       Path jars = new Path(path).getParent();
-      String libraryConf = job.get(Constants.NATIVE_CLASS_LIBRARY_CUSTOM, null);
-      if (null != libraryConf) {
-        String[] libraries = libraryConf.split(",");
-        String[] pair;
-        String jarDir = jars.toString();
-        if (job.get(Constants.JT_IPC_ADDRESS).equals("local")) {
-          File jobJar = new File(job.getJar().split(":")[1]);
-          RunJar.unJar(jobJar, new File(jarDir));
-        }
-        for (int i = 0; i < libraries.length; i++) {
-          pair = libraries[i].split("=");
-          if (pair.length == 2) {
-            LOG.info("Try to load library " + pair[0] + " with file " + pair[1]);
-            if (NativeRuntime.registerLibrary(jarDir + "/lib/" + pair[1], pair[0]) != 0) {
-              LOG.error("RegisterLibrary failed : name = " + pair[0] + " path = " + pair[1]);
-            } else {
-              LOG.info("RegisterLibrary success : name = " + pair[0] + " path = " + pair[1]);
-            }
+    String libraryConf = job.get(Constants.NATIVE_CLASS_LIBRARY_CUSTOM, null);
+    if (null != libraryConf) {
+      String[] libraries = libraryConf.split(",");
+      String[] pair;
+      String jarDir = jars.toString();
+      if (job.get(JTConfig.JT_IPC_ADDRESS).equals("local")) {
+        File jobJar = new File(job.getJar().split(":")[1]);
+        RunJar.unJar(jobJar, new File(jarDir));
+      }
+      for (int i = 0; i < libraries.length; i++) {
+        pair = libraries[i].split("=");
+        if (pair.length == 2) {
+          LOG.info("Try to load library " + pair[0] + " with file " + pair[1]);
+          if (NativeRuntime.registerLibrary(jarDir + "/lib/" + pair[1], pair[0]) != 0) {
+            LOG.error("RegisterLibrary failed : name = " + pair[0] + " path = " + pair[1]);
+          } else {
+            LOG.info("RegisterLibrary success : name = " + pair[0] + " path = " + pair[1]);
           }
         }
       }
+    }
     }
 
     this.handler = null;
     try {
       final Class<K> oKClass = (Class<K>) job.getMapOutputKeyClass();
       final Class<K> oVClass = (Class<K>) job.getMapOutputValueClass();
-
-      final TaskContext context = new TaskContext(job, null, null, oKClass, oVClass, reporter,
-          task.getTaskID());
-      handler = NativeCollectorOnlyHandler.create(context);
+      final TaskAttemptID id = context.getMapTask().getTaskID();
+      final TaskContext taskContext = new TaskContext(job, null, null, oKClass, oVClass,
+          context.getReporter(), id);
+      handler = NativeCollectorOnlyHandler.create(taskContext);
     } catch (final IOException e) {
-      throw new IOException("Native output collector cannot be loaded", e);
+      String message = "Native output collector cannot be loaded;";
+      LOG.error(message);
+      throw new IOException(message, e);
     }
 
     LOG.info("Native output collector can be successfully enabled!");

@@ -33,7 +33,8 @@ import org.apache.hadoop.mapred.TaskAttemptID;
 import org.apache.hadoop.mapred.TaskDelegation;
 import org.apache.hadoop.mapred.TaskUmbilicalProtocol;
 import org.apache.hadoop.mapred.nativetask.handlers.NativeReduceTask;
-import org.apache.hadoop.mapred.nativetask.util.OutputPathUtil;
+import org.apache.hadoop.mapred.nativetask.util.NativeTaskOutput;
+import org.apache.hadoop.mapred.nativetask.util.OutputUtil;
 
 public class NativeReduceTaskDelegator<IK, IV, OK, OV> implements TaskDelegation.ReduceTaskDelegator {
   private static final Log LOG = LogFactory.getLog(NativeReduceTaskDelegator.class);
@@ -63,7 +64,8 @@ public class NativeReduceTaskDelegator<IK, IV, OK, OV> implements TaskDelegation
     updater.start();
     NativeRuntime.configure(job);
 
-    final String finalName = OutputPathUtil.getOutputName(taskAttemptID.getTaskID().getId());
+    NativeTaskOutput output = OutputUtil.createNativeTaskOutput(job, taskAttemptID.toString());
+    final String finalName = output.getOutputName(taskAttemptID.getTaskID().getId());
 
     LOG.info("Delegeate reduce function to native space: ");
 

@@ -23,15 +23,18 @@ import java.io.IOException;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.mapred.nativetask.CommandDispatcher;
+import org.apache.hadoop.mapred.TaskAttemptID;
 import org.apache.hadoop.mapred.nativetask.Command;
+import org.apache.hadoop.mapred.nativetask.CommandDispatcher;
 import org.apache.hadoop.mapred.nativetask.DataChannel;
 import org.apache.hadoop.mapred.nativetask.ICombineHandler;
 import org.apache.hadoop.mapred.nativetask.INativeHandler;
 import org.apache.hadoop.mapred.nativetask.NativeBatchProcessor;
 import org.apache.hadoop.mapred.nativetask.TaskContext;
-import org.apache.hadoop.mapred.nativetask.util.OutputPathUtil;
+import org.apache.hadoop.mapred.nativetask.util.NativeTaskOutput;
+import org.apache.hadoop.mapred.nativetask.util.OutputUtil;
 import org.apache.hadoop.mapred.nativetask.util.ReadWriteBuffer;
 
 /**
@@ -47,8 +50,7 @@ public class NativeCollectorOnlyHandler<K, V> implements CommandDispatcher, Clos
   public static Command GET_SPILL_PATH = new Command(102, "GET_SPILL_PATH");
   public static Command GET_COMBINE_HANDLER = new Command(103, "GET_COMBINE_HANDLER");
   
-
-  private OutputPathUtil outputFileUtil = null;
+  private NativeTaskOutput output;
   private int spillNumber = 0;
   private ICombineHandler combinerHandler = null;
   private final BufferPusher<K, V> kvPusher;
@@ -70,7 +72,7 @@ public class NativeCollectorOnlyHandler<K, V> implements CommandDispatcher, Clos
     }
     
     if (null != combinerHandler) {
-      LOG.info("[NativeMapAndCollectorHandler] combiner is not null");
+      LOG.info("[NativeCollectorOnlyHandler] combiner is not null");
     }
 
     final INativeHandler nativeHandler = NativeBatchProcessor.create(NAME, context.getConf(), DataChannel.OUT);
@@ -82,8 +84,14 @@ public class NativeCollectorOnlyHandler<K, V> implements CommandDispatcher, Clos
 
   protected NativeCollectorOnlyHandler(TaskContext context, INativeHandler nativeHandler,
       BufferPusher<K, V> kvPusher, ICombineHandler combiner) throws IOException {
-    this.outputFileUtil = new OutputPathUtil();
-    outputFileUtil.setConf(context.getConf());
+    Configuration conf = context.getConf();
+    TaskAttemptID id = context.getTaskAttemptId();
+    if (null == id) {
+      this.output = OutputUtil.createNativeTaskOutput(conf, "");
+    } else {
+      this.output = OutputUtil.createNativeTaskOutput(context.getConf(), context.getTaskAttemptId()
+        .toString());
+    }
     this.combinerHandler = combiner;
     this.kvPusher = kvPusher;
     this.nativeHandler = nativeHandler;
@@ -125,11 +133,11 @@ public class NativeCollectorOnlyHandler<K, V> implements CommandDispatcher, Clos
     }
         
     if (command.equals(GET_OUTPUT_PATH)) {
-      p = outputFileUtil.getOutputFileForWrite(-1);
+      p = output.getOutputFileForWrite(-1);
     } else if (command.equals(GET_OUTPUT_INDEX_PATH)) {
-      p = outputFileUtil.getOutputIndexFileForWrite(-1);
+      p = output.getOutputIndexFileForWrite(-1);
     } else if (command.equals(GET_SPILL_PATH)) {
-      p = outputFileUtil.getSpillFileForWrite(spillNumber++, -1);
+      p = output.getSpillFileForWrite(spillNumber++, -1);
       
     } else if (command.equals(GET_COMBINE_HANDLER)) {
       if (null == combinerHandler) {

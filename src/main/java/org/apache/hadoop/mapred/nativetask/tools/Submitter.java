@@ -46,6 +46,7 @@ import org.apache.hadoop.mapred.lib.IdentityReducer;
 import org.apache.hadoop.mapred.nativetask.Constants;
 import org.apache.hadoop.mapred.nativetask.NativeMapTaskDelegator;
 import org.apache.hadoop.mapred.nativetask.NativeReduceTaskDelegator;
+import org.apache.hadoop.mapreduce.MRJobConfig;
 import org.apache.hadoop.util.GenericOptionsParser;
 import org.apache.hadoop.util.Tool;
 
@@ -78,10 +79,10 @@ public class Submitter extends Configured implements Tool {
 
   public static void setupNativeJob(JobConf conf) throws IOException {
     final String textClassname = Text.class.getName();
-    setIfUnset(conf, Constants.MAP_OUTPUT_KEY_CLASS, textClassname);
-    setIfUnset(conf, Constants.MAP_OUTPUT_VALUE_CLASS, textClassname);
-    setIfUnset(conf, Constants.OUTPUT_KEY_CLASS, textClassname);
-    setIfUnset(conf, Constants.OUTPUT_VALUE_CLASS, textClassname);
+    setIfUnset(conf, MRJobConfig.MAP_OUTPUT_KEY_CLASS, textClassname);
+    setIfUnset(conf, MRJobConfig.MAP_OUTPUT_VALUE_CLASS, textClassname);
+    setIfUnset(conf, MRJobConfig.OUTPUT_KEY_CLASS, textClassname);
+    setIfUnset(conf, MRJobConfig.OUTPUT_VALUE_CLASS, textClassname);
     conf.setBoolean(Constants.NATIVE_TASK_ENABLED, true);
     if ("JAVA".equals(conf.get(Constants.NATIVE_MAPPER_CLASS))) {
       conf.setMapperClass(IdentityMapper.class);
