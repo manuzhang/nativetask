@@ -43,11 +43,11 @@ src/codec/Lz4Codec.cc \
 src/codec/SnappyCodec.cc \
 src/handler/BatchHandler.cc \
 src/handler/MCollectorOutputHandler.cc \
+src/handler/AbstractMapHandler.cc \
 src/handler/CombineHandler.cc \
 src/lib/Buffers.cc \
 src/lib/BufferStream.cc \
 src/lib/Compressions.cc \
-src/lib/FileSplit.cc \
 src/lib/PartitionBucket.cc \
 src/lib/PartitionBucketIterator.cc \
 src/lib/FileSystem.cc \
