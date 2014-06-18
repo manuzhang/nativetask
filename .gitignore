@@ -48,6 +48,7 @@ local.properties
 .loadpath
 .externalToolBuilders/
 *.launch
+.project
 .cproject
 
 # IDEA
