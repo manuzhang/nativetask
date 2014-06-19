@@ -31,12 +31,10 @@ import org.apache.hadoop.mapred.TaskAttemptID;
 import org.apache.hadoop.mapred.nativetask.handlers.NativeCollectorOnlyHandler;
 import org.apache.hadoop.mapred.nativetask.serde.INativeSerializer;
 import org.apache.hadoop.mapred.nativetask.serde.NativeSerialization;
-import org.apache.hadoop.mapred.nativetask.util.ConfigUtil;
 import org.apache.hadoop.mapreduce.MRJobConfig;
 import org.apache.hadoop.mapreduce.server.jobtracker.JTConfig;
 import org.apache.hadoop.util.QuickSort;
 import org.apache.hadoop.util.RunJar;
-import org.apache.pig.impl.util.ObjectSerializer;
 
 public class NativeMapOutputCollectorDelegator<K, V> implements MapOutputCollector<K, V> {
 
@@ -76,28 +74,17 @@ public class NativeMapOutputCollectorDelegator<K, V> implements MapOutputCollect
       throw new InvalidJobConfException(message);
     }
 
-    if (job.getClass(MRJobConfig.KEY_COMPARATOR, null, RawComparator.class) != null) {
-      if (job.get(Constants.PIG_VERSION, null) != null) {
-        String version = job.get(Constants.PIG_VERSION, null);
-        if (version == null || !version.equals(job.get(Constants.EXPECTED_PIG_VERSION, null))) {
-          String message = "Native output collector don't support Pig version " + version;
-          LOG.error(message);
-          throw new InvalidJobConfException(message);
-        } else {
-          LOG.info("Pig key types: Pig version " + version);
-        }
-      } else {
-        String message = "Native output collector don't support customized java comparator "
-            + job.get(MRJobConfig.KEY_COMPARATOR);
-        LOG.error(message);
-        throw new InvalidJobConfException(message);
-      }
+    if (job.getClass(MRJobConfig.KEY_COMPARATOR, null, RawComparator.class) == null) {
+      String message = "Native output collector don't support customized java comparator "
+        + job.get(MRJobConfig.KEY_COMPARATOR);
+      LOG.error(message);
+      throw new InvalidJobConfException(message);
     }
 
     if (job.getBoolean(MRJobConfig.MAP_OUTPUT_COMPRESS, false) == true) {
       if (!isCodecSupported(job.get(MRJobConfig.MAP_OUTPUT_COMPRESS_CODEC))) {
         String message = "Native output collector don't support compression codec "
-            + job.get(MRJobConfig.MAP_OUTPUT_COMPRESS_CODEC) + ", We support Gzip, Lz4, snappy";
+          + job.get(MRJobConfig.MAP_OUTPUT_COMPRESS_CODEC) + ", We support Gzip, Lz4, snappy";
         LOG.error(message);
         throw new InvalidJobConfException(message);
       }
@@ -117,27 +104,9 @@ public class NativeMapOutputCollectorDelegator<K, V> implements MapOutputCollect
         String message = "Key type not supported. Cannot find serializer for " + keyCls.getName();
         LOG.error(message);
         throw new InvalidJobConfException(message);
-      }
-
-      if (job.getBoolean(Constants.PIG_GROUP_ONLY, false)) {
-        LOG.info("Pig key types: group only");
-      } else if ((serializer instanceof INativeComparable)
-          && !job.getBoolean(Constants.PIG_USER_COMPARATOR, false)) {
-        if (job.get(Constants.PIG_SORT_ORDER, null) != null) {
-          boolean[] order = (boolean[]) ObjectSerializer.deserialize(job.get(Constants.PIG_SORT_ORDER));
-          job.set(Constants.NATIVE_PIG_SORT, ConfigUtil.booleansToString(order));
-          LOG.info("Pig key types: set sort order");
-        }
-        if (job.get(Constants.PIG_SEC_SORT_ORDER, null) != null) {
-          boolean[] order = (boolean[]) ObjectSerializer.deserialize(job
-              .get(Constants.PIG_SEC_SORT_ORDER));
-          job.set(Constants.NATIVE_PIG_SEC_SORT, ConfigUtil.booleansToString(order));
-          job.setBoolean(Constants.NATIVE_PIG_USE_SEC_KEY, true);
-          LOG.info("Pig key types: set secondary sort order");
-        }
-      } else {
+      } else if (!Platforms.support(serializer, job)) {
         String message = "Native output collector don't support this key, this key is not comparable in native "
-            + keyCls.getName();
+          + keyCls.getName();
         LOG.error(message);
         throw new InvalidJobConfException(message);
       }

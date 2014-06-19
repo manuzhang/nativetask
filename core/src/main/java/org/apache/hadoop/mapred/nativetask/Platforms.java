@@ -21,6 +21,8 @@ import java.io.IOException;
 import java.util.ServiceLoader;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.mapred.JobConf;
+import org.apache.hadoop.mapred.nativetask.serde.INativeSerializer;
 import org.apache.hadoop.mapred.nativetask.serde.NativeSerialization;
 
 public class Platforms {
@@ -57,5 +59,19 @@ public class Platforms {
         platform.init();
       }
     }
+  }
+
+  public static boolean support(INativeSerializer serializer, JobConf job) {
+    boolean supported;
+    // TODO: this may not be needed
+    synchronized (platforms) {
+      for (Platform platform : platforms) {
+        supported = platform.support(serializer, job);
+        if (supported) {
+          return true;
+        }
+      }
+    }
+    return false;
   }
 }
