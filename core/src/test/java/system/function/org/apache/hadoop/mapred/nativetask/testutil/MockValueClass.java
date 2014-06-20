@@ -22,10 +22,10 @@ import java.io.DataOutput;
 import java.io.IOException;
 import java.util.Random;
 
-import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.Writable;
+import org.apache.hadoop.mapred.nativetask.util.BytesUtil;
 
 public class MockValueClass implements Writable {
   private final static int DEFAULT_ARRAY_LENGTH = 16;
@@ -40,7 +40,7 @@ public class MockValueClass implements Writable {
     array = new byte[DEFAULT_ARRAY_LENGTH];
     rand.nextBytes(array);
     longWritable = new LongWritable(rand.nextLong());
-    txt = new Text(Bytes.toStringBinary(array));
+    txt = new Text(BytesUtil.toStringBinary(array));
   }
 
   public MockValueClass(byte[] seed) {
@@ -48,7 +48,7 @@ public class MockValueClass implements Writable {
     array = new byte[seed.length];
     System.arraycopy(seed, 0, array, 0, seed.length);
     longWritable = new LongWritable(a);
-    txt = new Text(Bytes.toStringBinary(array));
+    txt = new Text(BytesUtil.toStringBinary(array));
   }
 
   @Override

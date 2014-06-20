@@ -25,7 +25,6 @@ import java.util.Arrays;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.mapreduce.Reducer;
-import org.apache.pig.impl.io.PigNullableWritable;
 
 public class HashSumReducer<KTYPE, VTYPE> extends Reducer<KTYPE, VTYPE, KTYPE, IntWritable> {
 
@@ -43,9 +42,7 @@ public class HashSumReducer<KTYPE, VTYPE> extends Reducer<KTYPE, VTYPE, KTYPE, I
         hashSum += hash;
       }
     }
-    if(key instanceof PigNullableWritable){
-      ((PigNullableWritable) key).setIndex((byte) 0);
-    }
+
     context.write(key, new IntWritable(hashSum));
   }
 }

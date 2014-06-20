@@ -33,8 +33,7 @@ public class TestBytesUtil extends TestCase {
     Assert.assertEquals(str, BytesUtil.fromBytes(bytes));
 
     final int a = 1000;
-    final byte[] intBytes = new byte[4];
-    BytesUtil.toBytes(a, intBytes);
+    final byte[] intBytes = BytesUtil.toBytes(a);
 
     Assert.assertEquals(a, BytesUtil.toInt(intBytes));
 

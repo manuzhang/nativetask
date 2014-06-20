@@ -34,26 +34,10 @@ import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.SequenceFile;
 import org.apache.hadoop.io.VIntWritable;
 import org.apache.hadoop.io.VLongWritable;
-import org.apache.hadoop.mapred.nativetask.testutil.BytesUtil;
+import org.apache.hadoop.mapred.nativetask.testutil.BytesFactory;
 import org.apache.hadoop.mapred.nativetask.testutil.ScenarioConfiguration;
 import org.apache.hadoop.mapred.nativetask.testutil.TestConstants;
-import org.apache.mahout.cf.taste.hadoop.EntityEntityWritable;
-import org.apache.mahout.classifier.df.mapreduce.partial.TreeID;
-import org.apache.mahout.common.StringTuple;
-import org.apache.mahout.math.VarIntWritable;
-import org.apache.mahout.math.VarLongWritable;
-import org.apache.mahout.math.hadoop.stochasticsvd.SplitPartitionedWritable;
-import org.apache.mahout.vectorizer.collocations.llr.Gram;
-import org.apache.mahout.vectorizer.collocations.llr.GramKey;
-import org.apache.pig.impl.io.NullableBooleanWritable;
-import org.apache.pig.impl.io.NullableBytesWritable;
-import org.apache.pig.impl.io.NullableDateTimeWritable;
-import org.apache.pig.impl.io.NullableDoubleWritable;
-import org.apache.pig.impl.io.NullableFloatWritable;
-import org.apache.pig.impl.io.NullableIntWritable;
-import org.apache.pig.impl.io.NullableLongWritable;
-import org.apache.pig.impl.io.NullableText;
-import org.apache.pig.impl.io.NullableTuple;
+
 
 public class TestInputFile {
 	
@@ -102,7 +86,7 @@ public class TestInputFile {
     map.put(LongWritable.class.getName(), new KVSizeScope(8, 8));
     map.put(VIntWritable.class.getName(), new KVSizeScope(4, 4));
     map.put(IntWritable.class.getName(), new KVSizeScope(4, 4));
-    // Mahout
+/*    // Mahout
     mahoutMap.put(SplitPartitionedWritable.class.getName(), new KVSizeScope(12,12));
     mahoutMap.put(EntityEntityWritable.class.getName(), new KVSizeScope(16, 16));
     mahoutMap.put(VarLongWritable.class.getName(), new KVSizeScope(8, 8));
@@ -125,7 +109,7 @@ public class TestInputFile {
     pigMap.put(NullableTuple.class.getName(), new KVSizeScope(2, 64));
     pigMap.put(NullableText.class.getName(), new KVSizeScope(2, 64));
 
-    map.putAll(pigMap);
+    map.putAll(pigMap);*/
   }
   
   public TestInputFile(int filesize, String keytype, String valuetype, Configuration conf) throws Exception {
@@ -224,17 +208,17 @@ public class TestInputFile {
       if (keyMaxBytesNum != keyMinBytesNum) {
         keybytesnum = keyMinBytesNum + r.nextInt(keyMaxBytesNum - keyMinBytesNum);
       }
-      if (pigMap.keySet().contains(keyClsName)&& isPigPrimitiveType(keyClsName)) {
+/*      if (pigMap.keySet().contains(keyClsName)&& isPigPrimitiveType(keyClsName)) {
         keybytesnum = (keybytesnum == keyMinBytesNum)?keyMinBytesNum:keyMaxBytesNum;
-      }
+      }*/
       
       valuebytesnum = valueMaxBytesNum;
       if (valueMaxBytesNum != valueMinBytesNum) {
         valuebytesnum = valueMinBytesNum + r.nextInt(valueMaxBytesNum - valueMinBytesNum);
       }
-      if (pigMap.keySet().contains(valueClsName)&& isPigPrimitiveType(valueClsName)) {
+/*      if (pigMap.keySet().contains(valueClsName)&& isPigPrimitiveType(valueClsName)) {
         valuebytesnum = (valuebytesnum == valueMinBytesNum)?valueMinBytesNum:valueMaxBytesNum;
-      }
+      }*/
       
       if (keybytesnum + valuebytesnum > remains) {
         break;
@@ -250,7 +234,7 @@ public class TestInputFile {
       offset += valuebytesnum;
       
       try {
-        writer.append(BytesUtil.newObject(key, this.keyClsName), BytesUtil.newObject(value, this.valueClsName));
+        writer.append(BytesFactory.newObject(key, this.keyClsName), BytesFactory.newObject(value, this.valueClsName));
       } catch (final IOException e) {
         e.printStackTrace();
         throw new Exception("sequence file create failed", e);
@@ -259,7 +243,7 @@ public class TestInputFile {
     return offset;
   }
   
-  private boolean isPigPrimitiveType(String clazz) {
+/*  private boolean isPigPrimitiveType(String clazz) {
     if (clazz.equals(NullableBooleanWritable.class.getName())
         || clazz.equals(NullableDateTimeWritable.class.getName())
         || clazz.equals(NullableDoubleWritable.class.getName())
@@ -269,6 +253,6 @@ public class TestInputFile {
       return true;
     }
     return false;
-  }
+  }*/
   
 }

@@ -19,8 +19,6 @@ package org.apache.hadoop.mapred.nativetask.testutil;
 
 import java.util.Random;
 
-import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
-import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.io.BooleanWritable;
 import org.apache.hadoop.io.ByteWritable;
 import org.apache.hadoop.io.BytesWritable;
@@ -33,72 +31,52 @@ import org.apache.hadoop.io.UTF8;
 import org.apache.hadoop.io.VIntWritable;
 import org.apache.hadoop.io.VLongWritable;
 import org.apache.hadoop.mapred.nativetask.kvtest.TestInputFile;
-import org.apache.mahout.cf.taste.hadoop.EntityEntityWritable;
-import org.apache.mahout.classifier.df.mapreduce.partial.TreeID;
-import org.apache.mahout.common.StringTuple;
-import org.apache.mahout.math.VarIntWritable;
-import org.apache.mahout.math.VarLongWritable;
-import org.apache.mahout.math.hadoop.stochasticsvd.SplitPartitionedWritable;
-import org.apache.mahout.vectorizer.collocations.llr.Gram;
-import org.apache.mahout.vectorizer.collocations.llr.GramKey;
-import org.apache.pig.data.BinSedesTupleFactory;
-import org.apache.pig.data.DefaultTuple;
-import org.apache.pig.data.Tuple;
-import org.apache.pig.impl.io.NullableBooleanWritable;
-import org.apache.pig.impl.io.NullableBytesWritable;
-import org.apache.pig.impl.io.NullableDateTimeWritable;
-import org.apache.pig.impl.io.NullableDoubleWritable;
-import org.apache.pig.impl.io.NullableFloatWritable;
-import org.apache.pig.impl.io.NullableIntWritable;
-import org.apache.pig.impl.io.NullableLongWritable;
-import org.apache.pig.impl.io.NullableText;
-import org.apache.pig.impl.io.NullableTuple;
-import org.apache.pig.impl.io.PigNullableWritable;
-import org.joda.time.DateTime;
+import org.apache.hadoop.mapred.nativetask.util.BytesUtil;
 
-public class BytesUtil {
+
+public class BytesFactory {
   public static Random r = new Random();
 
   public static Object newObject(byte[] seed, String className) {
     r.setSeed(seed.hashCode());
     if (className.equals(IntWritable.class.getName())) {
-      return new IntWritable(Bytes.toInt(seed));
+      return new IntWritable(BytesUtil.toInt(seed));
     } else if (className.equals(FloatWritable.class.getName())) {
       return new FloatWritable(r.nextFloat());
     } else if (className.equals(DoubleWritable.class.getName())) {
       return new DoubleWritable(r.nextDouble());
     } else if (className.equals(LongWritable.class.getName())) {
-      return new LongWritable(Bytes.toLong(seed));
+      return new LongWritable(BytesUtil.toLong(seed));
     } else if (className.equals(VIntWritable.class.getName())) {
-      return new VIntWritable(Bytes.toInt(seed));
+      return new VIntWritable(BytesUtil.toInt(seed));
     } else if (className.equals(VLongWritable.class.getName())) {
-      return new VLongWritable(Bytes.toLong(seed));
+      return new VLongWritable(BytesUtil.toLong(seed));
     } else if (className.equals(BooleanWritable.class.getName())) {
       return new BooleanWritable(seed[0] % 2 == 1 ? true : false);
     } else if (className.equals(Text.class.getName())) {
-      return new Text(Bytes.toStringBinary(seed));
+      return new Text(BytesUtil.toStringBinary(seed));
     } else if (className.equals(ByteWritable.class.getName())) {
       return new ByteWritable(seed.length > 0 ? seed[0] : 0);
     } else if (className.equals(BytesWritable.class.getName())) {
       return new BytesWritable(seed);
-    } else if (className.equals(ImmutableBytesWritable.class.getName())) {
+/*    } else if (className.equals(ImmutableBytesWritable.class.getName())) {
       final byte[] bytes = new byte[seed.length];
       System.arraycopy(seed, 0, bytes, 0, seed.length);
-      return new ImmutableBytesWritable(bytes);
+      return new ImmutableBytesWritable(bytes);  */
     } else if (className.equals(UTF8.class.getName())) {
-      return new UTF8(Bytes.toStringBinary(seed));
+      return new UTF8(BytesUtil.toStringBinary(seed));
     } else if (className.equals(MockValueClass.class.getName())) {
       return new MockValueClass(seed);
-    } else if (TestInputFile.mahoutMap.containsKey(className)) {
+/*    } else if (TestInputFile.mahoutMap.containsKey(className)) {
       return newMahoutObject(seed, className);
-    } else if (TestInputFile.pigMap.containsKey(className)){
-      return newPigObject(seed, className);
+    } else if (TestInputFile.pigMap.containsKey(className)) {
+      return newPigObject(seed, className);*/
     } else {
       return null;
     }
   }
 
-  private static Object newMahoutObject(byte[] seed, String className) {
+/*  private static Object newMahoutObject(byte[] seed, String className) {
     if (className.equals(VarIntWritable.class.getName())) {
       return new VarIntWritable(Bytes.toInt(seed));
     } else if (className.equals(VarLongWritable.class.getName())) {
@@ -114,7 +92,7 @@ public class BytesUtil {
       return spWritable;
     } else if (className.equals(EntityEntityWritable.class.getName())) {
       EntityEntityWritable entityWritable = new EntityEntityWritable(
-          Bytes.toLong(seed, 0), Bytes.toLong(seed, 8));
+        Bytes.toLong(seed, 0), Bytes.toLong(seed, 8));
       return entityWritable;
     } else if (className.equals(Gram.class.getName())) {
       String ngram = Bytes.toStringBinary(seed);
@@ -122,7 +100,7 @@ public class BytesUtil {
     } else if (className.equals(GramKey.class.getName())) {
       int primaryLength = r.nextInt(seed.length);
       Gram gram = new Gram(Bytes.toStringBinary(seed, 0,
-          Math.max(primaryLength, 1)), Gram.Type.NGRAM);
+        Math.max(primaryLength, 1)), Gram.Type.NGRAM);
       byte[] order = new byte[seed.length - primaryLength];
       System.arraycopy(seed, primaryLength, order, 0, order.length);
       return new GramKey(gram, order);
@@ -138,13 +116,13 @@ public class BytesUtil {
       return null;
     }
   }
-  
+
   private static Object newPigObject(byte[] seed, String className) {
     PigNullableWritable pigNullableWritable = null;
     if (seed.length == TestInputFile.pigMap.get(className).minBytesNum) {
       try {
         Class<?> clazz = Class.forName(className);
-        pigNullableWritable = (PigNullableWritable)clazz.newInstance();
+        pigNullableWritable = (PigNullableWritable) clazz.newInstance();
       } catch (Exception e) {
         throw new RuntimeException("init class " + className + " failed");
       }
@@ -169,18 +147,18 @@ public class BytesUtil {
       pigNullableWritable = new NullableText(Bytes.toStringBinary(seed, 0, seed.length - 2));
     } else if (className.equals(NullableTuple.class.getName())) {
       pigNullableWritable = new NullableTuple(createPigTuple(seed));
-    } 
-    pigNullableWritable.setIndex((byte) (seed[seed.length-1]&0x7F));
+    }
+    pigNullableWritable.setIndex((byte) (seed[seed.length - 1] & 0x7F));
     return pigNullableWritable;
   }
-  
+
   private static Tuple createPigTuple(byte[] seed) {
     BinSedesTupleFactory factory = new BinSedesTupleFactory();
     Tuple tuple = factory.newTuple();
     tuple.append(new Boolean(seed[0] % 2 == 1 ? true : false));
     tuple.append(Bytes.toStringBinary(seed));
 
-/*    if (seed.length >= 4) {
+*//*    if (seed.length >= 4) {
       tuple.append(new Integer(Bytes.toInt(seed)));
     //  tuple.append(r.nextFloat());
     }
@@ -188,10 +166,10 @@ public class BytesUtil {
       tuple.append(new Long(Bytes.toLong(seed)));
     //  tuple.append(r.nextDouble());
     //  tuple.append(new DateTime(Bytes.toLong(seed)));
-    } */
+    } *//*
     return tuple;
-  }
-  
+  }*/
+
   public static <VTYPE> byte[] fromBytes(byte[] bytes) throws Exception {
     throw new Exception("Not supported");
   }
@@ -199,39 +177,39 @@ public class BytesUtil {
   public static <VTYPE> byte[] toBytes(VTYPE obj) {
     final String className = obj.getClass().getName();
     if (className.equals(IntWritable.class.getName())) {
-      return Bytes.toBytes(((IntWritable) obj).get());
+      return BytesUtil.toBytes(((IntWritable) obj).get());
     } else if (className.equals(FloatWritable.class.getName())) {
-      return Bytes.toBytes(((FloatWritable) obj).get());
+      return BytesUtil.toBytes(((FloatWritable) obj).get());
     } else if (className.equals(DoubleWritable.class.getName())) {
-      return Bytes.toBytes(((DoubleWritable) obj).get());
+      return BytesUtil.toBytes(((DoubleWritable) obj).get());
     } else if (className.equals(LongWritable.class.getName())) {
-      return Bytes.toBytes(((LongWritable) obj).get());
+      return BytesUtil.toBytes(((LongWritable) obj).get());
     } else if (className.equals(VIntWritable.class.getName())) {
-      return Bytes.toBytes(((VIntWritable) obj).get());
+      return BytesUtil.toBytes(((VIntWritable) obj).get());
     } else if (className.equals(VLongWritable.class.getName())) {
-      return Bytes.toBytes(((VLongWritable) obj).get());
+      return BytesUtil.toBytes(((VLongWritable) obj).get());
     } else if (className.equals(BooleanWritable.class.getName())) {
-      return Bytes.toBytes(((BooleanWritable) obj).get());
+      return BytesUtil.toBytes(((BooleanWritable) obj).get());
     } else if (className.equals(Text.class.getName())) {
-      return Bytes.toBytes(((Text) obj).toString());
+      return BytesUtil.toBytes(((Text) obj).toString());
     } else if (className.equals(ByteWritable.class.getName())) {
-      return Bytes.toBytes(((ByteWritable) obj).get());
+      return BytesUtil.toBytes(((ByteWritable) obj).get());
     } else if (className.equals(BytesWritable.class.getName())) {
       return ((BytesWritable) obj).getBytes();
-    } else if (className.equals(ImmutableBytesWritable.class.getName())) {
+/*    } else if (className.equals(ImmutableBytesWritable.class.getName())) {
       return ((ImmutableBytesWritable) obj).get();
     } else if (className.equals(UTF8.class.getName())) {
       return ((UTF8) obj).getBytes();
-    } else if (TestInputFile.mahoutMap.containsKey(className)){
+    } else if (TestInputFile.mahoutMap.containsKey(className)) {
       return MahoutObjectToBytes(obj);
-    } else if (TestInputFile.pigMap.containsKey(className)){
-    	return PigObjectToBytes(obj);
+    } else if (TestInputFile.pigMap.containsKey(className)) {
+      return PigObjectToBytes(obj);*/
     } else {
       return new byte[0];
     }
   }
-  
-  private static <VTYPE> byte[] MahoutObjectToBytes(VTYPE obj) {
+
+/*  private static <VTYPE> byte[] MahoutObjectToBytes(VTYPE obj) {
     String className = obj.getClass().getName();
     if (className.equals(VarIntWritable.class.getName())) {
       return Bytes.toBytes(((VarIntWritable) obj).get());
@@ -244,7 +222,7 @@ public class BytesUtil {
       SplitPartitionedWritable spWritable = (SplitPartitionedWritable) obj;
       System.arraycopy(Bytes.toBytes(spWritable.getTaskId()), 0, bytes, 0, 4);
       System.arraycopy(Bytes.toBytes(spWritable.getTaskItemOrdinal()), 0,
-          bytes, 4, 8);
+        bytes, 4, 8);
       return bytes;
     } else if (className.equals(EntityEntityWritable.class.getName())) {
       byte[] bytes = new byte[16];
@@ -262,7 +240,7 @@ public class BytesUtil {
       return new byte[0];
     }
   }
-  
+
   private static <VTYPE> byte[] PigObjectToBytes(VTYPE obj) {
     String className = obj.getClass().getName();
     if (className.equals(NullableBooleanWritable.class.getName())) {
@@ -292,7 +270,7 @@ public class BytesUtil {
     } else if (className.equals(NullableTuple.class.getName())) {
       DefaultTuple tuple = (DefaultTuple) ((NullableTuple) obj).getValueAsPigType();
       return Bytes.toBytes(tuple.toString());
-    } 
+    }
     return new byte[0];
-  }
+  }*/
 }
