@@ -32,6 +32,7 @@ import org.apache.hadoop.mapred.nativetask.handlers.NativeCollectorOnlyHandler;
 import org.apache.hadoop.mapred.nativetask.serde.INativeSerializer;
 import org.apache.hadoop.mapred.nativetask.serde.NativeSerialization;
 import org.apache.hadoop.mapred.nativetask.util.ConfigUtil;
+import org.apache.hadoop.mapreduce.MRConfig;
 import org.apache.hadoop.mapreduce.MRJobConfig;
 import org.apache.hadoop.mapreduce.server.jobtracker.JTConfig;
 import org.apache.hadoop.util.QuickSort;
@@ -105,6 +106,12 @@ public class NativeMapOutputCollectorDelegator<K, V> implements MapOutputCollect
 
     if (!QuickSort.class.getName().equals(job.get(Constants.MAP_SORT_CLASS))) {
       String message = "Native-Task don't support sort class " + job.get(Constants.MAP_SORT_CLASS);
+      LOG.error(message);
+      throw new InvalidJobConfException(message);
+    }
+
+    if (job.getBoolean(MRConfig.SHUFFLE_SSL_ENABLED_KEY, false) == true) {
+      String message = "Native-Task don't support secure shuffle";
       LOG.error(message);
       throw new InvalidJobConfException(message);
     }
