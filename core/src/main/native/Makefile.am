@@ -70,8 +70,6 @@ src/lib/Combiner.cc \
 src/lib/TaskCounters.cc \
 src/util/Checksum.cc \
 src/util/Hash.cc \
-src/util/PigUtils.cc \
-src/util/MahoutUtils.cc \
 src/util/Random.cc \
 src/util/StringUtil.cc \
 src/util/SyncUtils.cc \
@@ -81,8 +79,6 @@ src/util/WritableUtils.cc
 
 COMMONHEADERS = \
 src/util/Checksum.h                   \
-src/util/MahoutUtils.h                \
-src/util/PigUtils.h                   \
 src/util/StringUtil.h                 \
 src/util/SyncUtils.h                  \
 src/util/WritableUtils.h              \
@@ -118,10 +114,8 @@ test/lib/TestPartitionBucket.cc \
 test/lib/TestReadBuffer.cc \
 test/lib/TestReadWriteBuffer.cc \
 test/lib/TestTrackingCollector.cc \
-test/lib/TestMahoutComparator.cc   \
 test/util/TestChecksum.cc             \
 test/util/TestHash.cc                 \
-test/util/TestPigUtils.cc             \
 test/util/TestStringUtil.cc           \
 test/util/TestSyncUtils.cc            \
 test/util/TestWritableUtils.cc        \

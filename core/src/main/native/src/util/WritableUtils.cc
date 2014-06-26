@@ -222,53 +222,6 @@ string WritableUtils::ReadUTF8(InputStream * stream) {
   return ret;
 }
 
-uint32_t WritableUtils::ReadUnsignedVarInt(const char * pos, uint32_t & len) {
-  uint32_t value = 0;
-  int i = 0;
-  while (((*pos) & 0x80) != 0 && i <= 35) {
-    value |= ((*pos) & 0x7F) << i;
-    i += 7;
-    pos++;
-  }
-  len = i / 7 + 1;
-  return value | (*pos << i);
-}
-
-uint64_t WritableUtils::ReadUnsignedVarLong(const char * pos, uint32_t & len) {
-  uint64_t value = 0;
-  int i = 0;
-  while (((*pos) & 0x80) != 0 && i <= 63) {
-    value |= ((uint64_t)(*pos) & 0x7F) << i;
-    i += 7;
-    pos++;
-  }
-  len = i / 7 + 1;
-  return value | ((uint64_t)(*pos) << i);
-}
-
-void WritableUtils::WriteUnsignedVarInt(uint32_t num, char * pos, uint32_t & len) {
-  len = 0;
-  while ((num & 0xFFFFFF80) != 0L) {
-    *pos = (num & 0x7F) | 0x80;
-    num >>= 7;
-    pos++;
-    len++;
-  }
-  len++;
-  *pos = num & 0x7F;
-}
-
-void WritableUtils::WriteUnsignedVarLong(uint64_t num, char * pos, uint32_t & len) {
-  len = 0;
-  while ((num & 0xFFFFFFFFFFFFFF80L) != 0L) {
-    *pos = (num & 0x7F) | 0x80;
-    num >>= 7;
-    pos++;
-    len++;
-  }
-  len++;
-  *pos = num & 0x7F;
-}
 
 void WritableUtils::WriteVLong(OutputStream * stream, int64_t v) {
   char buff[10];
