@@ -17,7 +17,6 @@
  */
 
 #include "commons.h"
-#include "PigUtils.h"
 #include "StringUtil.h"
 #include "WritableUtils.h"
 
@@ -28,12 +27,6 @@ KeyValueType JavaClassToKeyValueType(const std::string & clazz) {
     return TextType;
   }
   if (clazz == "org.apache.hadoop.io.BytesWritable") {
-    return BytesType;
-  }
-  if (clazz == "org.apache.hadoop.hbase.io.ImmutableBytesWritable") {
-    return BytesType;
-  }
-  if (clazz == "org.apache.hadoop.hive.ql.io.HiveKey") {
     return BytesType;
   }
   if (clazz == "org.apache.hadoop.io.ByteWritable") {
@@ -62,34 +55,6 @@ KeyValueType JavaClassToKeyValueType(const std::string & clazz) {
   }
   if (clazz == "org.apache.hadoop.io.VLongWritable") {
     return VLongType;
-  }
-  if (clazz == "org.apache.mahout.common.StringTuple") {
-    return StringTupleType;
-  }
-  if (clazz == "org.apache.mahout.vectorizer.collocations.llr.Gram") {
-    return GramType;
-  }
-  if (clazz == "org.apache.mahout.vectorizer.collocations.llr.GramKey") {
-    return GramKeyType;
-  }
-  if (clazz == "org.apache.mahout.math.hadoop.stochasticsvd.SplitPartitionedWritable") {
-    return SplitPartitionedType;
-  }
-  if (clazz == "org.apache.mahout.cf.taste.hadoop.EntityEntityWritable") {
-    return EntityEntityType;
-  }
-  if (clazz == "org.apache.mahout.math.VarIntWritable") {
-    return VarIntType;
-  }
-  if (clazz == "org.apache.mahout.math.VarLongWritable") {
-    return VarLongType;
-  }
-  if (clazz == "org.apache.mahout.classifier.df.mapreduce.partial.TreeID") {
-    return LongType;
-  }
-  if (clazz.find(PigUtils::getPackageName()) == 0) {
-    PigUtils::setPigWritableType();
-    return PigType;
   }
   return UnknownType;
 }

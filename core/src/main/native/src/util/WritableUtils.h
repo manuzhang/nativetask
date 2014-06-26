@@ -82,35 +82,6 @@ public:
     WriteVLong(v, target, written);
   }
 
-  //The next functions are used by Mahout
-  static uint32_t ReadUnsignedVarInt(const char * pos, uint32_t & len);
-
-  static uint64_t ReadUnsignedVarLong(const char * pos, uint32_t & len);
-
-  inline static int32_t ReadSignedVarInt(const char * pos, uint32_t & len) {
-    int32_t raw = ReadUnsignedVarInt(pos, len);
-    int32_t tmp = (((raw << 31) >> 31) ^ raw) >> 1;
-    return tmp ^ (raw & (1 << 31));
-  }
-
-  inline static int64_t ReadSignedVarLong(const char * pos, uint32_t & len) {
-    int64_t raw = ReadUnsignedVarLong(pos, len);
-    int64_t tmp = (((raw << 63) >> 63) ^ raw) >> 1;
-    return tmp ^ (raw & (1LL << 63));
-  }
-
-  static void WriteUnsignedVarInt(uint32_t num, char * pos, uint32_t & len);
-
-  static void WriteUnsignedVarLong(uint64_t num, char * pos, uint32_t & len);
-
-  inline static void WriteSignedVarInt(int32_t num, char * pos, uint32_t & len) {
-    WriteUnsignedVarInt((num << 1) ^ (num >> 31), pos, len);
-  }
-
-  inline static void WriteSignedVarLong(int64_t num, char * pos, uint32_t & len) {
-    WriteUnsignedVarLong((num << 1) ^ (num >> 63), pos, len);
-  }
-
   // Stream interfaces
   static int64_t ReadVLong(InputStream * stream);
 

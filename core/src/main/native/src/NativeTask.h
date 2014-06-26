@@ -98,11 +98,6 @@ enum Endium {
 
 #define NATIVE_MAPOUT_KEY_COMPARATOR "native.map.output.key.comparator"
 
-#define NATIVE_PIG_GROUPONLY "native.pig.groupOnly"
-#define NATIVE_PIG_USE_SECONDARY_KEY "native.pig.useSecondaryKey"
-#define NATIVE_PIG_SORT_ORDER "native.pig.sortOrder"
-#define NATIVE_PIG_SECONDARY_SORT_ORDER "native.pig.secondarySortOrder"
-
 extern const std::string NativeObjectTypeToString(NativeObjectType type);
 extern NativeObjectType NativeObjectTypeFromString(const std::string type);
 
@@ -594,15 +589,7 @@ enum KeyValueType {
   MD5HashType = 8,
   VIntType = 9,
   VLongType = 10,
-  StringTupleType = 101,
-  VarIntType = 102,
-  VarLongType = 103,
-  GramType = 104,
-  GramKeyType = 105,
-  SplitPartitionedType = 106,
-  EntityEntityType = 107,
-  UnknownType = -1,
-  PigType = 80,  // ascii code of 'P'
+  UnknownType = -1
 };
 
 typedef int (*ComparatorPtr)(const char * src, uint32_t srcLength, const char * dest,

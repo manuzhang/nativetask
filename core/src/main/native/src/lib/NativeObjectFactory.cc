@@ -25,8 +25,6 @@
 #include "NativeObjectFactory.h"
 #include "NativeLibrary.h"
 #include "BufferStream.h"
-#include "util/MahoutUtils.h"
-#include "util/PigUtils.h"
 #include "util/StringUtil.h"
 #include "util/SyncUtils.h"
 #include "util/WritableUtils.h"
@@ -444,36 +442,6 @@ ComparatorPtr get_comparator(const KeyValueType keyType, const char * comparator
       return &NativeObjectFactory::VIntComparator;
     } else if (keyType == VLongType) {
       return &NativeObjectFactory::VLongComparator;
-    } else if (keyType == StringTupleType) {
-      return &MahoutUtils::StringTupleComparator;
-    } else if (keyType == VarIntType) {
-      return &MahoutUtils::VarIntComparator;
-    } else if (keyType == VarLongType) {
-      return &MahoutUtils::VarLongComparator;
-    } else if (keyType == GramType) {
-      return &MahoutUtils::GramComparator;
-    } else if (keyType == GramKeyType) {
-      return &MahoutUtils::GramKeyComparator;
-    } else if (keyType == SplitPartitionedType) {
-      return &MahoutUtils::SplitPartitionedComparator;
-    } else if (keyType == EntityEntityType) {
-      return &MahoutUtils::EntityEntityComparator;
-    } else if (keyType == PigType) {
-      if (PigUtils::isGroupOnly()) {
-        LOG("[NativeObjectLibrary] key group only, using BytesComparator");
-        return &NativeObjectFactory::BytesComparator;
-      } else if (PigUtils::useSecondaryKey()){
-        LOG("[NativeObjectLibrary] secondary key, using PigSecondaryKeyComparator");
-        PigUtils::setSecSort(true);
-        PigUtils::setSortOrder();
-        PigUtils::setSecondarySortOrder();
-        return &PigUtils::PigSecondaryKeyComparator;
-      } else {
-        LOG("[NativeObjectLibrary] order by key, using PigRawComparator");
-        PigUtils::setSecSort(false);
-        PigUtils::setSortOrder();
-        return PigUtils::getPigComparator(PigUtils::getPigWritableType());
-      }
     }
   } else {
     void * func = NativeObjectFactory::GetFunction(string(comparatorName));
