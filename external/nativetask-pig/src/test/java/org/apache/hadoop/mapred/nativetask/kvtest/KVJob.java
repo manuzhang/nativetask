@@ -20,8 +20,7 @@ package org.apache.hadoop.mapred.nativetask.kvtest;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.hbase.util.Bytes;
-import org.apache.hadoop.mapred.nativetask.testutil.BytesUtil;
+import org.apache.hadoop.mapred.nativetask.testutil.BytesFactory;
 import org.apache.hadoop.mapred.nativetask.testutil.TestConstants;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
@@ -55,15 +54,15 @@ public class KVJob {
 
     @Override
     public void reduce(KTYPE key, Iterable<VTYPE> values, Context context) throws IOException, InterruptedException {
-      long resultlong = 0;// 8 bytes match BytesUtil.fromBytes function
+      long resultlong = 0;// 8 bytes match BytesFactory.fromBytes function
       final CRC32 crc32 = new CRC32();
       for (final VTYPE val : values) {
         crc32.reset();
-        crc32.update(BytesUtil.toBytes(val));
+        crc32.update(BytesFactory.toBytes(val));
         resultlong += crc32.getValue();
       }
       final VTYPE V = null;
-      context.write(key, (VTYPE) BytesUtil.newObject(Bytes.toBytes(resultlong), V.getClass().getName()));
+      context.write(key, (VTYPE) BytesFactory.newObject(BytesFactory.toBytes(resultlong), V.getClass().getName()));
     }
   }
 

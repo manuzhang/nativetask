@@ -60,10 +60,7 @@ public class TestInputFile {
   }
 
   private static HashMap<String, KVSizeScope> map = new HashMap<String, KVSizeScope>();
-  public static HashMap<String, KVSizeScope> mahoutMap = new HashMap<String, KVSizeScope>();
-  public static HashMap<String, KVSizeScope> pigMap = new HashMap<String, KVSizeScope>();
 
-  
   private byte[] databuf = null;
   private final String keyClsName, valueClsName;
   private int filesize = 0;
@@ -86,30 +83,6 @@ public class TestInputFile {
     map.put(LongWritable.class.getName(), new KVSizeScope(8, 8));
     map.put(VIntWritable.class.getName(), new KVSizeScope(4, 4));
     map.put(IntWritable.class.getName(), new KVSizeScope(4, 4));
-/*    // Mahout
-    mahoutMap.put(SplitPartitionedWritable.class.getName(), new KVSizeScope(12,12));
-    mahoutMap.put(EntityEntityWritable.class.getName(), new KVSizeScope(16, 16));
-    mahoutMap.put(VarLongWritable.class.getName(), new KVSizeScope(8, 8));
-    mahoutMap.put(VarIntWritable.class.getName(), new KVSizeScope(4, 4));
-    mahoutMap.put(StringTuple.class.getName(), new KVSizeScope());
-    mahoutMap.put(GramKey.class.getName(), new KVSizeScope());
-    mahoutMap.put(TreeID.class.getName(), new KVSizeScope(8, 8));
-    mahoutMap.put(Gram.class.getName(), new KVSizeScope());
-
-    map.putAll(mahoutMap);
-
-    // Pig
-    pigMap.put(NullableDateTimeWritable.class.getName(), new KVSizeScope(2, 12));
-    pigMap.put(NullableBooleanWritable.class.getName(), new KVSizeScope(2, 3));
-    pigMap.put(NullableDoubleWritable.class.getName(), new KVSizeScope(2, 10));
-    pigMap.put(NullableFloatWritable.class.getName(), new KVSizeScope(2, 6));
-    pigMap.put(NullableLongWritable.class.getName(), new KVSizeScope(2, 10));
-    pigMap.put(NullableIntWritable.class.getName(), new KVSizeScope(2, 6));
-    pigMap.put(NullableBytesWritable.class.getName(), new KVSizeScope(2, 64));
-    pigMap.put(NullableTuple.class.getName(), new KVSizeScope(2, 64));
-    pigMap.put(NullableText.class.getName(), new KVSizeScope(2, 64));
-
-    map.putAll(pigMap);*/
   }
   
   public TestInputFile(int filesize, String keytype, String valuetype, Configuration conf) throws Exception {
@@ -208,18 +181,12 @@ public class TestInputFile {
       if (keyMaxBytesNum != keyMinBytesNum) {
         keybytesnum = keyMinBytesNum + r.nextInt(keyMaxBytesNum - keyMinBytesNum);
       }
-/*      if (pigMap.keySet().contains(keyClsName)&& isPigPrimitiveType(keyClsName)) {
-        keybytesnum = (keybytesnum == keyMinBytesNum)?keyMinBytesNum:keyMaxBytesNum;
-      }*/
-      
+
       valuebytesnum = valueMaxBytesNum;
       if (valueMaxBytesNum != valueMinBytesNum) {
         valuebytesnum = valueMinBytesNum + r.nextInt(valueMaxBytesNum - valueMinBytesNum);
       }
-/*      if (pigMap.keySet().contains(valueClsName)&& isPigPrimitiveType(valueClsName)) {
-        valuebytesnum = (valuebytesnum == valueMinBytesNum)?valueMinBytesNum:valueMaxBytesNum;
-      }*/
-      
+
       if (keybytesnum + valuebytesnum > remains) {
         break;
       }
@@ -242,17 +209,5 @@ public class TestInputFile {
     }
     return offset;
   }
-  
-/*  private boolean isPigPrimitiveType(String clazz) {
-    if (clazz.equals(NullableBooleanWritable.class.getName())
-        || clazz.equals(NullableDateTimeWritable.class.getName())
-        || clazz.equals(NullableDoubleWritable.class.getName())
-        || clazz.equals(NullableFloatWritable.class.getName())
-        || clazz.equals(NullableIntWritable.class.getName())
-        || clazz.equals(NullableLongWritable.class.getName())) {
-      return true;
-    }
-    return false;
-  }*/
-  
+
 }

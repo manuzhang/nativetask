@@ -21,7 +21,6 @@ public class TestConstants {
   // conf path
   public static final String COMBINER_CONF_PATH = "test-combiner-conf.xml";
   public static final String KVTEST_CONF_PATH = "kvtest-conf.xml";
-  public static final String PIG_KVTEST_CONF_PATH = "kvtest-pig-conf.xml";
   public static final String NONSORT_TEST_CONF = "test-nonsort-conf.xml";
 
   public static final String NATIVETASK_KVSIZE_MIN = "nativetask.kvsize.min";

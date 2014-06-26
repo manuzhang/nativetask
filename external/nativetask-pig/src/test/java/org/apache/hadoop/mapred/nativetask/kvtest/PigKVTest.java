@@ -199,7 +199,7 @@ public class PigKVTest {
   }
 
   @Test
-  public void testKVCompability() {
+  public void testKVCompatibility() {
 
     try {
       // the same as sortOrderAsc for keyclasses other than NullableTuple

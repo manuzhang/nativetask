@@ -11,7 +11,7 @@
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
                       http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
-  <groupId>org.apache.hadoop</groupId>
+  <groupId>nativetask</groupId>
   <artifactId>nativetask-pig</artifactId>
   <version>2.2.0</version>
   <name>nativetask-pig</name>
@@ -24,11 +24,6 @@
       <groupId>org.apache.hadoop</groupId>
       <artifactId>hadoop-mapreduce-client-nativetask</artifactId>
       <version>2.2.0</version>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.hbase</groupId>
-      <artifactId>hbase</artifactId>
-      <version>0.94.16</version>
     </dependency>
     <dependency>
       <groupId>org.apache.pig</groupId>
@@ -54,14 +49,16 @@
       <type>test-jar</type>
       <scope>test</scope>
     </dependency>
+      <dependency>
+          <groupId>joda-time</groupId>
+          <artifactId>joda-time</artifactId>
+          <version>2.2</version>
+          <scope>test</scope>
+      </dependency>
   </dependencies>
 
   <build>
     <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-jar-plugin</artifactId>
-      </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
@@ -144,10 +141,7 @@
                     	</fileset>
                     	<fileset file="${basedir}/src/main/native/src/NativeTask.h" />
                     </copy>
-                    <tar compression="gzip" destfile="${project.build.directory}/${project.artifactId}-${project.version}/lib/native/sdk/example.tgz">
-                      <tarfileset dir="${basedir}/sdk" mode="755"/>
-                    </tar>    	      
-								  </target>
+				  </target>
                 </configuration>
               </execution>
               <execution>

@@ -111,6 +111,42 @@ public class BytesUtil {
   }
 
   /**
+   * Presumes float encoded as IEEE 754 floating-point "single format"
+   * @param bytes byte array
+   * @return Float made from passed byte array.
+   */
+  public static float toFloat(byte [] bytes) {
+    return toFloat(bytes, 0);
+  }
+
+  /**
+   * Presumes float encoded as IEEE 754 floating-point "single format"
+   * @param bytes array to convert
+   * @param offset offset into array
+   * @return Float made from passed byte array.
+   */
+  public static float toFloat(byte [] bytes, int offset) {
+    return Float.intBitsToFloat(toInt(bytes, offset, SIZEOF_INT));
+  }
+
+  /**
+   * @param bytes byte array
+   * @return Return double made from passed bytes.
+   */
+  public static double toDouble(final byte [] bytes) {
+    return toDouble(bytes, 0);
+  }
+
+  /**
+   * @param bytes byte array
+   * @param offset offset where double is
+   * @return Return double made from passed bytes.
+   */
+  public static double toDouble(final byte [] bytes, final int offset) {
+    return Double.longBitsToDouble(toLong(bytes, offset, SIZEOF_LONG));
+  }
+
+  /**
    * Write a printable representation of a byte array.
    *
    * @param b byte array
@@ -215,15 +251,6 @@ public class BytesUtil {
   public static byte [] toBytes(final double d) {
     // Encode it as a long
     return toBytes(Double.doubleToRawLongBits(d));
-  }
-
-  // same rule as DataOutputStream
-  public static void toBytes(int v, byte[] b, int offset, int length) {
-    b[offset] = (byte) ((v >>> 24) & 0xFF);
-    b[offset + 1] = (byte) ((v >>> 16) & 0xFF);
-    b[offset + 2] = (byte) ((v >>> 8) & 0xFF);
-    b[offset + 3] = (byte) ((v >>> 0) & 0xFF);
-    return;
   }
 
 }
