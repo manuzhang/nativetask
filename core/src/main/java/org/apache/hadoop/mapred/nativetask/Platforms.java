@@ -27,33 +27,11 @@ import org.apache.hadoop.mapred.nativetask.serde.NativeSerialization;
 
 public class Platforms {
 
-  /*
-   * public static String NATIVE_PLATFORMS = "native.platforms"; public static String
-   * DEFAULT_PLATFORMS = HadoopPlatform.class.getName() + "," + HBasePlatform.class.getName() + ","
-   * + HivePlatform.class.getName() + "," + MahoutPlatform.class.getName() + ","
-   * +PigPlatform.class.getName();
-   */
-
-
   private static final ServiceLoader<Platform> platforms = ServiceLoader.load(Platform.class);
   
   public static void init(Configuration conf) throws IOException {
 
     NativeSerialization.getInstance().reset();
-
-/*    final String valueString = conf.get(NATIVE_PLATFORMS, DEFAULT_PLATFORMS);
-    final String[] platforms = StringUtils.getStrings(valueString);
-
-    for (int i = 0; i < platforms.length; i++) {
-      try {
-        final Class platformClass = Class.forName(platforms[i].trim());
-        final Platform platform = (Platform) platformClass.newInstance();
-        platform.init();
-      } catch (final Exception e) {
-        throw new IOException(e);
-      }
-    }
-*/  
     synchronized (platforms) {
       for (Platform platform : platforms) {
         platform.init();
@@ -63,7 +41,6 @@ public class Platforms {
 
   public static boolean support(INativeSerializer serializer, JobConf job) {
     boolean supported;
-    // TODO: this may not be needed
     synchronized (platforms) {
       for (Platform platform : platforms) {
         supported = platform.support(serializer, job);

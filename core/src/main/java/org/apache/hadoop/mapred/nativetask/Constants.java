@@ -46,16 +46,6 @@ public class Constants {
   public static String NATIVE_STATUS_UPDATE_INTERVAL = "native.update.interval";
   public static int NATIVE_STATUS_UPDATE_INTERVAL_DEFVAL = 3000;
 
-  public static String EXPECTED_PIG_VERSION = "native.pig.version.expected";
-  public static String PIG_VERSION = "pig.version";
-  public static String PIG_GROUP_ONLY = "native.pig.groupOnly";
-  public static String PIG_USER_COMPARATOR = "pig.usercomparator";
-  public static String PIG_SORT_ORDER = "pig.sortOrder";
-  public static String NATIVE_PIG_SORT = "native.pig.sortOrder";
-  public static String PIG_SEC_SORT_ORDER = "pig.secondarySortOrder";
-  public static String NATIVE_PIG_SEC_SORT = "native.pig.secondarySortOrder";
-  public static String NATIVE_PIG_USE_SEC_KEY = "native.pig.useSecondaryKey";
-
   public static String SERIALIZATION_FRAMEWORK = "SerializationFramework";
   public static int SIZEOF_PARTITION_LENGTH = 4;
   public static int SIZEOF_KEY_LENGTH = 4;
