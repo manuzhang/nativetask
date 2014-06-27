@@ -17,8 +17,6 @@
  */
 package org.apache.hadoop.mapred.nativetask.kvtest;
 
-import static org.junit.Assert.assertEquals;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -28,44 +26,21 @@ import java.util.Map;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.mapred.nativetask.Constants;
+import org.apache.hadoop.mapred.nativetask.PigPlatform;
 import org.apache.hadoop.mapred.nativetask.testutil.ResultVerifier;
 import org.apache.hadoop.mapred.nativetask.testutil.ScenarioConfiguration;
 import org.apache.hadoop.mapred.nativetask.testutil.TestConstants;
 import org.apache.hadoop.mapreduce.Job;
-import org.apache.pig.backend.hadoop.executionengine.mapReduceLayer.JobControlCompiler.PigBooleanWritableComparator;
-import org.apache.pig.backend.hadoop.executionengine.mapReduceLayer.JobControlCompiler.PigCharArrayWritableComparator;
-import org.apache.pig.backend.hadoop.executionengine.mapReduceLayer.JobControlCompiler.PigDBAWritableComparator;
-import org.apache.pig.backend.hadoop.executionengine.mapReduceLayer.JobControlCompiler.PigDateTimeWritableComparator;
-import org.apache.pig.backend.hadoop.executionengine.mapReduceLayer.JobControlCompiler.PigDoubleWritableComparator;
-import org.apache.pig.backend.hadoop.executionengine.mapReduceLayer.JobControlCompiler.PigFloatWritableComparator;
-import org.apache.pig.backend.hadoop.executionengine.mapReduceLayer.JobControlCompiler.PigIntWritableComparator;
-import org.apache.pig.backend.hadoop.executionengine.mapReduceLayer.JobControlCompiler.PigLongWritableComparator;
-import org.apache.pig.backend.hadoop.executionengine.mapReduceLayer.JobControlCompiler.PigTupleWritableComparator;
-import org.apache.pig.backend.hadoop.executionengine.mapReduceLayer.PigBooleanRawComparator;
-import org.apache.pig.backend.hadoop.executionengine.mapReduceLayer.PigBytesRawComparator;
-import org.apache.pig.backend.hadoop.executionengine.mapReduceLayer.PigDateTimeRawComparator;
-import org.apache.pig.backend.hadoop.executionengine.mapReduceLayer.PigDoubleRawComparator;
-import org.apache.pig.backend.hadoop.executionengine.mapReduceLayer.PigFloatRawComparator;
-import org.apache.pig.backend.hadoop.executionengine.mapReduceLayer.PigIntRawComparator;
-import org.apache.pig.backend.hadoop.executionengine.mapReduceLayer.PigLongRawComparator;
-import org.apache.pig.backend.hadoop.executionengine.mapReduceLayer.PigTextRawComparator;
-import org.apache.pig.backend.hadoop.executionengine.mapReduceLayer.PigTupleSortComparator;
-import org.apache.pig.impl.io.NullableBooleanWritable;
-import org.apache.pig.impl.io.NullableBytesWritable;
-import org.apache.pig.impl.io.NullableDateTimeWritable;
-import org.apache.pig.impl.io.NullableDoubleWritable;
-import org.apache.pig.impl.io.NullableFloatWritable;
-import org.apache.pig.impl.io.NullableIntWritable;
-import org.apache.pig.impl.io.NullableLongWritable;
-import org.apache.pig.impl.io.NullableText;
-import org.apache.pig.impl.io.NullableTuple;
+import org.apache.pig.backend.hadoop.executionengine.mapReduceLayer.*;
+import org.apache.pig.impl.io.*;
 import org.apache.pig.impl.util.ObjectSerializer;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
+
+import static org.apache.pig.backend.hadoop.executionengine.mapReduceLayer.JobControlCompiler.*;
+import static org.junit.Assert.assertEquals;
 
 @RunWith(Parameterized.class)
 public class PigKVTest {
@@ -126,7 +101,7 @@ public class PigKVTest {
       PigTupleWritableComparator.class);
   }
 
-  @Parameters(name = "key:{0}\nvalue:{1}\norder:{2}")
+  @Parameterized.Parameters(name = "key:{0}\nvalue:{1}\norder:{2}")
   public static Iterable<Object[]> data() {
     Class<?>[] keyclasses = null;
     Class<?>[] valueclasses = null;
@@ -246,9 +221,9 @@ public class PigKVTest {
     fs.close();
     nativekvtestconf.set(TestConstants.NATIVETASK_KVTEST_CREATEFILE, "true");
     if (keyOrder.equals("groupOnly")) {
-      nativekvtestconf.setBoolean(Constants.PIG_GROUP_ONLY, true);
+      nativekvtestconf.setBoolean(PigPlatform.PIG_GROUP_ONLY, true);
     } else {
-      nativekvtestconf.setBoolean(Constants.PIG_GROUP_ONLY, false);
+      nativekvtestconf.setBoolean(PigPlatform.PIG_GROUP_ONLY, false);
     }
     try {
       final KVJob keyJob = new KVJob(jobname, nativekvtestconf, keyclass, valueclass, inputpath, outputpath);
@@ -287,19 +262,19 @@ public class PigKVTest {
   private void setPigConf(Configuration conf) {
     if (keyOrder.equals("sortOrderAsc")) {
       try {
-        conf.set(Constants.PIG_SORT_ORDER, ObjectSerializer.serialize(new boolean[] { true }));
+        conf.set(PigPlatform.PIG_SORT_ORDER, ObjectSerializer.serialize(new boolean[] { true }));
       } catch (IOException e) {
         e.printStackTrace();
       }
     } else if (keyOrder.equals("sortOrderDesc")) {
       try {
-        conf.set(Constants.PIG_SORT_ORDER, ObjectSerializer.serialize(new boolean[] { false }));
+        conf.set(PigPlatform.PIG_SORT_ORDER, ObjectSerializer.serialize(new boolean[] { false }));
       } catch (IOException e) {
         e.printStackTrace();
       }
     } else if (keyOrder.equals("sortOrderAscDesc")) {
       try {
-        conf.set(Constants.PIG_SORT_ORDER,
+        conf.set(PigPlatform.PIG_SORT_ORDER,
           ObjectSerializer.serialize(new boolean[] { true, false }));
       } catch (IOException e) {
         e.printStackTrace();
@@ -318,19 +293,19 @@ public class PigKVTest {
 
     if (keyOrder.equals("sortOrderAsc")) {
       try {
-        conf.set(Constants.PIG_SORT_ORDER, ObjectSerializer.serialize(new boolean[] { true }));
+        conf.set(PigPlatform.PIG_SORT_ORDER, ObjectSerializer.serialize(new boolean[] { true }));
       } catch (IOException e) {
         e.printStackTrace();
       }
     } else if (keyOrder.equals("sortOrderDesc")) {
       try {
-        conf.set(Constants.PIG_SORT_ORDER, ObjectSerializer.serialize(new boolean[] { false }));
+        conf.set(PigPlatform.PIG_SORT_ORDER, ObjectSerializer.serialize(new boolean[] { false }));
       } catch (IOException e) {
         e.printStackTrace();
       }
     } else if (keyOrder.equals("sortOrderAscDesc")) {
       try {
-        conf.set(Constants.PIG_SORT_ORDER,
+        conf.set(PigPlatform.PIG_SORT_ORDER,
           ObjectSerializer.serialize(new boolean[] { true, false }));
       } catch (IOException e) {
         e.printStackTrace();
