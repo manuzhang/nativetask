@@ -132,18 +132,38 @@ protected:
   static bool ReadPigBool(const char type);
   static int ReadPigInt(const char *& src, const char type);
   static long ReadPigLong(const char *& src, const char type);
-  static void ReadPigMap(const char *& src, int size, map<string *, const char *> * m);
+  static void ReadPigMap(const char *& src, int size,
+      map<string *, const char *> * m);
   static void ReadPigBag(const char *& src, int size, list<const char *> * s);
-  static void ReadPigCharArray(const char *& src, const char type, string * ret);
+  static void ReadPigCharArray(const char *& src, const char type,
+      string * ret);
   static void nextField(const char *& src, char byte);
   static int getDataSize(const char *& src, const char type);
 
-  static int compareFields(const char *& src, const char *& dest, bool * order, int oLen);
-  static int compareBags(const char *& src, const char srcType, const char *& dest,
-      const char destType);
-  static int compareInnerTuples(const char *& src, const char srcType, const char *& dest,
-      const char destType);
-  static int compareMaps(map<string *, const char *> & left, map<string *, const char *> & right);
+  template<typename T>
+  static int compare(const T & left, const T & right) {
+    if (left < right)
+      return -1;
+    else if (right < left)
+      return 1;
+    else
+      return 0;
+
+  }
+
+  static int compareFields(const char *& src, const char *& dest, bool * order,
+      int oLen);
+  static int compareBags(const char *& src, const char srcType,
+      const char *& dest, const char destType);
+  static int compareInnerTuples(const char *& src, const char *& dest);
+  static int compareInnerTuples(const char *& src, const char srcType,
+      const char *& dest, const char destType);
+  static int compareTuples(const char *& src, const char *& dest);
+  static int compareMaps(map<string *, const char *> & left,
+      map<string *, const char *> & right);
+  static int compareBytes(const char * src, uint32_t srcLength,
+      const char * dest, uint32_t destLength);
+
   static void stringToBooleans(string & conf, bool *& order, int & len);
 
   static int8_t ReadByte(const char * src);
@@ -159,67 +179,48 @@ protected:
 
   static void nextField(const char *& src);
 
-  static int PigTextComparator(const char * src, uint32_t srcLength, const char * dest,
-      uint32_t destLength);
-  static int PigBytesComparator(const char * src, uint32_t srcLength, const char * dest,
-      uint32_t destLength);
-  static int PigTupleComparator(const char * src, uint32_t srcLength, const char * dest,
-      uint32_t destLength);
-  static int PigNullableWritableComparator(const char * src, uint32_t srcLength, const char * dest,
-      uint32_t destLength, ComparatorPtr comparator);
-
-
-  template<typename T>
-  static int compare(const T & left, const T & right) {
-    if (left < right)
-      return -1;
-    else if (right < left)
-      return 1;
-    else
-      return 0;
-
-  }
-
-  static int compareBytes(const char * src, uint32_t srcLength, const char * dest,
-      uint32_t destLength);
-  static int compareInnerTuples(const char *& src, const char *& dest);
-  static int compareTuples(const char *& src, const char *& dest);
+  static int PigTextComparator(const char * src, uint32_t srcLength,
+      const char * dest, uint32_t destLength);
+  static int PigBytesComparator(const char * src, uint32_t srcLength,
+      const char * dest, uint32_t destLength);
+  static int PigTupleComparator(const char * src, uint32_t srcLength,
+      const char * dest, uint32_t destLength);
+  static int PigNullableWritableComparator(const char * src, uint32_t srcLength,
+      const char * dest, uint32_t destLength, ComparatorPtr comparator);
 
   static char interSedesTypeToDataType(const char type);
 
   static void setPigWritableType();
   static PigWritableType getPigWritableType();
   static string getPackageName();
-  static void setSecondarySortOrder();
-  static bool getSortOrder();
+  static void setSortOrder();
 
 public:
-  static int PigNullableBooleanComparator(const char * src, uint32_t srcLength, const char * dest,
-      uint32_t destLength);
-  static int PigNullableIntComparator(const char * src, uint32_t srcLength, const char * dest,
-      uint32_t destLength);
-  static int PigNullableLongComparator(const char * src, uint32_t srcLength, const char * dest,
-      uint32_t destLength);
-  static int PigNullableFloatComparator(const char * src, uint32_t srcLength, const char * dest,
-      uint32_t destLength);
-  static int PigNullableDoubleComparator(const char * src, uint32_t srcLength, const char * dest,
-      uint32_t destLength);
-  static int PigNullableDateTimeComparator(const char * src, uint32_t srcLength, const char * dest,
-    uint32_t destLength);
-  static int PigNullableTextComparator(const char * src, uint32_t srcLength, const char * dest,
-      uint32_t destLength);
-  static int PigNullableTupleComparator(const char * src, uint32_t srcLength, const char * dest,
-      uint32_t destLength);
-  static int PigNullableBytesComparator(const char * src, uint32_t srcLength, const char * dest,
-      uint32_t destLength);
-  static int PigSecondaryKeyComparator(const char * src, uint32_t srcLength, const char * dest,
-      uint32_t destLength);
+  static int PigNullableBooleanComparator(const char * src, uint32_t srcLength,
+      const char * dest, uint32_t destLength);
+  static int PigNullableIntComparator(const char * src, uint32_t srcLength,
+      const char * dest, uint32_t destLength);
+  static int PigNullableLongComparator(const char * src, uint32_t srcLength,
+      const char * dest, uint32_t destLength);
+  static int PigNullableFloatComparator(const char * src, uint32_t srcLength,
+      const char * dest, uint32_t destLength);
+  static int PigNullableDoubleComparator(const char * src, uint32_t srcLength,
+      const char * dest, uint32_t destLength);
+  static int PigNullableDateTimeComparator(const char * src, uint32_t srcLength,
+      const char * dest, uint32_t destLength);
+  static int PigNullableTextComparator(const char * src, uint32_t srcLength,
+      const char * dest, uint32_t destLength);
+  static int PigNullableTupleComparator(const char * src, uint32_t srcLength,
+      const char * dest, uint32_t destLength);
+  static int PigNullableBytesComparator(const char * src, uint32_t srcLength,
+      const char * dest, uint32_t destLength);
+  static int PigSecondaryKeyComparator(const char * src, uint32_t srcLength,
+      const char * dest, uint32_t destLength);
   static ComparatorPtr getPigComparator(const PigWritableType keyType);
 };
 
 bool tuplecmp(const char * lhs, const char * rhs);
 
- } // namespace PigPlatform
+} // namespace PigPlatform
 
-
- #endif /* PIGPLATFORM_H */
+#endif /* PIGPLATFORM_H */

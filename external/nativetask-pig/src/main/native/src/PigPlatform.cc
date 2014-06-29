@@ -16,9 +16,9 @@
  * limitations under the License.
  */
 
- #include "PigPlatform.h"
+#include "PigPlatform.h"
 
- namespace PigPlatform {
+namespace PigPlatform {
 map<string, PigWritableType> ClassToWritable;
 Config & config = NativeObjectFactory::GetConfig();
 bool * SortOrder;      // order for order by keys
@@ -59,11 +59,6 @@ PigWritableType PigPlatform::getPigWritableType() {
   return ClassToWritable.at(clazz);
 }
 
-void PigPlatform::setSecondarySortOrder() {
-  string conf = config.get(NATIVE_PIG_SECONDARY_SORT_ORDER, "1");
-  stringToBooleans(conf, SecSortOrder, SecOrderLen);
-}
-
 void PigPlatform::stringToBooleans(string & conf, bool *& order, int & len) {
   len = conf.length();
   order = new bool[len];
@@ -72,12 +67,9 @@ void PigPlatform::stringToBooleans(string & conf, bool *& order, int & len) {
   }
 }
 
-bool PigPlatform::getSortOrder() {
-  if (SortOrder == NULL) {
-    string conf = config.get(NATIVE_PIG_SORT_ORDER, "1");
-    stringToBooleans(conf, SortOrder, OrderLen);
-  }
-  return SortOrder[0];
+void PigPlatform::setSortOrder() {
+  string conf = config.get(NATIVE_PIG_SORT_ORDER, "1");
+  stringToBooleans(conf, SortOrder, OrderLen);
 }
 
 int8_t PigPlatform::ReadByte(const char * src) {
@@ -177,39 +169,39 @@ void PigPlatform::ReadString(const char *& src, string * ret) {
 
 bool PigPlatform::ReadPigBool(const char type) {
   switch (type) {
-    case PIG_BOOLEAN_FALSE:
-      return false;
-    case PIG_BOOLEAN_TRUE:
-      return true;
-    default:
-      THROW_EXCEPTION_EX(IOException, "unknown Pig boolean type: %d", type);
+  case PIG_BOOLEAN_FALSE:
+    return false;
+  case PIG_BOOLEAN_TRUE:
+    return true;
+  default:
+    THROW_EXCEPTION_EX(IOException, "unknown Pig boolean type: %d", type);
   }
 }
 
 int PigPlatform::ReadPigInt(const char *& src, const char type) {
   int ret = 0;
   switch (type) {
-    case PIG_INTEGER_0:
-      return 0;
-    case PIG_INTEGER_1:
-      return 1;
-    case PIG_INTEGER_INBYTE: {
-      ret = ReadByte(src);
-      src++;
-      break;
-    }
-    case PIG_INTEGER_INSHORT: {
-      ret = ReadShort(src);
-      src += 2;
-      break;
-    }
-    case PIG_INTEGER: {
-      ret = ReadInt(src);
-      src += 4;
-      break;
-    }
-    default:
-      THROW_EXCEPTION_EX(IOException, "unknown Pig integer type: %d", type);
+  case PIG_INTEGER_0:
+    return 0;
+  case PIG_INTEGER_1:
+    return 1;
+  case PIG_INTEGER_INBYTE: {
+    ret = ReadByte(src);
+    src++;
+    break;
+  }
+  case PIG_INTEGER_INSHORT: {
+    ret = ReadShort(src);
+    src += 2;
+    break;
+  }
+  case PIG_INTEGER: {
+    ret = ReadInt(src);
+    src += 4;
+    break;
+  }
+  default:
+    THROW_EXCEPTION_EX(IOException, "unknown Pig integer type: %d", type);
   }
   return ret;
 }
@@ -217,32 +209,32 @@ int PigPlatform::ReadPigInt(const char *& src, const char type) {
 long PigPlatform::ReadPigLong(const char *& src, const char type) {
   long ret = 0;
   switch (type) {
-    case PIG_LONG_0:
-      return 0;
-    case PIG_LONG_1:
-      return 1;
-    case PIG_LONG_INBYTE: {
-      ret = ReadByte(src);
-      src++;
-      break;
-    }
-    case PIG_LONG_INSHORT: {
-      ret = ReadShort(src);
-      src += 2;
-      break;
-    }
-    case PIG_LONG_ININT: {
-      ret = ReadInt(src);
-      src += 4;
-      break;
-    }
-    case PIG_LONG: {
-      ret = ReadLong(src);
-      src += 8;
-      break;
-    }
-    default:
-      THROW_EXCEPTION_EX(IOException, "unknown Pig long type: %d", type);
+  case PIG_LONG_0:
+    return 0;
+  case PIG_LONG_1:
+    return 1;
+  case PIG_LONG_INBYTE: {
+    ret = ReadByte(src);
+    src++;
+    break;
+  }
+  case PIG_LONG_INSHORT: {
+    ret = ReadShort(src);
+    src += 2;
+    break;
+  }
+  case PIG_LONG_ININT: {
+    ret = ReadInt(src);
+    src += 4;
+    break;
+  }
+  case PIG_LONG: {
+    ret = ReadLong(src);
+    src += 8;
+    break;
+  }
+  default:
+    THROW_EXCEPTION_EX(IOException, "unknown Pig long type: %d", type);
   }
   return ret;
 }
@@ -250,17 +242,17 @@ long PigPlatform::ReadPigLong(const char *& src, const char type) {
 void PigPlatform::ReadPigCharArray(const char *& src, const char type,
     string * ret) {
   switch (type) {
-    case PIG_SMALLCHARARRAY: {
-      ReadUTF(src, ret);
-      break;
-    }
+  case PIG_SMALLCHARARRAY: {
+    ReadUTF(src, ret);
+    break;
+  }
 
-    case PIG_CHARARRAY: {
-      ReadString(src, ret);
-      break;
-    }
-    default:
-      THROW_EXCEPTION_EX(IOException, "unknown Pig chararray type: %d", type);
+  case PIG_CHARARRAY: {
+    ReadString(src, ret);
+    break;
+  }
+  default:
+    THROW_EXCEPTION_EX(IOException, "unknown Pig chararray type: %d", type);
   }
 }
 
@@ -277,7 +269,8 @@ void PigPlatform::ReadPigMap(const char *& src, int size,
   }
 }
 
-void PigPlatform::ReadPigBag(const char *& src, int size, list<const char *> * s) {
+void PigPlatform::ReadPigBag(const char *& src, int size,
+    list<const char *> * s) {
   for (int i = 0; i < size; i++) {
     const char * val = src;
     s->push_back(val);
@@ -292,109 +285,109 @@ void PigPlatform::nextField(const char *& src) {
 
 void PigPlatform::nextField(const char *& src, char type) {
   switch (type) {
-    case PIG_BOOLEAN_TRUE:
-    case PIG_BOOLEAN_FALSE:
-    case PIG_INTEGER_0:
-    case PIG_INTEGER_1:
-    case PIG_LONG_0:
-    case PIG_LONG_1:
-    case PIG_NULL:
-      break;
+  case PIG_BOOLEAN_TRUE:
+  case PIG_BOOLEAN_FALSE:
+  case PIG_INTEGER_0:
+  case PIG_INTEGER_1:
+  case PIG_LONG_0:
+  case PIG_LONG_1:
+  case PIG_NULL:
+    break;
 
-    case PIG_BYTE:
-    case PIG_INTEGER_INBYTE:
-    case PIG_LONG_INBYTE: {
-      src++;
-      break;
-    }
+  case PIG_BYTE:
+  case PIG_INTEGER_INBYTE:
+  case PIG_LONG_INBYTE: {
+    src++;
+    break;
+  }
 
-    case PIG_INTEGER_INSHORT:
-    case PIG_LONG_INSHORT: {
-      src += 2;
-      break;
-    }
-    case PIG_INTEGER:
-    case PIG_LONG_ININT:
-    case PIG_FLOAT: {
-      src += 4;
-      break;
-    }
-    case PIG_LONG:
-    case PIG_DOUBLE: {
-      src += 8;
-      break;
-    }
-    case PIG_DATETIME: {
-      src += 10;
-      break;
-    }
+  case PIG_INTEGER_INSHORT:
+  case PIG_LONG_INSHORT: {
+    src += 2;
+    break;
+  }
+  case PIG_INTEGER:
+  case PIG_LONG_ININT:
+  case PIG_FLOAT: {
+    src += 4;
+    break;
+  }
+  case PIG_LONG:
+  case PIG_DOUBLE: {
+    src += 8;
+    break;
+  }
+  case PIG_DATETIME: {
+    src += 10;
+    break;
+  }
 
-    case PIG_SMALLCHARARRAY: {
-      int len = ReadShort(src);
-      src += 2 + len;
-      break;
-    }
-    case PIG_CHARARRAY: {
-      int len = ReadInt(src);
-      src += 4 + len;
-      break;
-    }
+  case PIG_SMALLCHARARRAY: {
+    int len = ReadShort(src);
+    src += 2 + len;
+    break;
+  }
+  case PIG_CHARARRAY: {
+    int len = ReadInt(src);
+    src += 4 + len;
+    break;
+  }
 
-    case PIG_TINYBYTEARRAY:
-    case PIG_SMALLBYTEARRAY:
-    case PIG_BYTEARRAY: {
-      int size = getDataSize(src, type);
-      src += size;
-      break;
-    }
+  case PIG_TINYBYTEARRAY:
+  case PIG_SMALLBYTEARRAY:
+  case PIG_BYTEARRAY: {
+    int size = getDataSize(src, type);
+    src += size;
+    break;
+  }
 
-    case PIG_TUPLE_0:
-    case PIG_TUPLE_1:
-    case PIG_TUPLE_2:
-    case PIG_TUPLE_3:
-    case PIG_TUPLE_4:
-    case PIG_TUPLE_5:
-    case PIG_TUPLE_6:
-    case PIG_TUPLE_7:
-    case PIG_TUPLE_8:
-    case PIG_TUPLE_9:
-    case PIG_TUPLE:
-    case PIG_TINYTUPLE:
-    case PIG_SMALLTUPLE:
-    case PIG_BAG:
-    case PIG_SMALLBAG:
-    case PIG_TINYBAG: {
-      int size = getDataSize(src, type);
-      for (int i = 0; i < size; i++) {
-        nextField(src);
-      }
-      break;
+  case PIG_TUPLE_0:
+  case PIG_TUPLE_1:
+  case PIG_TUPLE_2:
+  case PIG_TUPLE_3:
+  case PIG_TUPLE_4:
+  case PIG_TUPLE_5:
+  case PIG_TUPLE_6:
+  case PIG_TUPLE_7:
+  case PIG_TUPLE_8:
+  case PIG_TUPLE_9:
+  case PIG_TUPLE:
+  case PIG_TINYTUPLE:
+  case PIG_SMALLTUPLE:
+  case PIG_BAG:
+  case PIG_SMALLBAG:
+  case PIG_TINYBAG: {
+    int size = getDataSize(src, type);
+    for (int i = 0; i < size; i++) {
+      nextField(src);
     }
-    case PIG_MAP:
-    case PIG_TINYMAP:
-    case PIG_SMALLMAP: {
-      int size = getDataSize(src, type);
-      for (int i = 0; i < size; i++) {
-        nextField(src); // key
-        nextField(src); // value
-      }
-      break;
+    break;
+  }
+  case PIG_MAP:
+  case PIG_TINYMAP:
+  case PIG_SMALLMAP: {
+    int size = getDataSize(src, type);
+    for (int i = 0; i < size; i++) {
+      nextField(src); // key
+      nextField(src); // value
     }
-    case PIG_GENERIC:
-      THROW_EXCEPTION(IOException, "do not support generic WritableComparable");
-      break;
-    case PIG_INTERNALMAP: {
-      int len = ReadInt(src);
-      src += len;
-      for (int i = 0; i < len; i++) {
-        nextField(src); // key
-        nextField(src); // value
-      }
-      break;
+    break;
+  }
+  case PIG_GENERIC:
+    THROW_EXCEPTION(IOException, "do not support generic WritableComparable");
+    break;
+  case PIG_INTERNALMAP: {
+    int len = ReadInt(src);
+    src += len;
+    for (int i = 0; i < len; i++) {
+      nextField(src); // key
+      nextField(src); // value
     }
+    break;
+  }
 
-    default:
-      THROW_EXCEPTION_EX(IOException, "Unexpected Sedes type: %d", type);
+  default:
+    THROW_EXCEPTION_EX(IOException, "Unexpected Sedes type: %d", type);
   }
 }
 
@@ -429,8 +422,8 @@ int PigPlatform::PigBytesComparator(const char * src, uint32_t srcLength,
   // src[0], dest[0] == PIG_TUPLE_1
   char srcType = src[1];
   char destType = dest[1];
-  if (interSedesTypeToDataType(src[1]) != PigByteArrayType || interSedesTypeToDataType(
-      dest[1]) != PigByteArrayType) {
+  if (interSedesTypeToDataType(src[1]) != PigByteArrayType
+      || interSedesTypeToDataType(dest[1]) != PigByteArrayType) {
     return compareTuples(src, dest);
   } else {
     src += 2;
@@ -458,7 +451,8 @@ int PigPlatform::PigTupleComparator(const char * src, uint32_t srcLength,
 
       c = 1;
     }
-    if (1 == OrderLen && !SortOrder[0]) c *= -1;
+    if (1 == OrderLen && !SortOrder[0])
+      c *= -1;
   }
   return c;
 }
@@ -483,8 +477,10 @@ int PigPlatform::compareMaps(map<string *, const char *> & left,
     map<string *, const char *> & right) {
   int ls = left.size();
   int rs = right.size();
-  if (ls < rs) return -1;
-  else if (ls > rs) return 1;
+  if (ls < rs)
+    return -1;
+  else if (ls > rs)
+    return 1;
   else {
     map<string *, const char *>::iterator lit = left.begin();
     map<string *, const char *>::iterator rit = right.begin();
@@ -522,17 +518,21 @@ int PigPlatform::compareTuples(const char *& src, const char *& dest) {
         THROW_EXCEPTION(IOException,
             "Pig secondary sort, key number doesn't equal to 2");
       int c = compareFields(src, dest, SortOrder, OrderLen);
-      if (0 == c) return compareFields(src, dest, SecSortOrder, SecOrderLen);
-      else return c;
+      if (0 == c)
+        return compareFields(src, dest, SecSortOrder, SecOrderLen);
+      else
+        return c;
     } else {
       // one tuple key
       for (int i = 0; i < srcSize; i++) {
         int c = compareFields(src, dest, new bool[0], 0);
         if (c != 0) {
-          if (OrderLen > 1 && i < OrderLen && !SortOrder[i]) c *= -1;
+          if (OrderLen > 1 && i < OrderLen && !SortOrder[i])
+            c *= -1;
           // if there is only one entry in the SortOrder
           // it means it's for the whole tuple
-          else if (1 == OrderLen && !SortOrder[0]) c *= -1;
+          else if (1 == OrderLen && !SortOrder[0])
+            c *= -1;
           return c;
         }
       }
@@ -559,7 +559,8 @@ int PigPlatform::compareInnerTuples(const char *& src, const char srcType,
   } else {
     for (int i = 0; i < srcSize; i++) {
       int c = compareFields(src, dest, NULL, 0);
-      if (c != 0) return c;
+      if (c != 0)
+        return c;
     }
     return 0;
   }
@@ -602,8 +603,8 @@ int PigPlatform::compareBags(const char *& src, const char srcType,
   }
 }
 
-int PigPlatform::compareFields(const char *& src, const char *& dest, bool * order,
-    int oLen) {
+int PigPlatform::compareFields(const char *& src, const char *& dest,
+    bool * order, int oLen) {
   char srcType = src[0];
   char destType = dest[0];
   char srcDataType = interSedesTypeToDataType(srcType);
@@ -613,116 +614,114 @@ int PigPlatform::compareFields(const char *& src, const char *& dest, bool * ord
     src++;
     dest++;
     switch (srcDataType) {
-      case PigNullType:
-        if (order != NULL) HasNullField = true;
-        break;
-      case PigBoolType: {
-        c = compare<bool>(ReadPigBool(srcType), ReadPigBool(destType));
-        break;
-      }
-      case PigByteType: {
-        c = ReadByte(src) - ReadByte(dest);
-        src++;
-        dest++;
-        break;
-      }
-      case PigIntType: {
-        c = compare<int>(ReadPigInt(src, srcType), ReadPigInt(dest, destType));
-        break;
-      }
-      case PigLongType: {
-        c = compare<long>(ReadPigLong(src, srcType),
-            ReadPigLong(dest, destType));
-        break;
-      }
-      case PigFloatType: {
-        c = compare<float>(ReadFloat(src), ReadFloat(dest));
-        src += 4;
-        dest += 4;
-        break;
-      }
-      case PigDoubleType: {
-        c = compare<double>(ReadDouble(src), ReadDouble(dest));
-        src += 8;
-        dest += 8;
-        break;
-      }
-      case PigDateTimeType: {
-        // we ignore following 2-byte timezone
-        c = compare<long>(ReadLong(src), ReadLong(dest));
-        src += 10;
-        dest += 10;
-        break;
-      }
-      case PigByteArrayType: {
-        int sblen = getDataSize(src, srcType);
-        int dblen = getDataSize(dest, destType);
-        c = compareBytes(src, sblen, dest, dblen);
-        src += sblen;
-        dest += dblen;
-        break;
-      }
-      case PigCharArrayType: {
-        string * lhs = new string();
-        string * rhs = new string();
-        ReadPigCharArray(src, srcType, lhs);
-        ReadPigCharArray(dest, destType, rhs);
-        c = compare<string>(*lhs, *rhs);
-        delete lhs;
-        delete rhs;
-        break;
-      }
-      case PigMapType: {
-        int srcSize = getDataSize(src, srcType);
-        int destSize = getDataSize(dest, destType);
-        map<string *, const char *> * srcMap =
-            new map<string *, const char *>();
-        map<string *, const char *> * destMap =
-            new map<string *, const char *>();
-        ReadPigMap(src, srcSize, srcMap);
-        ReadPigMap(dest, destSize, destMap);
-        c = compareMaps(*srcMap, *destMap);
-        delete srcMap;
-        delete destMap;
-        break;
-      }
-      case PigGenericType: {
-        // should've checked this at Java side
-        THROW_EXCEPTION(IOException,
-            "do not support generic WritableComparable");
-      }
-      case PigInternalMapType: {
-        c = -1;
-        break;
-      }
-      case PigTupleType: {
-        int srcSize = getDataSize(src, srcType);
-        int destSize = getDataSize(dest, destType);
-        c = compare<int>(srcSize, destSize);
-        if (0 == c) {
-          for (int i = 0; i < srcSize; i++) {
-            c = compareFields(src, dest, NULL, 0);
-            if (c != 0 && order != NULL && oLen > 1 && i < oLen && !order[i]) {
-              c *= -1;
-              break;
-            }
+    case PigNullType:
+      if (order != NULL)
+        HasNullField = true;
+      break;
+    case PigBoolType: {
+      c = compare<bool>(ReadPigBool(srcType), ReadPigBool(destType));
+      break;
+    }
+    case PigByteType: {
+      c = ReadByte(src) - ReadByte(dest);
+      src++;
+      dest++;
+      break;
+    }
+    case PigIntType: {
+      c = compare<int>(ReadPigInt(src, srcType), ReadPigInt(dest, destType));
+      break;
+    }
+    case PigLongType: {
+      c = compare<long>(ReadPigLong(src, srcType), ReadPigLong(dest, destType));
+      break;
+    }
+    case PigFloatType: {
+      c = compare<float>(ReadFloat(src), ReadFloat(dest));
+      src += 4;
+      dest += 4;
+      break;
+    }
+    case PigDoubleType: {
+      c = compare<double>(ReadDouble(src), ReadDouble(dest));
+      src += 8;
+      dest += 8;
+      break;
+    }
+    case PigDateTimeType: {
+      // we ignore following 2-byte timezone
+      c = compare<long>(ReadLong(src), ReadLong(dest));
+      src += 10;
+      dest += 10;
+      break;
+    }
+    case PigByteArrayType: {
+      int sblen = getDataSize(src, srcType);
+      int dblen = getDataSize(dest, destType);
+      c = compareBytes(src, sblen, dest, dblen);
+      src += sblen;
+      dest += dblen;
+      break;
+    }
+    case PigCharArrayType: {
+      string * lhs = new string();
+      string * rhs = new string();
+      ReadPigCharArray(src, srcType, lhs);
+      ReadPigCharArray(dest, destType, rhs);
+      c = compare<string>(*lhs, *rhs);
+      delete lhs;
+      delete rhs;
+      break;
+    }
+    case PigMapType: {
+      int srcSize = getDataSize(src, srcType);
+      int destSize = getDataSize(dest, destType);
+      map<string *, const char *> * srcMap = new map<string *, const char *>();
+      map<string *, const char *> * destMap = new map<string *, const char *>();
+      ReadPigMap(src, srcSize, srcMap);
+      ReadPigMap(dest, destSize, destMap);
+      c = compareMaps(*srcMap, *destMap);
+      delete srcMap;
+      delete destMap;
+      break;
+    }
+    case PigGenericType: {
+      // should've checked this at Java side
+      THROW_EXCEPTION(IOException, "do not support generic WritableComparable");
+    }
+    case PigInternalMapType: {
+      c = -1;
+      break;
+    }
+    case PigTupleType: {
+      int srcSize = getDataSize(src, srcType);
+      int destSize = getDataSize(dest, destType);
+      c = compare<int>(srcSize, destSize);
+      if (0 == c) {
+        for (int i = 0; i < srcSize; i++) {
+          c = compareFields(src, dest, NULL, 0);
+          if (c != 0 && order != NULL && oLen > 1 && i < oLen && !order[i]) {
+            c *= -1;
+            break;
           }
-        } else {
-          return c;
         }
-        break;
+      } else {
+        return c;
       }
-      case PigBagType: {
-        c = compareBags(src, srcType, dest, destType);
-        break;
-      }
-      default: {
-        THROW_EXCEPTION(IOException, "unknown type in compare");
-      }
+      break;
+    }
+    case PigBagType: {
+      c = compareBags(src, srcType, dest, destType);
+      break;
+    }
+    default: {
+      THROW_EXCEPTION(IOException, "unknown type in compare");
+    }
     }
   }
 
-  if (order != NULL && 1 == oLen && !order[0]) c *= -1;
+  if (order != NULL && 1 == oLen && !order[0])
+    c *= -1;
   return c;
 }
 
@@ -733,56 +732,56 @@ string PigPlatform::getPackageName() {
 int PigPlatform::getDataSize(const char *& src, const char type) {
   int size = 0;
   switch (type) {
-    case PIG_TUPLE_0:
-      return 0;
-    case PIG_TUPLE_1:
-      return 1;
-    case PIG_TUPLE_2:
-      return 2;
-    case PIG_TUPLE_3:
-      return 3;
-    case PIG_TUPLE_4:
-      return 4;
-    case PIG_TUPLE_5:
-      return 5;
-    case PIG_TUPLE_6:
-      return 6;
-    case PIG_TUPLE_7:
-      return 7;
-    case PIG_TUPLE_8:
-      return 8;
-    case PIG_TUPLE_9:
-      return 9;
-    case PIG_TINYTUPLE:
-    case PIG_TINYBAG:
-    case PIG_TINYMAP:
-    case PIG_TINYBYTEARRAY: {
-      size = ReadUnsignedByte(src);
-      src++;
-      break;
-    }
-    case PIG_SMALLTUPLE:
-    case PIG_SMALLBAG:
-    case PIG_SMALLMAP:
-    case PIG_SMALLBYTEARRAY: {
-      size = ReadUnsignedShort(src);
-      src += 2;
-      break;
-    }
-    case PIG_TUPLE:
-    case PIG_MAP:
-    case PIG_BYTEARRAY: {
-      size = ReadInt(src);
-      src += 4;
-      break;
-    }
-    case PIG_BAG: {
-      size = ReadLong(src);
-      src += 8;
-      break;
-    }
-    default:
-      THROW_EXCEPTION_EX(IOException, "Unknown Sedes type : %d", type);
+  case PIG_TUPLE_0:
+    return 0;
+  case PIG_TUPLE_1:
+    return 1;
+  case PIG_TUPLE_2:
+    return 2;
+  case PIG_TUPLE_3:
+    return 3;
+  case PIG_TUPLE_4:
+    return 4;
+  case PIG_TUPLE_5:
+    return 5;
+  case PIG_TUPLE_6:
+    return 6;
+  case PIG_TUPLE_7:
+    return 7;
+  case PIG_TUPLE_8:
+    return 8;
+  case PIG_TUPLE_9:
+    return 9;
+  case PIG_TINYTUPLE:
+  case PIG_TINYBAG:
+  case PIG_TINYMAP:
+  case PIG_TINYBYTEARRAY: {
+    size = ReadUnsignedByte(src);
+    src++;
+    break;
+  }
+  case PIG_SMALLTUPLE:
+  case PIG_SMALLBAG:
+  case PIG_SMALLMAP:
+  case PIG_SMALLBYTEARRAY: {
+    size = ReadUnsignedShort(src);
+    src += 2;
+    break;
+  }
+  case PIG_TUPLE:
+  case PIG_MAP:
+  case PIG_BYTEARRAY: {
+    size = ReadInt(src);
+    src += 4;
+    break;
+  }
+  case PIG_BAG: {
+    size = ReadLong(src);
+    src += 8;
+    break;
+  }
+  default:
+    THROW_EXCEPTION_EX(IOException, "Unknown Sedes type : %d", type);
   }
   if (size < 0) {
     THROW_EXCEPTION_EX(IOException, "Invalid size %d for a tuple", size);
@@ -792,178 +791,213 @@ int PigPlatform::getDataSize(const char *& src, const char type) {
 
 char PigPlatform::interSedesTypeToDataType(const char type) {
   switch (type) {
-    case PIG_BOOLEAN_TRUE:
-    case PIG_BOOLEAN_FALSE:
-      return PigBoolType;
-    case PIG_BYTE:
-      return PigByteType;
-    case PIG_INTEGER:
-    case PIG_INTEGER_0:
-    case PIG_INTEGER_1:
-    case PIG_INTEGER_INSHORT:
-    case PIG_INTEGER_INBYTE:
-      return PigIntType;
-    case PIG_LONG:
-    case PIG_LONG_INBYTE:
-    case PIG_LONG_INSHORT:
-    case PIG_LONG_ININT:
-    case PIG_LONG_0:
-    case PIG_LONG_1:
-      return PigLongType;
-    case PIG_FLOAT:
-      return PigFloatType;
-    case PIG_DOUBLE:
-      return PigDoubleType;
-    case PIG_DATETIME:
-      return PigDateTimeType;
-    case PIG_BYTEARRAY:
-    case PIG_SMALLBYTEARRAY:
-    case PIG_TINYBYTEARRAY:
-      return PigByteArrayType;
-    case PIG_CHARARRAY:
-    case PIG_SMALLCHARARRAY:
-      return PigCharArrayType;
-    case PIG_TINYMAP:
-    case PIG_SMALLMAP:
-    case PIG_MAP:
-      return PigMapType;
-    case PIG_TUPLE:
-    case PIG_SMALLTUPLE:
-    case PIG_TINYTUPLE:
-    case PIG_TUPLE_0:
-    case PIG_TUPLE_1:
-    case PIG_TUPLE_2:
-    case PIG_TUPLE_3:
-    case PIG_TUPLE_4:
-    case PIG_TUPLE_5:
-    case PIG_TUPLE_6:
-    case PIG_TUPLE_7:
-    case PIG_TUPLE_8:
-    case PIG_TUPLE_9:
-      return PigTupleType;
-    case PIG_BAG:
-    case PIG_SMALLBAG:
-    case PIG_TINYBAG:
-      return PigBagType;
-    case PIG_GENERIC:
-      return PigGenericType;
-    case PIG_INTERNALMAP:
-      return PigInternalMapType;
-    case PIG_NULL:
-      return PigNullType;
-    default:
-      THROW_EXCEPTION_EX(IOException, "Unexpected Sedes type: %d", type);
+  case PIG_BOOLEAN_TRUE:
+  case PIG_BOOLEAN_FALSE:
+    return PigBoolType;
+  case PIG_BYTE:
+    return PigByteType;
+  case PIG_INTEGER:
+  case PIG_INTEGER_0:
+  case PIG_INTEGER_1:
+  case PIG_INTEGER_INSHORT:
+  case PIG_INTEGER_INBYTE:
+    return PigIntType;
+  case PIG_LONG:
+  case PIG_LONG_INBYTE:
+  case PIG_LONG_INSHORT:
+  case PIG_LONG_ININT:
+  case PIG_LONG_0:
+  case PIG_LONG_1:
+    return PigLongType;
+  case PIG_FLOAT:
+    return PigFloatType;
+  case PIG_DOUBLE:
+    return PigDoubleType;
+  case PIG_DATETIME:
+    return PigDateTimeType;
+  case PIG_BYTEARRAY:
+  case PIG_SMALLBYTEARRAY:
+  case PIG_TINYBYTEARRAY:
+    return PigByteArrayType;
+  case PIG_CHARARRAY:
+  case PIG_SMALLCHARARRAY:
+    return PigCharArrayType;
+  case PIG_TINYMAP:
+  case PIG_SMALLMAP:
+  case PIG_MAP:
+    return PigMapType;
+  case PIG_TUPLE:
+  case PIG_SMALLTUPLE:
+  case PIG_TINYTUPLE:
+  case PIG_TUPLE_0:
+  case PIG_TUPLE_1:
+  case PIG_TUPLE_2:
+  case PIG_TUPLE_3:
+  case PIG_TUPLE_4:
+  case PIG_TUPLE_5:
+  case PIG_TUPLE_6:
+  case PIG_TUPLE_7:
+  case PIG_TUPLE_8:
+  case PIG_TUPLE_9:
+    return PigTupleType;
+  case PIG_BAG:
+  case PIG_SMALLBAG:
+  case PIG_TINYBAG:
+    return PigBagType;
+  case PIG_GENERIC:
+    return PigGenericType;
+  case PIG_INTERNALMAP:
+    return PigInternalMapType;
+  case PIG_NULL:
+    return PigNullType;
+  default:
+    THROW_EXCEPTION_EX(IOException, "Unexpected Sedes type: %d", type);
   }
 }
 
 // Pig Comparators
 
 /* Boolean is 1 byte */
-int PigPlatform::PigNullableBooleanComparator(const char * src, uint32_t srcLength, const char * dest,
-    uint32_t destLength) {
-  if ((srcLength != 2 && srcLength != 3) || (destLength != 2 && destLength != 3)) {
+int PigPlatform::PigNullableBooleanComparator(const char * src,
+    uint32_t srcLength, const char * dest, uint32_t destLength) {
+  if ((srcLength != 2 && srcLength != 3)
+      || (destLength != 2 && destLength != 3)) {
     THROW_EXCEPTION(IOException,
         "Pig NullableBooleanWritable comparator, while src/dest length is not 2 or 3");
   }
-  int c = PigPlatform::PigNullableWritableComparator(src, srcLength, dest, destLength, &NativeObjectFactory::ByteComparator);
-  if (c != 0 && !PigPlatform::getSortOrder())
+  IsSecSort = false;
+  setSortOrder();
+  int c = PigPlatform::PigNullableWritableComparator(src, srcLength, dest,
+      destLength, &NativeObjectFactory::ByteComparator);
+  if (c != 0 && !SortOrder[0])
     c *= -1;
   return c;
 }
 
 /* Int is 4 bytes */
-int PigPlatform::PigNullableIntComparator(const char * src, uint32_t srcLength, const char * dest,
-    uint32_t destLength) {
-  if ((srcLength != 2 && srcLength != 6) || (destLength != 2 && destLength != 6)) {
+int PigPlatform::PigNullableIntComparator(const char * src, uint32_t srcLength,
+    const char * dest, uint32_t destLength) {
+  if ((srcLength != 2 && srcLength != 6)
+      || (destLength != 2 && destLength != 6)) {
     THROW_EXCEPTION(IOException,
         "Pig NullableIntWritable comparator, while src/dest length is not 2 or 6");
   }
-  int c = PigPlatform::PigNullableWritableComparator(src, srcLength, dest, destLength, &NativeObjectFactory::IntComparator);
-  if (c != 0 && !PigPlatform::getSortOrder())
+  IsSecSort = false;
+  setSortOrder();
+  int c = PigPlatform::PigNullableWritableComparator(src, srcLength, dest,
+      destLength, &NativeObjectFactory::IntComparator);
+  if (c != 0 && !SortOrder[0])
     c *= -1;
   return c;
 }
 
 /* Long is 8 bytes */
-int PigPlatform::PigNullableLongComparator(const char * src, uint32_t srcLength, const char * dest,
-    uint32_t destLength) {
-  if ((srcLength != 2 && srcLength != 10) || (destLength != 2 && destLength != 10)) {
+int PigPlatform::PigNullableLongComparator(const char * src, uint32_t srcLength,
+    const char * dest, uint32_t destLength) {
+  if ((srcLength != 2 && srcLength != 10)
+      || (destLength != 2 && destLength != 10)) {
     THROW_EXCEPTION(IOException,
         "Pig NullableLongWritable comparator, while src/dest length is not 2 or 10");
   }
-  int c = PigPlatform::PigNullableWritableComparator(src, srcLength, dest, destLength, &NativeObjectFactory::LongComparator);
-  if (c != 0 && !PigPlatform::getSortOrder())
+  IsSecSort = false;
+  setSortOrder();
+  int c = PigPlatform::PigNullableWritableComparator(src, srcLength, dest,
+      destLength, &NativeObjectFactory::LongComparator);
+  if (c != 0 && !SortOrder[0])
     c *= -1;
   return c;
 }
 
 /* Float is 4 bytes */
-int PigPlatform::PigNullableFloatComparator(const char * src, uint32_t srcLength, const char * dest,
-    uint32_t destLength) {
-  if ((srcLength != 2 && srcLength != 6) || (destLength != 2 && destLength != 6)) {
+int PigPlatform::PigNullableFloatComparator(const char * src,
+    uint32_t srcLength, const char * dest, uint32_t destLength) {
+  if ((srcLength != 2 && srcLength != 6)
+      || (destLength != 2 && destLength != 6)) {
     THROW_EXCEPTION(IOException,
         "Pig NullableFloatWritable comparator, while src/dest length is not 2 or 6");
   }
-  int c = PigPlatform::PigNullableWritableComparator(src, srcLength, dest, destLength, &NativeObjectFactory::FloatComparator);
-  if (c != 0 && !PigPlatform::getSortOrder())
+  IsSecSort = false;
+  setSortOrder();
+  int c = PigPlatform::PigNullableWritableComparator(src, srcLength, dest,
+      destLength, &NativeObjectFactory::FloatComparator);
+  if (c != 0 && !SortOrder[0])
     c *= -1;
   return c;
 }
 
 /* Double is 8 bytes */
-int PigPlatform::PigNullableDoubleComparator(const char * src, uint32_t srcLength, const char * dest,
-    uint32_t destLength) {
-  if ((srcLength != 2 && srcLength != 10) || (destLength != 2 && destLength != 10)) {
+int PigPlatform::PigNullableDoubleComparator(const char * src,
+    uint32_t srcLength, const char * dest, uint32_t destLength) {
+  if ((srcLength != 2 && srcLength != 10)
+      || (destLength != 2 && destLength != 10)) {
     THROW_EXCEPTION(IOException,
         "Pig NullableDoubleWritable comparator, while src/dest length is not 2 or 10");
   }
-  int c = PigPlatform::PigNullableWritableComparator(src, srcLength, dest, destLength, &NativeObjectFactory::DoubleComparator);
-  if (c != 0 && !PigPlatform::getSortOrder())
+  IsSecSort = false;
+  setSortOrder();
+  int c = PigPlatform::PigNullableWritableComparator(src, srcLength, dest,
+      destLength, &NativeObjectFactory::DoubleComparator);
+  if (c != 0 && !SortOrder[0])
     c *= -1;
   return c;
 }
 
 /* 8 bytes time + 2 bytes timezone but timezone is ignored */
-int PigPlatform::PigNullableDateTimeComparator(const char * src, uint32_t srcLength, const char * dest,
-    uint32_t destLength) {
-  if ((srcLength != 2 && srcLength != 12) || (destLength != 2 && destLength != 12)) {
+int PigPlatform::PigNullableDateTimeComparator(const char * src,
+    uint32_t srcLength, const char * dest, uint32_t destLength) {
+  if ((srcLength != 2 && srcLength != 12)
+      || (destLength != 2 && destLength != 12)) {
     THROW_EXCEPTION(IOException,
         "Pig NullableDatetimeWritable comparator, while src/dest length is not 2 or 12");
   }
-  int c = PigPlatform::PigNullableWritableComparator(src, srcLength, dest, destLength, &NativeObjectFactory::LongComparator);
-  if (c != 0 && !PigPlatform::getSortOrder())
+  IsSecSort = false;
+  setSortOrder();
+  int c = PigPlatform::PigNullableWritableComparator(src, srcLength, dest,
+      destLength, &NativeObjectFactory::LongComparator);
+  if (c != 0 && !SortOrder[0])
     c *= -1;
   return c;
 }
 
-int PigPlatform::PigNullableTextComparator(const char * src, uint32_t srcLength, const char * dest,
-    uint32_t destLength) {
-  int c = PigPlatform::PigNullableWritableComparator(src, srcLength, dest, destLength,
-      &PigPlatform::PigTextComparator);
-  if (c != 0 && !PigPlatform::getSortOrder()) c *= -1;
+int PigPlatform::PigNullableTextComparator(const char * src, uint32_t srcLength,
+    const char * dest, uint32_t destLength) {
+  IsSecSort = false;
+  setSortOrder();
+  int c = PigPlatform::PigNullableWritableComparator(src, srcLength, dest,
+      destLength, &PigPlatform::PigTextComparator);
+  if (c != 0 && !SortOrder[0])
+    c *= -1;
   return c;
 }
 
-int PigPlatform::PigNullableTupleComparator(const char * src, uint32_t srcLength, const char * dest,
-    uint32_t destLength) {
+int PigPlatform::PigNullableTupleComparator(const char * src,
+    uint32_t srcLength, const char * dest, uint32_t destLength) {
+  IsSecSort = false;
+  setSortOrder();
   return PigPlatform::PigTupleComparator(src, srcLength, dest, destLength);
 }
 
 /*
  * NullableBytesWritable is internally a PIG_TUPLE_1
  */
-int PigPlatform::PigNullableBytesComparator(const char * src, uint32_t srcLength, const char * dest,
-    uint32_t destLength) {
-  int c = PigPlatform::PigNullableWritableComparator(src, srcLength, dest, destLength,
-      &PigPlatform::PigBytesComparator);
-  if (c != 0 && !PigPlatform::getSortOrder()) c *= -1;
+int PigPlatform::PigNullableBytesComparator(const char * src,
+    uint32_t srcLength, const char * dest, uint32_t destLength) {
+  IsSecSort = false;
+  setSortOrder();
+  int c = PigPlatform::PigNullableWritableComparator(src, srcLength, dest,
+      destLength, &PigPlatform::PigBytesComparator);
+  if (c != 0 && !SortOrder[0])
+    c *= -1;
   return c;
 }
-
 
 int PigPlatform::PigSecondaryKeyComparator(const char * src, uint32_t srcLength,
     const char * dest, uint32_t destLength) {
   IsSecSort = true;
+  setSortOrder();
+  string conf = config.get(NATIVE_PIG_SECONDARY_SORT_ORDER, "1");
+  stringToBooleans(conf, SecSortOrder, SecOrderLen);
+
   const char mqFlag = 0x80;
   const char idxSpace = 0x7F;
   char srcNull = src[0];
@@ -973,8 +1007,10 @@ int PigPlatform::PigSecondaryKeyComparator(const char * src, uint32_t srcLength,
   char destIndex = dest[destLength - 1] & idxSpace;
 
   if ((srcIndex & mqFlag) != 0) {
-    if ((srcIndex & idxSpace) < (destIndex & idxSpace)) return -1;
-    else if ((srcIndex & idxSpace) > (destIndex & idxSpace)) return 1;
+    if ((srcIndex & idxSpace) < (destIndex & idxSpace))
+      return -1;
+    else if ((srcIndex & idxSpace) > (destIndex & idxSpace))
+      return 1;
   }
 
   srcIndex &= idxSpace;
@@ -995,30 +1031,6 @@ int PigPlatform::PigSecondaryKeyComparator(const char * src, uint32_t srcLength,
   }
 }
 
-ComparatorPtr PigPlatform::getPigComparator(const PigWritableType keyType) {
-  if (PigBooleanWritable == keyType) {
-    return &PigNullableBooleanComparator;
-  } else if (PigBytesWritable == keyType) {
-    return &PigNullableBytesComparator;
-  } else if (PigDateTimeWritable == keyType) {
-    return &PigNullableDateTimeComparator;
-  } else if (PigDoubleWritable == keyType) {
-    return &PigNullableDoubleComparator;
-  } else if (PigFloatWritable == keyType) {
-    return &PigNullableFloatComparator;
-  } else if (PigIntWritable == keyType) {
-    return &PigNullableIntComparator;
-  } else if (PigLongWritable == keyType) {
-    return &PigNullableLongComparator;
-  } else if (PigText == keyType) {
-    return &PigNullableTextComparator;
-  } else if (PigTuple == keyType) {
-    return &PigNullableTupleComparator;
-  } else {
-    return NULL;
-  }
-}
-
 DEFINE_NATIVE_LIBRARY(PigPlatform) {
   REGISTER_FUNCTION(PigNullableBooleanComparator, PigPlatform);
   REGISTER_FUNCTION(PigNullableBytesComparator, PigPlatform);
@@ -1032,4 +1044,4 @@ DEFINE_NATIVE_LIBRARY(PigPlatform) {
   REGISTER_FUNCTION(PigSecondaryKeyComparator, PigPlatform);
 }
 
- }
+}
