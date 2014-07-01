@@ -45,10 +45,7 @@ DIST_COMMON = README $(am__configure_deps) $(include_HEADERS) \
 	ChangeLog INSTALL NEWS config.guess config.sub depcomp \
 	install-sh ltmain.sh missing
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
-am__aclocal_m4_deps = $(top_srcdir)/m4/libtool.m4 \
-	$(top_srcdir)/m4/ltoptions.m4 $(top_srcdir)/m4/ltsugar.m4 \
-	$(top_srcdir)/m4/ltversion.m4 $(top_srcdir)/m4/lt~obsolete.m4 \
-	$(top_srcdir)/configure.ac
+am__aclocal_m4_deps = $(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
 am__CONFIG_DISTCLEAN_FILES = config.status config.cache config.log \
@@ -255,7 +252,7 @@ PRFLAGS = -DSIMPLE_MEMCPY
 NATIVETASK = $(top_srcdir)/../../../../../core/src/main/native
 NATIVETASK_FLAGS = -I$(NATIVETASK)/src -I$(NATIVETASK)/src/lib -I$(NATIVETASK)/src/util -I$(NATIVETASK)/test
 AM_LDFLAGS = -no-undefined  -L$(SNAPPY_PREFIX)/lib -lsnappy -lpthread -ldl -lz -lnativetask $(PLATFORM_LDFLAGS)
-AM_CFLAGS = $(PRFLAGS) $(JNI_INCLUDE) -I$(SNAPPY_PREFIX)/include -Ijavah -I$(top_srcdir)/src -I$(top_srcdir)/src/util -I$(top_srcdir)/src/lib -Wall $(NATIVETASK_FLAGS)
+AM_CFLAGS = $(PRFLAGS) $(JNI_INCLUDE) -I$(SNAPPY_PREFIX)/include -Ijavah -I$(top_srcdir)/src  -Wall $(NATIVETASK_FLAGS)
 COMMONSOURCES = \
 src/PigPlatform.cc
 

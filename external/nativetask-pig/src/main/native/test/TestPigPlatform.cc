@@ -22,10 +22,13 @@
 #include<iostream>
 #include<sstream>
 
-#include "test_commons.h"
+#include "string.h"
+
+#include "lib/primitives.h"
 #include "lib/BufferStream.h"
 #include "lib/NativeObjectFactory.h"
 #include "util/WritableUtils.h"
+#include "test_commons.h"
 
 #include "PigPlatform.h"
 
@@ -35,16 +38,6 @@ using std::map;
 using std::min;
 using std::ostringstream;
 using std::string;
-
-void TestReadByte(int8_t * array, int len);
-void TestReadUnsignedByte(uint8_t * array, int len);
-void TestReadShort(int16_t * array, int len);
-void TestReadUnsignedShort(uint16_t * array, int len);
-void TestReadInt(int32_t * array, int len);
-void TestReadLong(int64_t * array, int len);
-void TestReadFloat(float * array, int len);
-void TestReadDouble(double * array, int len);
-template<typename T> void check(map<T, T> & checks);
 
 void writeLong(int64_t l, string & data);
 void writeInt(int32_t i, string & data);
@@ -83,17 +76,15 @@ void genPigBag(vector<string *> & tuples, string & ret);
 char genPigWritable(string & value, string & wrt);
 
 void unsignedCharsToString(uint16_t src[], int len, string & ret);
-char getPigSedesType(const char * field);
-int getCompareResult(ComparatorPtr & comparator, string & lhs, string & rhs);
+int getCompareResult(ComparatorPtr comparator, string & lhs, string & rhs);
 
 template <typename T>
-void compareWithOrder(T lv, T rv, string & lw, string & rw, string & cmp, string & order); 
- 
+void compareWithOrder(T lv, T rv, string & lw, string & rw,
+    ComparatorPtr comparator, string & order);
 template <typename T>
-void compareAsc(T lv, T rv, string & lw, string & rw, ComparatorPtr & cmp);
+void compareAsc(T lv, T rv, string & lw, string & rw, ComparatorPtr comparator);
 template <typename T>
-void compareDesc(T lv, T rv, string & lw, string & rw, ComparatorPtr & cmp);
-void compareBytes(string & lw, string & rw, ComparatorPtr & cmp);
+void compareDesc(T lv, T rv, string & lw, string & rw, ComparatorPtr comparator);
 
 Config & config = NativeObjectFactory::GetConfig();
 time_t seed = time(NULL);
@@ -774,11 +765,7 @@ char genPigWritable(string & value, string & wrt) {
   return index;
 }
 
-char getPigSedesType(const char * field) {
-  return field[0];
-}
-
-int getCompareResult(ComparatorPtr & comparator, string & lhs, string & rhs) {
+int getCompareResult(ComparatorPtr  comparator, string & lhs, string & rhs) {
   int c = comparator(lhs.c_str(), lhs.length(), rhs.c_str(), rhs.length());
   if (c < 0)
     return -1;
@@ -788,148 +775,124 @@ int getCompareResult(ComparatorPtr & comparator, string & lhs, string & rhs) {
     return 0;
 }
 
+template <typename T>
+void compareWithOrder(T lv, T rv, string & lw, string & rw,
+    ComparatorPtr comparator, string & order) {
+  config.set(NATIVE_PIG_SORT_ORDER, order);
+  EXPECT_TRUE(comparator != NULL);
+  EXPECT_EQ(PigPlatform::compare<T>(lv, rv), getCompareResult(comparator, lw, rw));
+}
 
+template <typename T>
+void compareAsc(T lv, T rv, string & lw, string & rw, ComparatorPtr cmp) {
+  string order = "1";
+  compareWithOrder(lv, rv, lw, rw, cmp, order);
+}
 
+template <typename T>
+void compareDesc(T lv, T rv, string & lw, string & rw, ComparatorPtr cmp) {
+  string order = "0";
+  compareWithOrder(rv, lv, lw, rw, cmp, order);
+}
 
 /************ Tests ******************/
 
-void TestReadByte(int8_t * array, int len) {
-  for (int i = 0; i < len; i++) {
-    int8_t expected = array[i];
-    int8_t actual = PigPlatform::ReadByte((char *) &array[i]);
-    ASSERT_EQ(expected, actual);
-  }
-}
-
-void TestReadUnsignedByte(uint8_t * array, int len) {
-  for (int i = 0; i < len; i++) {
-    int8_t expected = array[i];
-    int8_t actual = PigPlatform::ReadUnsignedByte((char *) &array[i]);
-    ASSERT_EQ(expected, actual);
-  }
-}
-
-void TestReadShort(int16_t * array, int len) {
-  for (int i = 0; i < len; i++) {
-    string * data = new string();
-    int16_t expected = array[i];
-    writeShort(array[i], *data);
-    int16_t actual = PigPlatform::ReadShort(data->c_str());
-    ASSERT_EQ(expected, actual);
-    delete data;
-  }
-}
-
-void TestReadUnsignedShort(uint16_t * array, int len) {
-  for (int i = 0; i < len; i++) {
-    string * data = new string();
-    uint16_t expected = array[i];
-    writeShort(array[i], *data);
-    uint16_t actual = PigPlatform::ReadUnsignedShort(data->c_str());
-    ASSERT_EQ(expected, actual);
-    delete data;
-  }
-}
-
-void TestReadLong(int64_t * array, int len) {
-  for (int i = 0; i < len; i++) {
-    string * data = new string();
-    int64_t expected = array[i];
-    writeLong(array[i], *data);
-    int64_t actual = PigPlatform::ReadLong(data->c_str());
-    ASSERT_EQ(expected, actual);
-    delete data;
-  }
-}
-
-void TestReadInt(int32_t * array, int len) {
-  for (int i = 0; i < len; i++) {
-    string * data = new string();
-    int32_t expected = array[i];
-    writeInt(array[i], *data);
-    int32_t actual = PigPlatform::ReadInt(data->c_str());
-    ASSERT_EQ(expected, actual);
-    delete data;
-  }
-}
-
-void TestReadFloat(float * array, int len) {
-  for (int i = 0; i < len; i++) {
-    string * data = new string();
-    float expected = array[i];
-    writeFloat(array[i], *data);
-    float actual = PigPlatform::ReadFloat(data->c_str());
-    ASSERT_EQ(expected, actual);
-    delete data;
-  }
-}
-
-void TestReadDouble(double* array, int len) {
-  for (int i = 0; i < len; i++) {
-    string * data = new string();
-    double expected = array[i];
-    writeDouble(array[i], *data);
-    double actual = PigPlatform::ReadDouble(data->c_str());
-    ASSERT_EQ(expected, actual);
-    delete data;
-  }
-}
-
-template<typename T>
-void check(map<T, T> & checks) {
-  for (typename map<T, T>::iterator it = checks.begin(); it != checks.end(); it++) {
-    T expected = it->first;
-    T actual = it->second;
-    ASSERT_EQ(expected, actual);
-  }
-}
-
 TEST(PigPlatform, ReadByte) {
   Random random(++seed);
-  int8_t byteArray[] = { (int8_t) random.next_uint32(), CHAR_MAX, CHAR_MIN };
-  TestReadByte(byteArray, sizeof byteArray / sizeof(int8_t));
+  int8_t array[] = { (int8_t) random.next_uint32(), CHAR_MAX, CHAR_MIN };
+  for (int i = 0; i < 3; i++) {
+    int8_t expected = array[i];
+    int8_t actual = PigPlatform::ReadByte((char *) &array[i]);
+    EXPECT_EQ(expected, actual);
+  }
 }
 
 TEST(PigPlatform, ReadUnsignedByte) {
   Random random(++seed);
-  uint8_t ubyteArray[] = { (uint8_t) random.next_uint32(), 0, UCHAR_MAX, CHAR_MIN };
-  TestReadUnsignedByte(ubyteArray, sizeof ubyteArray / sizeof(uint8_t));
+  uint8_t array[] = { (uint8_t) random.next_uint32(), 0, UCHAR_MAX, CHAR_MIN };
+  for (int i = 0; i < 3; i++) {
+    int8_t expected = array[i];
+    int8_t actual = PigPlatform::ReadUnsignedByte((char *) &array[i]);
+    EXPECT_EQ(expected, actual);
+  }
 }
 
 TEST(PigPlatform, ReadShort) {
   Random random(++seed);
-  int16_t shortArray[] = { (int16_t) random.next_int32(), SHRT_MAX, SHRT_MIN };
-  TestReadShort(shortArray, sizeof shortArray / sizeof(int16_t));
+  int16_t array[] = { (int16_t) random.next_int32(), SHRT_MAX, SHRT_MIN };
+  for (int i = 0; i < 3; i++) {
+    string * data = new string();
+    int16_t expected = array[i];
+    writeShort(array[i], *data);
+    int16_t actual = PigPlatform::ReadShort(data->c_str());
+    EXPECT_EQ(expected, actual);
+    delete data;
+  }
 }
 
 TEST(PigPlatform, ReadUnsignedShort) {
   Random random(++seed);
-  uint16_t ushortArray[] = { (uint16_t) random.next_int32(), 0, USHRT_MAX, SHRT_MIN };
-  TestReadUnsignedShort(ushortArray, sizeof ushortArray / sizeof(uint16_t));
+  uint16_t array[] = { (uint16_t) random.next_int32(), 0, USHRT_MAX, SHRT_MIN };
+  for (int i = 0; i < 3; i++) {
+    string * data = new string();
+    uint16_t expected = array[i];
+    writeShort(array[i], *data);
+    uint16_t actual = PigPlatform::ReadUnsignedShort(data->c_str());
+    EXPECT_EQ(expected, actual);
+    delete data;
+  }
 }
 
 TEST(PigPlatform, ReadInt) {
   Random random(++seed);
-  int32_t intArray[] = { random.next_int32(), INT_MAX, INT_MIN };
-  TestReadInt(intArray, sizeof intArray / sizeof(int32_t));
+  int32_t array[] = { random.next_int32(), INT_MAX, INT_MIN };
+  for (int i = 0; i < 3; i++) {
+    string * data = new string();
+    int32_t expected = array[i];
+    writeInt(array[i], *data);
+    int32_t actual = PigPlatform::ReadInt(data->c_str());
+    EXPECT_EQ(expected, actual);
+    delete data;
+  }
 }
 
 TEST(PigPlatform, ReadLong) {
   Random random(++seed);
-  int64_t longArray[] = { (int64_t) random.next_uint64(), LONG_MAX, LONG_MIN };
-  TestReadLong(longArray, sizeof longArray / sizeof(int64_t));
+  int64_t array[] = { (int64_t) random.next_uint64(), LONG_MAX, LONG_MIN };
+  for (int i = 0; i < 3; i++) {
+    string * data = new string();
+    int64_t expected = array[i];
+    writeLong(array[i], *data);
+    int64_t actual = PigPlatform::ReadLong(data->c_str());
+    EXPECT_EQ(expected, actual);
+    delete data;
+  }
 }
 
 TEST(PigPlatform, ReadFloat) {
   Random random(++seed);
-  float floatArray[] = { random.nextFloat(), FLT_MAX, FLT_MIN };
-  TestReadFloat(floatArray, sizeof floatArray / sizeof(float));
+  float array[] = { random.nextFloat(), FLT_MAX, FLT_MIN };
+  for (int i = 0; i < 3; i++) {
+    string * data = new string();
+    float expected = array[i];
+    writeFloat(array[i], *data);
+    float actual = PigPlatform::ReadFloat(data->c_str());
+    EXPECT_EQ(expected, actual);
+    delete data;
+  }
 }
 
 TEST(PigPlatform, ReadDouble) {
   Random random(++seed);
-  double doubleArray[] = { random.nextDouble(), DBL_MAX, DBL_MIN };
-  TestReadDouble(doubleArray, sizeof doubleArray / sizeof(double));
+  double array[] = { random.nextDouble(), DBL_MAX, DBL_MIN };
+  for (int i = 0; i < 3; i++) {
+    string * data = new string();
+    double expected = array[i];
+    writeDouble(array[i], *data);
+    double actual = PigPlatform::ReadDouble(data->c_str());
+    EXPECT_EQ(expected, actual);
+    delete data;
+  }
 }
 
 TEST(PigPlatform, ReadString) {
@@ -943,7 +906,7 @@ TEST(PigPlatform, ReadString) {
   writeString(src, len, *ret);
   const char * pe = ret->c_str();
   PigPlatform::ReadString(pe, actual);
-  ASSERT_EQ(*expected, *actual);
+  EXPECT_EQ(*expected, *actual);
 
   delete ret;
   delete expected;
@@ -961,43 +924,16 @@ TEST(PigPlatform, ReadUTF) {
   writeUTF(src, len, *ret);
   const char * ps = ret->c_str();
   PigPlatform::ReadUTF(ps, actual);
-  ASSERT_EQ(*expected, *actual);
+  EXPECT_EQ(*expected, *actual);
 
   delete ret;
   delete expected;
   delete actual;
 }
 
-void compareBytes(string & lw, string & rw) {
-  ComparatorPtr comparator = &NativeObjectFactory::BytesComparator;
-  ASSERT_EQ(
-      PigPlatform::compareBytes(lw.c_str(), lw.length(), rw.c_str(), rw.length()),
-      getCompareResult(comparator, lw, rw)
-  );
-}
-
-template <typename T>
-void compareWithOrder(T lv, T rv, string & lw, string & rw, ComparatorPtr & cmp,
-    string & order) {
-  ASSERT_EQ(true, cmp != NULL);
-  ASSERT_EQ(PigPlatform::compare<T>(lv, rv), getCompareResult(cmp, lw, rw));
-}
-
-template <typename T>
-void compareAsc(T lv, T rv, string & lw, string & rw, ComparatorPtr & cmp) {
-  string order = "1";
-  compareWithOrder(lv, rv, lw, rw, cmp, order);
-}
-
-template <typename T>
-void compareDesc(T lv, T rv, string & lw, string & rw, ComparatorPtr & cmp) {
-  string order = "0";
-  compareWithOrder(rv, lv, lw, rw, cmp, order);
-}
-
-TEST(NativeObjectFactory, PigSecondaryKeyComparator) {
+TEST(PigPlatform, PigSecondaryKeyComparator) {
+  config.set(NATIVE_PIG_SECONDARY_SORT_ORDER, "0");
   ComparatorPtr comparator = &PigPlatform::PigSecondaryKeyComparator;
-  ASSERT_EQ(true, comparator != NULL);
 
   Random random(++seed);
   string * mq1 = new string();
@@ -1009,7 +945,7 @@ TEST(NativeObjectFactory, PigSecondaryKeyComparator) {
   char mqIndex2 = 0x80 | (0xff & random.next_uint32());
   mq2->push_back(mqIndex2);
   // if multiquery, compare index
-  ASSERT_EQ(PigPlatform::compare<char>((mqIndex1 & 0x7f), (mqIndex2 & 0x7f)),
+  EXPECT_EQ(PigPlatform::compare<char>((mqIndex1 & 0x7f), (mqIndex2 & 0x7f)),
       getCompareResult(comparator, *mq1, *mq2));
 
   string * null1 = new string();
@@ -1021,7 +957,7 @@ TEST(NativeObjectFactory, PigSecondaryKeyComparator) {
   char nullIndex2 = random.next_uint32() & 0x7f;
   null2->push_back(nullIndex2);
   // if both null, compare index
-  ASSERT_EQ(PigPlatform::compare<char>(nullIndex1, nullIndex2),
+  EXPECT_EQ(PigPlatform::compare<char>(nullIndex1, nullIndex2),
       getCompareResult(comparator, *null1, *null2));
 
 
@@ -1044,7 +980,7 @@ TEST(NativeObjectFactory, PigSecondaryKeyComparator) {
   float f1 = genPigFloat(*float1);
   string * float2 = new string();
   float f2 = genPigFloat(*float2);
-  ASSERT_EQ(*int1, *int2);
+  EXPECT_EQ(*int1, *int2);
 
   d1->push_back(int1);
   d1->push_back(float1);
@@ -1056,9 +992,9 @@ TEST(NativeObjectFactory, PigSecondaryKeyComparator) {
   genPigWritable(*v1, *wrt1);
   genPigWritable(*v2, *wrt2);
 
-  ASSERT_EQ(-1, getCompareResult(comparator, *null1, *wrt1));
+  EXPECT_EQ(-1, getCompareResult(comparator, *null1, *wrt1));
   // order PigWritable by int asc float desc
-  ASSERT_EQ(PigPlatform::compare<float>(f2, f1), getCompareResult(comparator, *wrt1, *wrt2));
+  EXPECT_EQ(PigPlatform::compare<float>(f2, f1), getCompareResult(comparator, *wrt1, *wrt2));
 
   delete null1;
   delete float1;
@@ -1091,7 +1027,7 @@ TEST(NativeObjectFactory, PigSecondaryKeyComparator) {
   char idx1 = genPigWritable(*v3, *wrt3);
   char idx2 = genPigWritable(*v4, *wrt4);
 
-  ASSERT_EQ(PigPlatform::compare<char>(idx1, idx2), getCompareResult(comparator, *wrt3, *wrt4));
+  EXPECT_EQ(PigPlatform::compare<char>(idx1, idx2), getCompareResult(comparator, *wrt3, *wrt4));
 
   delete int1;
   delete int2;
@@ -1106,7 +1042,7 @@ TEST(NativeObjectFactory, PigSecondaryKeyComparator) {
 
 }
 
-TEST(NativeObjectFactory, PigNullableBooleanComparator) {
+TEST(PigPlatform, PigNullableBooleanComparator) {
   string * v1 = new string();
   string * v2 = new string();
   string * wrt1 = new string();
@@ -1130,7 +1066,7 @@ TEST(NativeObjectFactory, PigNullableBooleanComparator) {
   delete wrt2;
 }
 
-TEST(NativeObjectFactory, PigNullableIntComparator) {
+TEST(PigPlatform, PigNullableIntComparator) {
   string * v1 = new string();
   string * v2 = new string();
   string * wrt1 = new string();
@@ -1155,7 +1091,7 @@ TEST(NativeObjectFactory, PigNullableIntComparator) {
   delete wrt2;
 }
 
-TEST(NativeObjectFactory, PigNullableLongComparator) {
+TEST(PigPlatform, PigNullableLongComparator) {
   string * v1 = new string();
   string * v2 = new string();
   string * wrt1 = new string();
@@ -1180,7 +1116,7 @@ TEST(NativeObjectFactory, PigNullableLongComparator) {
   delete wrt2;
 }
 
-TEST(NativeObjectFactory, PigNullableFloatComparator) {
+TEST(PigPlatform, PigNullableFloatComparator) {
   string * v1 = new string();
   string * v2 = new string();
   string * wrt1 = new string();
@@ -1205,7 +1141,7 @@ TEST(NativeObjectFactory, PigNullableFloatComparator) {
   delete wrt2;
 }
 
-TEST(NativeObjectFactory, PigNullableDoubleComparator) {
+TEST(PigPlatform, PigNullableDoubleComparator) {
   string * v1 = new string();
   string * v2 = new string();
   string * wrt1 = new string();
@@ -1231,7 +1167,7 @@ TEST(NativeObjectFactory, PigNullableDoubleComparator) {
 
 }
 
-TEST(NativeObjectFactory, PigNullableDateTimeComparator) {
+TEST(PigPlatform, PigNullableDateTimeComparator) {
   string * v1 = new string();
   string * v2 = new string();
   string * wrt1 = new string();
@@ -1260,7 +1196,7 @@ TEST(NativeObjectFactory, PigNullableDateTimeComparator) {
   delete wrt2;
 }
 
-TEST(NativeObjectFactory, PigTextComparator) {
+TEST(PigPlatform, PigNullableTextComparator) {
   string * v1 = new string();
   string * v2 = new string();
   string * wrt1 = new string();
@@ -1272,7 +1208,7 @@ TEST(NativeObjectFactory, PigTextComparator) {
   genPigWritable(*v1, *wrt1);
   genPigWritable(*v2, *wrt2);
 
-  ComparatorPtr comparator = &PigPlatform::PigTextComparator;
+  ComparatorPtr comparator = &PigPlatform::PigNullableTextComparator;
   compareAsc<string>(*s1, *s2, *wrt1, *wrt2, comparator);
   compareDesc<string>(*s1, *s2, *wrt1, *wrt2, comparator);
 
@@ -1284,7 +1220,7 @@ TEST(NativeObjectFactory, PigTextComparator) {
   delete wrt2;
 }
 
-TEST(NativeObjectFactory, PigTupleComparator) {
+TEST(PigPlatform, PigNullableTupleComparator) {
  /* Random random(time(NULL));
     vector<char> * typeArray = new vector<char>();
    vector<string *> * fields = new vector<string *>();
@@ -1321,13 +1257,13 @@ TEST(NativeObjectFactory, PigTupleComparator) {
    }
    string * tuple = new string();
    genPigTuple(*fields, *tuple);
-   ASSERT_EQ(tupleTypes[i], getPigSedesType(tuple->c_str()));
+   EXPECT_EQ(tupleTypes[i], getPigSedesType(tuple->c_str()));
 
    if (9 == i) {   // PIG_TUPLE_9
-   ASSERT_EQ(PIG_TUPLE_9, tuple->c_str()[0]);
+   EXPECT_EQ(PIG_TUPLE_9, tuple->c_str()[0]);
    const char * pos = tuple->c_str() + 1;
    for (int j = 0; j < 9; j++) {
-   ASSERT_EQ(typeArray->at(j), getPigSedesType(pos));
+   EXPECT_EQ(typeArray->at(j), getPigSedesType(pos));
    PigPlatform::nextField(pos);
    }
    }
@@ -1353,7 +1289,7 @@ TEST(NativeObjectFactory, PigTupleComparator) {
   genPigWritable(*v2, *wrt2);
 
   // wrt1.size > wrt2.size => wrt1 > wrt2
-  ComparatorPtr comparator = &PigPlatform::PigTupleComparator;
+  ComparatorPtr comparator = &PigPlatform::PigNullableTupleComparator;
   compareAsc<int>(d1->size(), d2->size(), *wrt1, *wrt2, comparator);
 
   string * int2 = new string();
@@ -1369,7 +1305,7 @@ TEST(NativeObjectFactory, PigTupleComparator) {
 
 
   string * int5 = new string(*int2);
-  ASSERT_EQ(*int2, *int5);
+  EXPECT_EQ(*int2, *int5);
   string * bool5 = new string();
   genPigBool(*bool5);
   vector<string *> * d5 = new vector<string *>();
@@ -1405,16 +1341,11 @@ TEST(NativeObjectFactory, PigTupleComparator) {
   delete wrt1;
   delete wrt2;
   delete wrt5;
-
-
-
-
 }
 
 
-TEST(NativeObjectFactory, PigTupleComparatorWithBag) {
-  ComparatorPtr comparator = &PigPlatform::PigTupleComparator;;
-  ASSERT_EQ(true, comparator != NULL);
+TEST(PigPlatform, PigTupleComparatorWithBag) {
+  ComparatorPtr comparator = &PigPlatform::PigNullableTupleComparator;;
 
   string * bag1 = new string();
   string * bag2 = new string();
@@ -1431,7 +1362,7 @@ TEST(NativeObjectFactory, PigTupleComparatorWithBag) {
   genPigTupleOne(*tInt, PigIntType);
   genPigTupleOne(*tDouble, PigDoubleType);
   string * tDouble2 = new string(*tDouble);
-  ASSERT_EQ(0, PigPlatform::compare(*tDouble, *tDouble2));
+  EXPECT_EQ(0, PigPlatform::compare(*tDouble, *tDouble2));
 
   d1->push_back(tInt);
   d1->push_back(tDouble);
@@ -1445,20 +1376,20 @@ TEST(NativeObjectFactory, PigTupleComparatorWithBag) {
   genPigWritable(*v1, *wrt1);
   genPigWritable(*v2, *wrt2);
 
-  ASSERT_GT(d1->size(), d2->size());
+  EXPECT_GT(d1->size(), d2->size());
   // wrt1.size > wrt2.size => wrt1 > wrt2
-  ASSERT_EQ(1, getCompareResult(comparator, *wrt1, *wrt2));
+  EXPECT_EQ(1, getCompareResult(comparator, *wrt1, *wrt2));
 
   string *tInt2 = new string(*tInt);
-  ASSERT_EQ(0, PigPlatform::compare(*tInt, *tInt2));
+  EXPECT_EQ(0, PigPlatform::compare(*tInt, *tInt2));
   d2->push_back(tInt2);
   genPigBag(*d2, *bag2);
   genPigTupleOne(*bag2, *v2);
   genPigWritable(*v2, *wrt2);
 
-  ASSERT_EQ(d1->size(), d2->size());
+  EXPECT_EQ(d1->size(), d2->size());
   // wrt1 == wrt2; the tuples are sorted before comparison
-  ASSERT_EQ(0, getCompareResult(comparator, *wrt1, *wrt2));
+  EXPECT_EQ(0, getCompareResult(comparator, *wrt1, *wrt2));
 
   string * tNull = new string();
   genPigTupleOne(*tNull, PigNullType);
@@ -1477,9 +1408,9 @@ TEST(NativeObjectFactory, PigTupleComparatorWithBag) {
   genPigWritable(*v1, *wrt1);
   genPigWritable(*v2, *wrt2);
 
-  ASSERT_EQ(d1->size(), d2->size());
+  EXPECT_EQ(d1->size(), d2->size());
   // {(null), (int), (double)} < {(bool), (int), (double)} => wrt1 < wrt2
-  ASSERT_EQ(-1, getCompareResult(comparator, *wrt1, *wrt2));
+  EXPECT_EQ(-1, getCompareResult(comparator, *wrt1, *wrt2));
 
   string * fFalse = new string();
   string * tFalse = new string();
@@ -1496,14 +1427,14 @@ TEST(NativeObjectFactory, PigTupleComparatorWithBag) {
   genPigWritable(*v1, *wrt1);
   genPigWritable(*v2, *wrt2);
 
-  ASSERT_EQ(d1->size(), d2->size());
+  EXPECT_EQ(d1->size(), d2->size());
   // {(null), (false), (int), (double)} < {(null), (true), (int), (double)}
-  ASSERT_EQ(-1, getCompareResult(comparator, *wrt1, *wrt2));
+  EXPECT_EQ(-1, getCompareResult(comparator, *wrt1, *wrt2));
 
   string * tFalse1 = new string(*tFalse);
   string * tFalse2 = new string(*tFalse);
-  ASSERT_EQ(*tFalse, *tFalse1);
-  ASSERT_EQ(*tFalse, *tFalse2);
+  EXPECT_EQ(*tFalse, *tFalse1);
+  EXPECT_EQ(*tFalse, *tFalse2);
   d1->push_back(tFalse1);
   d2->push_back(tFalse2);
 
@@ -1514,9 +1445,9 @@ TEST(NativeObjectFactory, PigTupleComparatorWithBag) {
   genPigWritable(*v1, *wrt1);
   genPigWritable(*v2, *wrt2);
 
-  ASSERT_EQ(d1->size(), d2->size());
+  EXPECT_EQ(d1->size(), d2->size());
   // {(null), (false), (false), (int), (double)} < {(null), (false), (true), (int), (double)}
-  ASSERT_EQ(-1, getCompareResult(comparator, *wrt1, *wrt2));
+  EXPECT_EQ(-1, getCompareResult(comparator, *wrt1, *wrt2));
 
   delete tNull;
   delete tNull2;
@@ -1541,7 +1472,7 @@ TEST(NativeObjectFactory, PigTupleComparatorWithBag) {
 }
 
 
-TEST(NativeObjectFactory, PigBytesComparator) {
+TEST(PigPlatform, PigBytesComparator) {
   string * v1 = new string();
   string * v2 = new string();
   string * wrt1 = new string();

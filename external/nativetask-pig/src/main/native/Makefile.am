@@ -34,7 +34,7 @@ PRFLAGS=-DSIMPLE_MEMCPY
 NATIVETASK = $(top_srcdir)/../../../../../core/src/main/native
 NATIVETASK_FLAGS = -I$(NATIVETASK)/src -I$(NATIVETASK)/src/lib -I$(NATIVETASK)/src/util -I$(NATIVETASK)/test
 AM_LDFLAGS = -no-undefined  -L$(SNAPPY_PREFIX)/lib -lsnappy -lpthread -ldl -lz -lnativetask $(PLATFORM_LDFLAGS)
-AM_CFLAGS = $(PRFLAGS) $(JNI_INCLUDE) -I$(SNAPPY_PREFIX)/include -Ijavah -I$(top_srcdir)/src -I$(top_srcdir)/src/util -I$(top_srcdir)/src/lib -Wall $(NATIVETASK_FLAGS)
+AM_CFLAGS = $(PRFLAGS) $(JNI_INCLUDE) -I$(SNAPPY_PREFIX)/include -Ijavah -I$(top_srcdir)/src  -Wall $(NATIVETASK_FLAGS)
 
 COMMONSOURCES = \
 src/PigPlatform.cc

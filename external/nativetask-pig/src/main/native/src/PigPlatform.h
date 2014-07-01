@@ -31,6 +31,11 @@ using std::map;
 using std::list;
 using std::string;
 
+using NativeTask::ComparatorPtr;
+
+#define NATIVE_PIG_SORT_ORDER "native.pig.sortOrder"
+#define NATIVE_PIG_SECONDARY_SORT_ORDER "native.pig.secondarySortOrder"
+
 /*enum PigWritableType {
   PigBag = 1,
   PigBooleanWritable = 4,
@@ -127,8 +132,8 @@ enum PigInterSedesType {
 };
 
 typedef bool (*CmpFunc)(const char *, const char *);
-typedef int (*ComparatorPtr)(const char * src, uint32_t srcLength, const char * dest,
-    uint32_t destLength);
+//typedef int (*ComparatorPtr)(const char * src, uint32_t srcLength, const char * dest,
+//    uint32_t destLength);
 
 class PigPlatform {
 
@@ -144,13 +149,6 @@ protected:
   static void nextField(const char *& src, char byte);
   static int getDataSize(const char *& src, const char type);
 
-  template<typename T>
-  static int compare(const T & left, const T & right) {
-    if (left < right) return -1;
-    else if (right < left) return 1;
-    else return 0;
-
-  }
 
   static int compareFields(const char *& src, const char *& dest, bool * order,
       int oLen);
@@ -163,19 +161,7 @@ protected:
       map<string *, const char *> & right);
   static int compareBytes(const char * src, uint32_t srcLength,
       const char * dest, uint32_t destLength);
-
   static void stringToBooleans(string & conf, bool *& order, int & len);
-
-  static int8_t ReadByte(const char * src);
-  static uint8_t ReadUnsignedByte(const char * src);
-  static int16_t ReadShort(const char * src);
-  static uint16_t ReadUnsignedShort(const char * src);
-  static int32_t ReadInt(const char * src);
-  static int64_t ReadLong(const char * src);
-  static float ReadFloat(const char * src);
-  static double ReadDouble(const char * src);
-  static void ReadString(const char *& src, string * ret);
-  static void ReadUTF(const char *& src, string * ret);
 
   static void nextField(const char *& src);
 
@@ -194,7 +180,23 @@ protected:
   static void setSortOrder();
 
 public:
+  template<typename T>
+  static int compare(const T & left, const T & right) {
+    if (left < right) return -1;
+    else if (right < left) return 1;
+    else return 0;
+  }
   static int compareInnerTuples(const char *& src, const char *& dest);
+  static int8_t ReadByte(const char * src);
+  static uint8_t ReadUnsignedByte(const char * src);
+  static int16_t ReadShort(const char * src);
+  static uint16_t ReadUnsignedShort(const char * src);
+  static int32_t ReadInt(const char * src);
+  static int64_t ReadLong(const char * src);
+  static float ReadFloat(const char * src);
+  static double ReadDouble(const char * src);
+  static void ReadString(const char *& src, string * ret);
+  static void ReadUTF(const char *& src, string * ret);
   static int PigNullableBooleanComparator(const char * src, uint32_t srcLength,
       const char * dest, uint32_t destLength);
   static int PigNullableIntComparator(const char * src, uint32_t srcLength,

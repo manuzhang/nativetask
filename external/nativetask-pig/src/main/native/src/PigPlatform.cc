@@ -33,13 +33,6 @@ using NativeTask::ObjectCreatorFunc;
 using NativeTask::StringUtil;
 using NativeTask::WritableUtils;
 
-
-#define NATIVE_PIG_GROUPONLY "native.pig.groupOnly"
-#define NATIVE_PIG_USE_SECONDARY_KEY "native.pig.useSecondaryKey"
-#define NATIVE_PIG_SORT_ORDER "native.pig.sortOrder"
-#define NATIVE_PIG_SECONDARY_SORT_ORDER "native.pig.secondarySortOrder"
-
-
 Config & config = NativeObjectFactory::GetConfig();
 bool * SortOrder;      // order for order by keys
 int OrderLen = 1;
