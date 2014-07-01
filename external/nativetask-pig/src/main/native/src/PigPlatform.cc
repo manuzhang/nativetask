@@ -16,10 +16,30 @@
  * limitations under the License.
  */
 
+#include <stdlib.h>
+#include <string.h>
+
+#include "lib/NativeObjectFactory.h"
+#include "lib/primitives.h"
+#include "util/StringUtil.h"
+#include "util/WritableUtils.h"
 #include "PigPlatform.h"
 
-namespace PigPlatform {
-map<string, PigWritableType> ClassToWritable;
+using NativeTask::Config;
+using NativeTask::IOException;
+using NativeTask::NativeObject;
+using NativeTask::NativeObjectFactory;
+using NativeTask::ObjectCreatorFunc;
+using NativeTask::StringUtil;
+using NativeTask::WritableUtils;
+
+
+#define NATIVE_PIG_GROUPONLY "native.pig.groupOnly"
+#define NATIVE_PIG_USE_SECONDARY_KEY "native.pig.useSecondaryKey"
+#define NATIVE_PIG_SORT_ORDER "native.pig.sortOrder"
+#define NATIVE_PIG_SECONDARY_SORT_ORDER "native.pig.secondarySortOrder"
+
+
 Config & config = NativeObjectFactory::GetConfig();
 bool * SortOrder;      // order for order by keys
 int OrderLen = 1;
@@ -32,32 +52,6 @@ bool tuplecmp(const char * lhs, const char * rhs) {
   return PigPlatform::compareInnerTuples(lhs, rhs) == -1;
 }
 
-void PigPlatform::setPigWritableType() {
-  string pkg_name = PigPlatform::getPackageName();
-  ClassToWritable[pkg_name + ".NullableBooleanWritable"] = PigBooleanWritable;
-  ClassToWritable[pkg_name + ".NullableBytesWritable"] = PigBytesWritable;
-  ClassToWritable[pkg_name + ".NullableDateTimeWritable"] = PigDateTimeWritable;
-  ClassToWritable[pkg_name + ".NullableDoubleWritable"] = PigDoubleWritable;
-  ClassToWritable[pkg_name + ".NullableFloatWritable"] = PigFloatWritable;
-  ClassToWritable[pkg_name + ".NullableIntWritable"] = PigIntWritable;
-  ClassToWritable[pkg_name + ".NullableLongWritable"] = PigLongWritable;
-  ClassToWritable[pkg_name + ".NullableText"] = PigText;
-  ClassToWritable[pkg_name + ".NullableTuple"] = PigTuple;
-}
-
-PigWritableType PigPlatform::getPigWritableType() {
-  const char * key_class = config.get(MAPRED_MAPOUTPUT_KEY_CLASS);
-  if (NULL == key_class) {
-    key_class = config.get(MAPRED_OUTPUT_KEY_CLASS);
-  }
-  if (NULL == key_class) {
-    // this should be never reached since the exception will
-    // be thrown earlier
-    return PigError;
-  }
-  string clazz(key_class);
-  return ClassToWritable.at(clazz);
-}
 
 void PigPlatform::stringToBooleans(string & conf, bool *& order, int & len) {
   len = conf.length();
@@ -1032,16 +1026,14 @@ int PigPlatform::PigSecondaryKeyComparator(const char * src, uint32_t srcLength,
 }
 
 DEFINE_NATIVE_LIBRARY(PigPlatform) {
-  REGISTER_FUNCTION(PigNullableBooleanComparator, PigPlatform);
-  REGISTER_FUNCTION(PigNullableBytesComparator, PigPlatform);
-  REGISTER_FUNCTION(PigNullableDateTimeComparator, PigPlatform);
-  REGISTER_FUNCTION(PigNullableDoubleComparator, PigPlatform);
-  REGISTER_FUNCTION(PigNullableFloatComparator, PigPlatform);
-  REGISTER_FUNCTION(PigNullableIntComparator, PigPlatform);
-  REGISTER_FUNCTION(PigNullableLongComparator, PigPlatform);
-  REGISTER_FUNCTION(PigNullableTextComparator, PigPlatform);
-  REGISTER_FUNCTION(PigNullableTupleComparator, PigPlatform);
-  REGISTER_FUNCTION(PigSecondaryKeyComparator, PigPlatform);
-}
-
+  REGISTER_FUNCTION(PigPlatform::PigNullableBooleanComparator, PigPlatform);
+  REGISTER_FUNCTION(PigPlatform::PigNullableBytesComparator, PigPlatform);
+  REGISTER_FUNCTION(PigPlatform::PigNullableDateTimeComparator, PigPlatform);
+  REGISTER_FUNCTION(PigPlatform::PigNullableDoubleComparator, PigPlatform);
+  REGISTER_FUNCTION(PigPlatform::PigNullableFloatComparator, PigPlatform);
+  REGISTER_FUNCTION(PigPlatform::PigNullableIntComparator, PigPlatform);
+  REGISTER_FUNCTION(PigPlatform::PigNullableLongComparator, PigPlatform);
+  REGISTER_FUNCTION(PigPlatform::PigNullableTextComparator, PigPlatform);
+  REGISTER_FUNCTION(PigPlatform::PigNullableTupleComparator, PigPlatform);
+  REGISTER_FUNCTION(PigPlatform::PigSecondaryKeyComparator, PigPlatform);
 }

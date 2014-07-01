@@ -23,9 +23,9 @@
 #endif
 
 #include <stdexcept>
-#include "commons.h"
-#include "Buffers.h"
-#include "FileSystem.h"
+#include "lib/commons.h"
+#include "lib/Buffers.h"
+#include "lib/FileSystem.h"
 #include "test_commons.h"
 
 extern "C" {

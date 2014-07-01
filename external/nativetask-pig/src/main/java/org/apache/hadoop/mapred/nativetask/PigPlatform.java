@@ -103,7 +103,7 @@ public class PigPlatform extends Platform {
     String keyClass = job.getMapOutputKeyClass().getName();
     String nativeComparator = Constants.NATIVE_MAPOUT_KEY_COMPARATOR + "." + keyClass;
     if (job.getBoolean(PIG_GROUP_ONLY, false)) {
-      job.set(nativeComparator, "NativeObjectFactory.BytesComparator");
+      job.set(nativeComparator, "BytesComparator");
       LOG.info("Pig key types: group only");
       supported = true;
     } else if ((serializer instanceof INativeComparable)
@@ -130,7 +130,7 @@ public class PigPlatform extends Platform {
       }
     } 
     if (supported) {
-      job.set(Constants.NATIVE_CLASS_LIBRARY_BUILDIN, "Pig=libnativetask-pig.so");
+      job.set(Constants.NATIVE_CLASS_LIBRARY_BUILDIN, "PigPlatform=libnativetaskpig.so");
     }
     return supported;
   }

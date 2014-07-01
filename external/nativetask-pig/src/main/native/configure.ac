@@ -21,14 +21,14 @@ AC_INIT
 
 AC_CONFIG_MACRO_DIR([m4])
 
-AC_CONFIG_SRCDIR([src/NativeTask.h])
+AC_CONFIG_SRCDIR([src/PigPlatform.h])
 AC_CONFIG_HEADERS(config.h)
 
 LT_PREREQ([2.2])
 LT_INIT
 AC_PROG_LIBTOOL
 
-AM_INIT_AUTOMAKE(nativetask,0.1.0)
+AM_INIT_AUTOMAKE(nativetask-pig,0.1.0)
 
 # Checks for programs.
 AC_PROG_CXX(["icpc -static-intel"  g++])

@@ -18,6 +18,7 @@
 package org.apache.hadoop.mapred.nativetask;
 
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
+import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.nativetask.serde.INativeSerializer;
 
 import java.io.DataInput;
@@ -38,6 +39,18 @@ public class HBasePlatform extends Platform {
   @Override
   public String name() {
     return "HBase";
+  }
+
+  @Override
+  public boolean support(INativeSerializer serializer, JobConf job) {
+    if (serializer instanceof INativeComparable) {
+      String keyClass = job.getMapOutputKeyClass().getName();
+      String nativeComparator = Constants.NATIVE_MAPOUT_KEY_COMPARATOR + "." + keyClass;
+      job.set(nativeComparator, "BytesComparator");
+      return true;
+    } else {
+      return false;
+    }
   }
 
   private static class ImmutableBytesWritableSerializer implements INativeComparable, INativeSerializer<ImmutableBytesWritable> {

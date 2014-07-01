@@ -19,17 +19,19 @@
 #ifndef PIGPLATFORM_H
 #define PIGPLATFORM_H
 
-#include "NativeTask.h"
-#include "StringUtil.h"
-#include "WritableUtils.h"
-#include "lib/NativeObjectFactory.h"
+#include <stdint.h>
 
-namespace PigPlatform {
+#include <map>
+#include <list>
+#include <string>
+
+#include "NativeTask.h"
+
 using std::map;
 using std::list;
 using std::string;
 
-enum PigWritableType {
+/*enum PigWritableType {
   PigBag = 1,
   PigBooleanWritable = 4,
   PigBytesWritable = 5,
@@ -41,7 +43,7 @@ enum PigWritableType {
   PigText = 12,
   PigTuple = 13,
   PigError = -1
-};
+};*/
 
 enum PigDataType {
   PigUnknownType = 0,
@@ -125,6 +127,8 @@ enum PigInterSedesType {
 };
 
 typedef bool (*CmpFunc)(const char *, const char *);
+typedef int (*ComparatorPtr)(const char * src, uint32_t srcLength, const char * dest,
+    uint32_t destLength);
 
 class PigPlatform {
 
@@ -142,12 +146,9 @@ protected:
 
   template<typename T>
   static int compare(const T & left, const T & right) {
-    if (left < right)
-      return -1;
-    else if (right < left)
-      return 1;
-    else
-      return 0;
+    if (left < right) return -1;
+    else if (right < left) return 1;
+    else return 0;
 
   }
 
@@ -155,7 +156,6 @@ protected:
       int oLen);
   static int compareBags(const char *& src, const char srcType,
       const char *& dest, const char destType);
-  static int compareInnerTuples(const char *& src, const char *& dest);
   static int compareInnerTuples(const char *& src, const char srcType,
       const char *& dest, const char destType);
   static int compareTuples(const char *& src, const char *& dest);
@@ -190,12 +190,11 @@ protected:
 
   static char interSedesTypeToDataType(const char type);
 
-  static void setPigWritableType();
-  static PigWritableType getPigWritableType();
   static string getPackageName();
   static void setSortOrder();
 
 public:
+  static int compareInnerTuples(const char *& src, const char *& dest);
   static int PigNullableBooleanComparator(const char * src, uint32_t srcLength,
       const char * dest, uint32_t destLength);
   static int PigNullableIntComparator(const char * src, uint32_t srcLength,
@@ -216,11 +215,8 @@ public:
       const char * dest, uint32_t destLength);
   static int PigSecondaryKeyComparator(const char * src, uint32_t srcLength,
       const char * dest, uint32_t destLength);
-  static ComparatorPtr getPigComparator(const PigWritableType keyType);
 };
 
 bool tuplecmp(const char * lhs, const char * rhs);
-
-} // namespace PigPlatform
 
 #endif /* PIGPLATFORM_H */

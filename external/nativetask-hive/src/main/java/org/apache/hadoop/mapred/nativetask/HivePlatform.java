@@ -19,7 +19,9 @@ package org.apache.hadoop.mapred.nativetask;
 
 import java.io.IOException;
 
+import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.nativetask.serde.BytesWritableSerializer;
+import org.apache.hadoop.mapred.nativetask.serde.INativeSerializer;
 
 public class HivePlatform extends Platform {
 
@@ -34,5 +36,17 @@ public class HivePlatform extends Platform {
   @Override
   public String name() {
     return "Hive";
+  }
+
+  @Override
+  public boolean support(INativeSerializer serializer, JobConf job) {
+    if (serializer instanceof INativeComparable) {
+      String keyClass = job.getMapOutputKeyClass().getName();
+      String nativeComparator = Constants.NATIVE_MAPOUT_KEY_COMPARATOR + "." + keyClass;
+      job.set(nativeComparator, "BytesComparator");
+      return true;
+    } else {
+      return false;
+    }
   }
 }

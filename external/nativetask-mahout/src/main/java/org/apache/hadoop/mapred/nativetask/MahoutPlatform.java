@@ -19,12 +19,17 @@
 package org.apache.hadoop.mapred.nativetask;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
+import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.nativetask.serde.DefaultSerializer;
+import org.apache.hadoop.mapred.nativetask.serde.INativeSerializer;
 import org.apache.hadoop.mapred.nativetask.serde.LongWritableSerializer;
 
 public class MahoutPlatform extends Platform{
-	
+
+  private Map<String, String> keyClassToComparator = new HashMap<String, String>();
   public MahoutPlatform() throws IOException {
 
   }
@@ -47,6 +52,24 @@ public class MahoutPlatform extends Platform{
         VarIntWritableSerializer.class);
     registerKey("org.apache.mahout.math.VarLongWritable",
         VarLongWritableSerializer.class);
+
+
+    keyClassToComparator.put("org.apache.mahout.classifier.df.mapreduce.partial.TreeID",
+      "LongComparator");
+    keyClassToComparator.put("org.apache.mahout.common.StringTuple",
+      "StringTupleComparator");
+    keyClassToComparator.put("org.apache.mahout.vectorizer.collocations.llr.Gram",
+      "GrapComparator");
+    keyClassToComparator.put("org.apache.mahout.vectorizer.collocations.llr.GramKey",
+      "GramKeyComparator");
+    keyClassToComparator.put("org.apache.mahout.math.hadoop.stochasticsvd.SplitPartitionedWritable",
+      "SplitPartitionedComparator");
+    keyClassToComparator.put("org.apache.mahout.cf.taste.hadoop.EntityEntityWritable",
+      "EntityEntityComparator");
+    keyClassToComparator.put("org.apache.mahout.math.VarIntWritable",
+      "VarIntComparator");
+    keyClassToComparator.put("org.apache.mahout.math.VarLongWritable",
+      "VarLongComparator");
   }
 
   @Override
@@ -54,6 +77,18 @@ public class MahoutPlatform extends Platform{
     return "Mahout";
   }
 
+  @Override
+  public boolean support(INativeSerializer serializer, JobConf job) {
+    if (serializer instanceof INativeComparable) {
+      String keyClass = job.getMapOutputKeyClass().getName();
+      String nativeComparator = Constants.NATIVE_MAPOUT_KEY_COMPARATOR + "." + keyClass;
+      job.set(nativeComparator, "MahoutPlatform." + keyClassToComparator.get(keyClass));
+      job.set(Constants.NATIVE_CLASS_LIBRARY_BUILDIN, "PigPlatform=libnativetaskmahout.so");
+      return true;
+    } else {
+      return false;
+    }
+  }
 
   private static class EntityEntityWritableSerializer extends DefaultSerializer
     implements INativeComparable {
