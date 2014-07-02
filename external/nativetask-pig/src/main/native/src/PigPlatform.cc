@@ -503,7 +503,7 @@ int PigPlatform::compareTuples(const char *& src, const char *& dest) {
       // compound tuple key (main_key, secondary_key)
       if (srcSize != 2)
         THROW_EXCEPTION(IOException,
-            "Pig secondary sort, key number doesn't equal to 2");
+            "Pig secondary sort, but key number doesn't equal to 2");
       int c = compareFields(src, dest, SortOrder, OrderLen);
       if (0 == c)
         return compareFields(src, dest, SecSortOrder, SecOrderLen);
