@@ -28,7 +28,7 @@ LT_PREREQ([2.2])
 LT_INIT
 AC_PROG_LIBTOOL
 
-AM_INIT_AUTOMAKE(nativetaskmahout,0.1.0)
+AM_INIT_AUTOMAKE(nativetask-mahout,0.1.0)
 
 # Checks for programs.
 AC_PROG_CXX(["icpc -static-intel"  g++])

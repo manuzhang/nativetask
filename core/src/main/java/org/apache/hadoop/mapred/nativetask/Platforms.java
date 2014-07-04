@@ -24,9 +24,11 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.nativetask.serde.INativeSerializer;
 import org.apache.hadoop.mapred.nativetask.serde.NativeSerialization;
+import org.apache.log4j.Logger;
 
 public class Platforms {
 
+  private static final Logger LOG = Logger.getLogger(Platforms.class);
   private static final ServiceLoader<Platform> platforms = ServiceLoader.load(Platform.class);
   
   public static void init(Configuration conf) throws IOException {
@@ -40,11 +42,24 @@ public class Platforms {
   }
 
   public static boolean support(INativeSerializer serializer, JobConf job) {
-    boolean supported;
     synchronized (platforms) {
       for (Platform platform : platforms) {
-        supported = platform.support(serializer, job);
-        if (supported) {
+        if (platform.support(serializer, job)) {
+          LOG.debug("platform " + platform.name() + " support serializer "
+            + serializer.getClass().getName());
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  public static boolean define(Class keyComparator) {
+    synchronized (platforms) {
+      for (Platform platform : platforms) {
+        if (platform.define(keyComparator)) {
+          LOG.debug("platform " + platform.name() + " define comparator "
+            + keyComparator.getName());
           return true;
         }
       }

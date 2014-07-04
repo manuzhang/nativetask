@@ -11,27 +11,3 @@ Index: src/org/apache/pig/backend/hadoop/DateTimeWritable.java
          return value.toString();
      }
  
-Index: src/org/apache/pig/backend/hadoop/executionengine/mapReduceLayer/JobControlCompiler.java
-===================================================================
---- src/org/apache/pig/backend/hadoop/executionengine/mapReduceLayer/JobControlCompiler.java
-+++ src/org/apache/pig/backend/hadoop/executionengine/mapReduceLayer/JobControlCompiler.java
-@@ -1212,6 +1212,7 @@
-                 if (succ.isGlobalSort()) hasOrderBy = true;
-             }
-         }
-+        job.getConfiguration().setBoolean("native.pig.groupOnly", !hasOrderBy);
-         if (hasOrderBy) {
-             switch (keyType) {
-             case DataType.BOOLEAN:
-Index: src/org/apache/pig/impl/io/PigNullableWritable.java
-===================================================================
---- src/org/apache/pig/impl/io/PigNullableWritable.java
-+++ src/org/apache/pig/impl/io/PigNullableWritable.java
-@@ -181,6 +181,6 @@
- 
-     @Override
-     public String toString() {
--        return "Null: " + mNull + " index: " + mIndex + " " + mValue.toString();
-+        return "Null: " + mNull + " index: " + mIndex + " " + (mValue == null ? "null" : mValue.toString());
-     }
- }

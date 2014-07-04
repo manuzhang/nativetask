@@ -31,20 +31,11 @@ import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.VIntWritable;
 import org.apache.hadoop.io.VLongWritable;
 import org.apache.hadoop.io.Writable;
-import org.apache.hadoop.mapred.nativetask.serde.BoolWritableSerializer;
-import org.apache.hadoop.mapred.nativetask.serde.ByteWritableSerializer;
-import org.apache.hadoop.mapred.nativetask.serde.BytesWritableSerializer;
-import org.apache.hadoop.mapred.nativetask.serde.DefaultSerializer;
-import org.apache.hadoop.mapred.nativetask.serde.DoubleWritableSerializer;
-import org.apache.hadoop.mapred.nativetask.serde.FloatWritableSerializer;
-import org.apache.hadoop.mapred.nativetask.serde.IntWritableSerializer;
-import org.apache.hadoop.mapred.nativetask.serde.LongWritableSerializer;
-import org.apache.hadoop.mapred.nativetask.serde.NullWritableSerializer;
-import org.apache.hadoop.mapred.nativetask.serde.TextSerializer;
-import org.apache.hadoop.mapred.nativetask.serde.VIntWritableSerializer;
-import org.apache.hadoop.mapred.nativetask.serde.VLongWritableSerializer;
+import org.apache.hadoop.mapred.JobConf;
+import org.apache.hadoop.mapred.nativetask.serde.*;
 
 public class HadoopPlatform extends Platform {
+
 
   public HadoopPlatform() throws IOException {
   }
@@ -63,6 +54,21 @@ public class HadoopPlatform extends Platform {
     registerKey(DoubleWritable.class.getName(), DoubleWritableSerializer.class);
     registerKey(VIntWritable.class.getName(), VIntWritableSerializer.class);
     registerKey(VLongWritable.class.getName(), VLongWritableSerializer.class);
+  }
+
+  @Override
+  public boolean support(INativeSerializer serializer, JobConf job) {
+    if (keys.contains(serializer.getClass())
+      && serializer instanceof INativeComparable) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  @Override
+  public boolean define(Class comparatorClass) {
+    return false;
   }
 
   @Override

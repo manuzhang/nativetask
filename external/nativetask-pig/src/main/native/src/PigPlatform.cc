@@ -1029,4 +1029,6 @@ DEFINE_NATIVE_LIBRARY(PigPlatform) {
   REGISTER_FUNCTION(PigPlatform::PigNullableTextComparator, PigPlatform);
   REGISTER_FUNCTION(PigPlatform::PigNullableTupleComparator, PigPlatform);
   REGISTER_FUNCTION(PigPlatform::PigSecondaryKeyComparator, PigPlatform);
+  REGISTER_FUNCTION(NativeObjectFactory::BytesComparator, PigPlatform);
 }
+

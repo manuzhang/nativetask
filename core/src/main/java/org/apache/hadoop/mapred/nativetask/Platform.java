@@ -18,7 +18,12 @@
 package org.apache.hadoop.mapred.nativetask;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.mapred.InvalidJobConfException;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.nativetask.serde.INativeSerializer;
@@ -26,6 +31,7 @@ import org.apache.hadoop.mapred.nativetask.serde.NativeSerialization;
 
 public abstract class Platform {
   private final NativeSerialization serialization;
+  protected Set<Class> keys = new HashSet<Class>();
 
   public Platform() {
     this.serialization = NativeSerialization.getInstance();
@@ -37,13 +43,10 @@ public abstract class Platform {
 
   protected void registerKey(String keyClassName, Class key) throws IOException {
     serialization.register(keyClassName, key);
+    keys.add(key);
   }
 
-  protected boolean support(INativeSerializer serializer, JobConf job) {
-    if (serializer instanceof INativeComparable) {
-      return true;
-    } else {
-      return false;
-    }
-  }
+  protected abstract boolean support(INativeSerializer serializer, JobConf job);
+
+  protected abstract boolean define(Class keyComparator);
 }

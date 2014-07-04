@@ -18,31 +18,37 @@
 package org.apache.hadoop.mapred.nativetask;
 
 import java.io.*;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.HashMap;
+import java.util.Set;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.nativetask.serde.INativeSerializer;
 import org.apache.hadoop.mapred.nativetask.util.ConfigUtil;
+import org.apache.hadoop.mapreduce.MRJobConfig;
+import org.apache.pig.backend.hadoop.executionengine.mapReduceLayer.*;
 import org.apache.pig.impl.io.PigNullableWritable;
 import org.apache.pig.impl.util.ObjectSerializer;
+
+import static org.apache.pig.backend.hadoop.executionengine.mapReduceLayer.JobControlCompiler.*;
 
 public class PigPlatform extends Platform {
 
   private static Log LOG = LogFactory.getLog(PigPlatform.class);
-  public static final String PIG_GROUP_ONLY = "native.pig.groupOnly";
   public static final String PIG_USER_COMPARATOR = "pig.usercomparator";
   public static final String PIG_SORT_ORDER = "pig.sortOrder";
   public static final String NATIVE_PIG_SORT = "native.pig.sortOrder";
   public static final String PIG_SEC_SORT_ORDER = "pig.secondarySortOrder";
   public static final String NATIVE_PIG_SEC_SORT = "native.pig.secondarySortOrder";
   public static final String NATIVE_PIG_USE_SEC_KEY = "native.pig.useSecondaryKey";
-  
-  private Map<String, String> keyClassToComparator = new HashMap<String, String>();
+
+  private Map<String, String> keyClassToNativeComparator = new HashMap<String, String>();
+  private Set<Class> rawComparatorClass = new HashSet<Class>();
 
   public PigPlatform() throws IOException {
-    
   }
   
   @Override
@@ -72,24 +78,37 @@ public class PigPlatform extends Platform {
     registerKey("org.apache.pig.impl.io.NullableTuple",
         NullableTupleSerializer.class);
 
-    keyClassToComparator.put("org.apache.pig.impl.io.NullableBooleanWritable",
+    keyClassToNativeComparator.put("org.apache.pig.impl.io.NullableBooleanWritable",
         "PigNullableBooleanComparator");
-    keyClassToComparator.put("org.apache.pig.impl.io.NullableBytesWritable",
+    keyClassToNativeComparator.put("org.apache.pig.impl.io.NullableBytesWritable",
         "PigNullableBytesComparator");
-    keyClassToComparator.put("org.apache.pig.impl.io.NullableDateTimeWritable",
+    keyClassToNativeComparator.put("org.apache.pig.impl.io.NullableDateTimeWritable",
         "PigNullableDateTimeComparator");
-    keyClassToComparator.put("org.apache.pig.impl.io.NullableDoubleWritable",
+    keyClassToNativeComparator.put("org.apache.pig.impl.io.NullableDoubleWritable",
         "PigNullableDoubleComparator");
-    keyClassToComparator.put("org.apache.pig.impl.io.NullableFloatWritable",
+    keyClassToNativeComparator.put("org.apache.pig.impl.io.NullableFloatWritable",
         "PigNullableFloatComparator");
-    keyClassToComparator.put("org.apache.pig.impl.io.NullableIntWritable", 
+    keyClassToNativeComparator.put("org.apache.pig.impl.io.NullableIntWritable",
         "PigNullableIntComparator");
-    keyClassToComparator.put("org.apache.pig.impl.io.NullableLongWritable",
+    keyClassToNativeComparator.put("org.apache.pig.impl.io.NullableLongWritable",
         "PigNullableLongComparator");
-    keyClassToComparator.put("org.apache.pig.impl.io.NullableText",
+    keyClassToNativeComparator.put("org.apache.pig.impl.io.NullableText",
         "PigNullableTextComparator");
-    keyClassToComparator.put("org.apache.pig.impl.io.NullableTuple",
+    keyClassToNativeComparator.put("org.apache.pig.impl.io.NullableTuple",
         "PigNullableTupleComparator");
+
+    rawComparatorClass.add(PigBooleanRawComparator.class);
+    rawComparatorClass.add(PigIntRawComparator.class);
+    rawComparatorClass.add(PigLongRawComparator.class);
+    rawComparatorClass.add(PigFloatRawComparator.class);
+    rawComparatorClass.add(PigDoubleRawComparator.class);
+    rawComparatorClass.add(PigDateTimeRawComparator.class);
+    rawComparatorClass.add(PigTextRawComparator.class);
+    rawComparatorClass.add(PigBytesRawComparator.class);
+    rawComparatorClass.add(PigTupleSortComparator.class);
+    rawComparatorClass.add(PigSecondaryKeyComparator.class);
+
+    LOG.info("Pig platform inited");
   }
 
   @Override
@@ -100,47 +119,60 @@ public class PigPlatform extends Platform {
   @Override
   public boolean support(INativeSerializer serializer, JobConf job) {
     boolean supported = false;
-    String keyClass = job.getMapOutputKeyClass().getName();
-    String nativeComparator = Constants.NATIVE_MAPOUT_KEY_COMPARATOR + "." + keyClass;
-    if (job.getBoolean(PIG_GROUP_ONLY, false)) {
-      job.set(nativeComparator, "BytesComparator");
-      LOG.info("Pig key types: group only");
-      supported = true;
-    } else if ((serializer instanceof INativeComparable)
-      // don't support user defined comparator
-      && !job.getBoolean(PIG_USER_COMPARATOR, false)) {
-      try {
-        if (job.get(PIG_SORT_ORDER, null) != null) {
-          boolean[] order = (boolean[]) ObjectSerializer.deserialize(job.get(PIG_SORT_ORDER));
-          job.set(NATIVE_PIG_SORT, ConfigUtil.booleansToString(order));
-          job.set(nativeComparator, "PigPlatform." + keyClassToComparator.get(keyClass));
-          LOG.info("Pig key types: set sort order");
-        }
-        if (job.get(PIG_SEC_SORT_ORDER, null) != null) {
-          boolean[] order = (boolean[]) ObjectSerializer.deserialize(job
-            .get(PIG_SEC_SORT_ORDER));
-          job.set(NATIVE_PIG_SEC_SORT, ConfigUtil.booleansToString(order));
-          job.setBoolean(NATIVE_PIG_USE_SEC_KEY, true);
-          job.set(nativeComparator, "PigPlatform.PigSecondaryKeyComparator");
-          LOG.info("Pig key types: set secondary sort order");
-        }
+    if (keys.contains(serializer.getClass())) {
+      String keyClass = job.getMapOutputKeyClass().getName();
+      String nativeComparator = Constants.NATIVE_MAPOUT_KEY_COMPARATOR + "." + keyClass;
+      Class comparatorClass = job.getClass(MRJobConfig.KEY_COMPARATOR, null);
+      if (PigWritableComparator.class.isAssignableFrom(comparatorClass)) {
+        job.set(nativeComparator, "PigPlatform.NativeObjectFactory::BytesComparator");
+        LOG.info("Pig key types: group only");
         supported = true;
-      } catch (final IOException e) {
-        LOG.error("cannot deserialize Pig configurations", e);
+      } else if ((serializer instanceof INativeComparable)
+        // don't support user defined comparator
+        && !job.getBoolean(PIG_USER_COMPARATOR, false)) {
+        try {
+          if (job.get(PIG_SORT_ORDER, null) != null) {
+            boolean[] order = (boolean[]) ObjectSerializer.deserialize(job.get(PIG_SORT_ORDER));
+            job.set(NATIVE_PIG_SORT, ConfigUtil.booleansToString(order));
+            job.set(nativeComparator, "PigPlatform.PigPlatform::" + keyClassToNativeComparator.get(keyClass));
+            LOG.info("Pig key types: set sort order");
+          }
+          if (job.get(PIG_SEC_SORT_ORDER, null) != null) {
+            boolean[] order = (boolean[]) ObjectSerializer.deserialize(job
+              .get(PIG_SEC_SORT_ORDER));
+            job.set(NATIVE_PIG_SEC_SORT, ConfigUtil.booleansToString(order));
+            job.setBoolean(NATIVE_PIG_USE_SEC_KEY, true);
+            job.set(nativeComparator, "PigPlatform.PigPlatform::PigSecondaryKeyComparator");
+            LOG.info("Pig key types: set secondary sort order");
+          }
+          supported = true;
+        } catch (final IOException e) {
+          LOG.error("cannot deserialize Pig configurations", e);
+        }
       }
-    } 
+    }
     if (supported) {
       job.set(Constants.NATIVE_CLASS_LIBRARY_BUILDIN, "PigPlatform=libnativetaskpig.so");
     }
     return supported;
   }
 
-  private static class NullableWritableSerializer implements
+  @Override
+  public boolean define(Class comparatorClass) {
+    if (PigWritableComparator.class.isAssignableFrom(comparatorClass)||
+      rawComparatorClass.contains(comparatorClass))  {
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  public static class NullableWritableSerializer implements
     INativeSerializer<PigNullableWritable> {
 
-    private ByteArrayOutputStream outBuffer = new ByteArrayOutputStream();
-    private DataOutputStream outData = new DataOutputStream(outBuffer);
-    private int bufferedLength = -1;
+    public ByteArrayOutputStream outBuffer = new ByteArrayOutputStream();
+    public DataOutputStream outData = new DataOutputStream(outBuffer);
+    public int bufferedLength = -1;
 
     @Override
     public int getLength(PigNullableWritable w) throws IOException {
@@ -173,15 +205,15 @@ public class PigPlatform extends Platform {
 
   }
 
-  private static class NullableTupleSerializer extends NullableWritableSerializer
+  public static class NullableTupleSerializer extends NullableWritableSerializer
     implements INativeComparable {
   }
 
-  private static class NullableTextSerializer extends NullableWritableSerializer
+  public static class NullableTextSerializer extends NullableWritableSerializer
     implements INativeComparable {
   }
 
-  private static class NullableLongWritableSerializer extends NullableWritableSerializer
+  public static class NullableLongWritableSerializer extends NullableWritableSerializer
     implements INativeComparable {
 
     @Override
@@ -196,7 +228,7 @@ public class PigPlatform extends Platform {
     }
   }
 
-  private static class NullableIntWritableSerializer extends NullableWritableSerializer
+  public static class NullableIntWritableSerializer extends NullableWritableSerializer
     implements INativeComparable {
 
     @Override
@@ -211,7 +243,7 @@ public class PigPlatform extends Platform {
     }
   }
 
-  private static class NullableFloatWritableSerializer extends NullableWritableSerializer
+  public static class NullableFloatWritableSerializer extends NullableWritableSerializer
     implements INativeComparable {
 
     @Override
@@ -226,7 +258,7 @@ public class PigPlatform extends Platform {
     }
   }
 
-  private static class NullableDoubleWritableSerializer extends NullableWritableSerializer
+  public static class NullableDoubleWritableSerializer extends NullableWritableSerializer
     implements INativeComparable {
 
     @Override
@@ -241,7 +273,7 @@ public class PigPlatform extends Platform {
     }
   }
 
-  private static class NullableDateTimeWritableSerializer extends NullableWritableSerializer
+  public static class NullableDateTimeWritableSerializer extends NullableWritableSerializer
     implements INativeComparable {
     @Override
     public int getLength(PigNullableWritable w) {
@@ -255,11 +287,11 @@ public class PigPlatform extends Platform {
     }
   }
 
-  private static class NullableBytesWritableSerializer extends NullableWritableSerializer
+  public static class NullableBytesWritableSerializer extends NullableWritableSerializer
     implements INativeComparable {
   }
 
-  private static class NullableBooleanWritableSerializer extends NullableWritableSerializer
+  public static class NullableBooleanWritableSerializer extends NullableWritableSerializer
     implements INativeComparable {
 
     @Override
@@ -274,17 +306,17 @@ public class PigPlatform extends Platform {
     }
   }
 
-  private static class NullableBigIntegerWritableSerializer extends
+  public static class NullableBigIntegerWritableSerializer extends
     NullableWritableSerializer {
     // not supported as key
   }
 
-  private static class NullableBigDecimalWritableSerializer extends
+  public static class NullableBigDecimalWritableSerializer extends
     NullableWritableSerializer {
     // not supported as key
   }
 
-  private static class NullableBagSerializer extends
+  public static class NullableBagSerializer extends
     NullableWritableSerializer {
     // not used as key
   }

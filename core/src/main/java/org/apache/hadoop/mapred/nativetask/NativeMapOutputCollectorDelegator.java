@@ -74,7 +74,8 @@ public class NativeMapOutputCollectorDelegator<K, V> implements MapOutputCollect
       throw new InvalidJobConfException(message);
     }
 
-    if (job.getClass(MRJobConfig.KEY_COMPARATOR, null, RawComparator.class) != null) {
+    Class comparatorClass = job.getClass(MRJobConfig.KEY_COMPARATOR, null, RawComparator.class);
+    if (comparatorClass != null && !Platforms.define(comparatorClass)) {
       String message = "Native output collector don't support customized java comparator "
         + job.get(MRJobConfig.KEY_COMPARATOR);
       LOG.error(message);

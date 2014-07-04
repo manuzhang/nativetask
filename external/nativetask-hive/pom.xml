@@ -7,8 +7,9 @@
   OR CONDITIONS OF ANY KIND, either express or implied. See the License for 
   the specific language governing permissions and limitations under the License. 
   See accompanying LICENSE file. -->
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
                       http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.apache.hadoop</groupId>
@@ -25,7 +26,7 @@
       <artifactId>hadoop-mapreduce-client-nativetask</artifactId>
       <version>2.2.0</version>
     </dependency>
-   <dependency>
+    <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
       <version>4.11</version>
@@ -33,8 +34,8 @@
     </dependency>
     <dependency>
       <groupId>org.mockito</groupId>
-	    <artifactId>mockito-all</artifactId>
-	    <version>1.8.4</version>
+      <artifactId>mockito-all</artifactId>
+      <version>1.8.4</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -51,7 +52,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-jar-plugin</artifactId>
-     </plugin>
+      </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
@@ -63,9 +64,9 @@
             </property>
           </properties>
           <includes>
-           <include>**/kvtest/*Test.java</include>
-          </includes> 
-       </configuration>
+            <include>**/kvtest/*Test.java</include>
+          </includes>
+        </configuration>
       </plugin>
     </plugins>
   </build>
@@ -81,6 +82,7 @@
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-enforcer-plugin</artifactId>
+            <version>1.3.1</version>
             <executions>
               <execution>
                 <id>enforce-os</id>
@@ -93,7 +95,8 @@
                       <family>mac</family>
                       <family>unix</family>
                       <message>native build only supported on Mac or
-                        Unix</message>
+                        Unix
+                      </message>
                     </requireOS>
                   </rules>
                   <fail>true</fail>
@@ -104,6 +107,7 @@
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-antrun-plugin</artifactId>
+            <version>1.6</version>
             <executions>
               <execution>
                 <id>make</id>
@@ -114,27 +118,27 @@
                 <configuration>
                   <target>
                     <exec executable="sh" dir="${basedir}/src/main/native"
-                      failonerror="true">
-                      <arg value="${basedir}/src/main/native/build.sh" />
-                      <arg value="all" />
+                          failonerror="true">
+                      <arg value="${basedir}/src/main/native/build.sh"/>
+                      <arg value="all"/>
                     </exec>
-                    <copy toDir="${project.build.directory}/native/target/usr/local/lib" overwrite="true">
+                    <copy toDir="${project.build.directory}/native/target/usr/local/lib"
+                          overwrite="true">
                       <fileset dir="${basedir}/src/main/native/.libs">
                         <exclude name="**/*.o"/>
                         <exclude name="nttest"/>
                       </fileset>
                     </copy>
-                    <copy todir="${project.build.directory}/${project.artifactId}-${project.version}/lib/native/sdk/" overwrite="true">
-                    	<fileset dir="${basedir}/src/main/native/.libs">
-                    	  <exclude name="**/*.o"/>
-                    	  <exclude name="nttest"/>
-                    	</fileset>
-                    	<fileset file="${basedir}/src/main/native/src/NativeTask.h" />
+                    <copy todir="${project.build.directory}/${project.artifactId}-${project.version}/lib/native/sdk/"
+                          overwrite="true">
+                      <fileset dir="${basedir}/src/main/native/.libs">
+                        <exclude name="**/*.o"/>
+                        <exclude name="nttest"/>
+                      </fileset>
+                      <fileset
+                              file="${basedir}/src/main/native/src/NativeTask.h"/>
                     </copy>
-                    <tar compression="gzip" destfile="${project.build.directory}/${project.artifactId}-${project.version}/lib/native/sdk/example.tgz">
-                      <tarfileset dir="${basedir}/sdk" mode="755"/>
-                    </tar>    	      
-								  </target>
+                  </target>
                 </configuration>
               </execution>
               <execution>
@@ -146,9 +150,9 @@
                 <configuration>
                   <target>
                     <exec executable="sh" dir="${basedir}/src/main/native"
-                      failonerror="true">
-                      <arg value="${basedir}/src/main/native/build.sh" />
-                      <arg value="clean" />
+                          failonerror="true">
+                      <arg value="${basedir}/src/main/native/build.sh"/>
+                      <arg value="clean"/>
                     </exec>
                   </target>
                 </configuration>

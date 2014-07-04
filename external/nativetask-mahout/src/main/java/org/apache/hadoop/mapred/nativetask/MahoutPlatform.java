@@ -27,7 +27,7 @@ import org.apache.hadoop.mapred.nativetask.serde.DefaultSerializer;
 import org.apache.hadoop.mapred.nativetask.serde.INativeSerializer;
 import org.apache.hadoop.mapred.nativetask.serde.LongWritableSerializer;
 
-public class MahoutPlatform extends Platform{
+public class MahoutPlatform extends Platform {
 
   private Map<String, String> keyClassToComparator = new HashMap<String, String>();
   public MahoutPlatform() throws IOException {
@@ -79,42 +79,48 @@ public class MahoutPlatform extends Platform{
 
   @Override
   public boolean support(INativeSerializer serializer, JobConf job) {
-    if (serializer instanceof INativeComparable) {
+    if (keys.contains(serializer.getClass()) &&
+      serializer instanceof INativeComparable) {
       String keyClass = job.getMapOutputKeyClass().getName();
       String nativeComparator = Constants.NATIVE_MAPOUT_KEY_COMPARATOR + "." + keyClass;
-      job.set(nativeComparator, "MahoutPlatform." + keyClassToComparator.get(keyClass));
-      job.set(Constants.NATIVE_CLASS_LIBRARY_BUILDIN, "PigPlatform=libnativetaskmahout.so");
+      job.set(nativeComparator, "MahoutPlatform.MahoutPlatform::" + keyClassToComparator.get(keyClass));
+      job.set(Constants.NATIVE_CLASS_LIBRARY_BUILDIN, "MahoutPlatform=libnativetaskmahout.so");
       return true;
     } else {
       return false;
     }
   }
 
-  private static class EntityEntityWritableSerializer extends DefaultSerializer
+  @Override
+  public boolean define(Class comparatorClass) {
+    return false;
+  }
+
+  public static class EntityEntityWritableSerializer extends DefaultSerializer
     implements INativeComparable {
   }
 
-  private static class GramKeySerializer extends DefaultSerializer
+  public static class GramKeySerializer extends DefaultSerializer
     implements INativeComparable {
   }
 
-  private static class GramSerializer  extends DefaultSerializer
+  public static class GramSerializer  extends DefaultSerializer
     implements INativeComparable {
   }
 
-  private static class SplitPartitionedWritableSerializer extends DefaultSerializer
+  public static class SplitPartitionedWritableSerializer extends DefaultSerializer
     implements INativeComparable {
   }
 
-  private static class StringTupleSerializer extends DefaultSerializer implements
+  public static class StringTupleSerializer extends DefaultSerializer implements
     INativeComparable {
   }
 
-  private static class VarIntWritableSerializer extends DefaultSerializer implements
+  public static class VarIntWritableSerializer extends DefaultSerializer implements
     INativeComparable {
   }
 
-  private static class VarLongWritableSerializer extends DefaultSerializer implements
+  public static class VarLongWritableSerializer extends DefaultSerializer implements
     INativeComparable {
   }
 }

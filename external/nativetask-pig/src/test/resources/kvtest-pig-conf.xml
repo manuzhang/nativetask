@@ -32,14 +32,14 @@
 <name>nativetask.kvtest.keyclasses</name>
 <value>
 org.apache.pig.impl.io.NullableBooleanWritable;
-org.apache.pig.impl.io.NullableBytesWritable;
+<!--org.apache.pig.impl.io.NullableBytesWritable;
 org.apache.pig.impl.io.NullableDateTimeWritable;
 org.apache.pig.impl.io.NullableDoubleWritable;
 org.apache.pig.impl.io.NullableFloatWritable;
 org.apache.pig.impl.io.NullableIntWritable;
 org.apache.pig.impl.io.NullableLongWritable;
 org.apache.pig.impl.io.NullableText; 
-org.apache.pig.impl.io.NullableTuple;
+org.apache.pig.impl.io.NullableTuple; -->
 </value>
 </property>
 <property>
@@ -47,16 +47,6 @@ org.apache.pig.impl.io.NullableTuple;
 <value>
 org.apache.pig.impl.io.NullableTuple;
 </value>
-</property>
-
-<property>
-<name>pig.version</name>
-<value>0.12.1-Intel</value>
-</property>
-
-<property>
-<name>native.pig.version.expected</name>
-<value>0.12.1-Intel</value>
 </property>
 
 <property>

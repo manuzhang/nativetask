@@ -43,14 +43,20 @@ public class HBasePlatform extends Platform {
 
   @Override
   public boolean support(INativeSerializer serializer, JobConf job) {
-    if (serializer instanceof INativeComparable) {
+    if (keys.contains(serializer.getClass()) &&
+      serializer instanceof INativeComparable) {
       String keyClass = job.getMapOutputKeyClass().getName();
       String nativeComparator = Constants.NATIVE_MAPOUT_KEY_COMPARATOR + "." + keyClass;
-      job.set(nativeComparator, "BytesComparator");
+      job.set(nativeComparator, "HBasePlatform.NativeObjectFactory::BytesComparator");
       return true;
     } else {
       return false;
     }
+  }
+
+  @Override
+  public boolean define(Class comparatorClass) {
+    return false;
   }
 
   private static class ImmutableBytesWritableSerializer implements INativeComparable, INativeSerializer<ImmutableBytesWritable> {

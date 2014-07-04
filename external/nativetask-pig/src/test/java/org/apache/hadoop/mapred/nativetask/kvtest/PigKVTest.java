@@ -177,7 +177,7 @@ public class PigKVTest {
   public void testKVCompatibility() {
 
     try {
-      // the same as sortOrderAsc for keyclasses other than NullableTuple
+      // same as sortOrderAsc for keyclasses other than NullableTuple
       if (keyOrder.equals("sortOrderAscDesc") && keyclass != NullableTuple.class) {
         return;
       }
@@ -220,11 +220,6 @@ public class PigKVTest {
     fs.delete(new Path(outputpath));
     fs.close();
     nativekvtestconf.set(TestConstants.NATIVETASK_KVTEST_CREATEFILE, "true");
-    if (keyOrder.equals("groupOnly")) {
-      nativekvtestconf.setBoolean(PigPlatform.PIG_GROUP_ONLY, true);
-    } else {
-      nativekvtestconf.setBoolean(PigPlatform.PIG_GROUP_ONLY, false);
-    }
     try {
       final KVJob keyJob = new KVJob(jobname, nativekvtestconf, keyclass, valueclass, inputpath, outputpath);
       setPigJobConf(keyJob.job);

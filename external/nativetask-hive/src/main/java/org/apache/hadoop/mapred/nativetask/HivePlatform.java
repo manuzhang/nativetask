@@ -22,8 +22,11 @@ import java.io.IOException;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.nativetask.serde.BytesWritableSerializer;
 import org.apache.hadoop.mapred.nativetask.serde.INativeSerializer;
+import org.apache.log4j.Logger;
 
 public class HivePlatform extends Platform {
+
+  private static final Logger LOG = Logger.getLogger(HivePlatform.class);
 
   public HivePlatform() {
   }
@@ -31,6 +34,7 @@ public class HivePlatform extends Platform {
   @Override
   public void init() throws IOException {
     registerKey("org.apache.hadoop.hive.ql.io.HiveKey", BytesWritableSerializer.class);
+    LOG.info("Hive platform inited");
   }
 
   @Override
@@ -40,13 +44,18 @@ public class HivePlatform extends Platform {
 
   @Override
   public boolean support(INativeSerializer serializer, JobConf job) {
-    if (serializer instanceof INativeComparable) {
+    if (keys.contains(serializer.getClass()) && serializer instanceof INativeComparable) {
       String keyClass = job.getMapOutputKeyClass().getName();
       String nativeComparator = Constants.NATIVE_MAPOUT_KEY_COMPARATOR + "." + keyClass;
-      job.set(nativeComparator, "BytesComparator");
+      job.set(nativeComparator, "HivePlatform.NativeObjectFactory::BytesComparator");
       return true;
     } else {
       return false;
     }
+  }
+
+  @Override
+  public boolean define(Class comparatorClass) {
+    return false;
   }
 }
