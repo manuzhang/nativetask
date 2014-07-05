@@ -33,9 +33,10 @@ import org.apache.hadoop.io.VLongWritable;
 import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.nativetask.serde.*;
+import org.apache.log4j.Logger;
 
 public class HadoopPlatform extends Platform {
-
+  private static final Logger LOG = Logger.getLogger(HadoopPlatform.class);
 
   public HadoopPlatform() throws IOException {
   }
@@ -54,11 +55,13 @@ public class HadoopPlatform extends Platform {
     registerKey(DoubleWritable.class.getName(), DoubleWritableSerializer.class);
     registerKey(VIntWritable.class.getName(), VIntWritableSerializer.class);
     registerKey(VLongWritable.class.getName(), VLongWritableSerializer.class);
+
+    LOG.info("Hadoop platform inited");
   }
 
   @Override
-  public boolean support(INativeSerializer serializer, JobConf job) {
-    if (keys.contains(serializer.getClass())
+  public boolean support(String keyClassName, INativeSerializer serializer, JobConf job) {
+    if (keyClassNames.contains(keyClassName)
       && serializer instanceof INativeComparable) {
       return true;
     } else {

@@ -31,7 +31,7 @@ import org.apache.hadoop.mapred.nativetask.serde.NativeSerialization;
 
 public abstract class Platform {
   private final NativeSerialization serialization;
-  protected Set<Class> keys = new HashSet<Class>();
+  protected Set<String> keyClassNames = new HashSet<String>();
 
   public Platform() {
     this.serialization = NativeSerialization.getInstance();
@@ -43,10 +43,10 @@ public abstract class Platform {
 
   protected void registerKey(String keyClassName, Class key) throws IOException {
     serialization.register(keyClassName, key);
-    keys.add(key);
+    keyClassNames.add(keyClassName);
   }
-
-  protected abstract boolean support(INativeSerializer serializer, JobConf job);
+  
+  protected abstract boolean support(String keyClassName, INativeSerializer serializer, JobConf job);
 
   protected abstract boolean define(Class keyComparator);
 }

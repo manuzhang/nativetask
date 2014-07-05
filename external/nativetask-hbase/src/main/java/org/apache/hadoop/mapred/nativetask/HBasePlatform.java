@@ -20,6 +20,7 @@ package org.apache.hadoop.mapred.nativetask;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.nativetask.serde.INativeSerializer;
+import org.apache.log4j.Logger;
 
 import java.io.DataInput;
 import java.io.DataOutput;
@@ -27,13 +28,15 @@ import java.io.IOException;
 
 
 public class HBasePlatform extends Platform {
+  private static final Logger LOG = Logger.getLogger(HBasePlatform.class);
 
-  public HBasePlatform() throws IOException {
+  public HBasePlatform() {
   }
 
   @Override
   public void init() throws IOException {
     registerKey("org.apache.hadoop.hbase.io.ImmutableBytesWritable", ImmutableBytesWritableSerializer.class);
+    LOG.info("HBase platform inited");
   }
 
   @Override
@@ -42,12 +45,12 @@ public class HBasePlatform extends Platform {
   }
 
   @Override
-  public boolean support(INativeSerializer serializer, JobConf job) {
-    if (keys.contains(serializer.getClass()) &&
+  public boolean support(String keyClassName, INativeSerializer serializer, JobConf job) {
+    if (keyClassNames.contains(keyClassName) &&
       serializer instanceof INativeComparable) {
-      String keyClass = job.getMapOutputKeyClass().getName();
-      String nativeComparator = Constants.NATIVE_MAPOUT_KEY_COMPARATOR + "." + keyClass;
+      String nativeComparator = Constants.NATIVE_MAPOUT_KEY_COMPARATOR + "." + keyClassName;
       job.set(nativeComparator, "HBasePlatform.NativeObjectFactory::BytesComparator");
+      job.set(Constants.NATIVE_CLASS_LIBRARY_BUILDIN, "HBasePlatform=libnativetaskhbase.so");
       return true;
     } else {
       return false;

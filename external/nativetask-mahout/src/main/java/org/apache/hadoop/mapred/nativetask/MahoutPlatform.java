@@ -26,12 +26,14 @@ import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.nativetask.serde.DefaultSerializer;
 import org.apache.hadoop.mapred.nativetask.serde.INativeSerializer;
 import org.apache.hadoop.mapred.nativetask.serde.LongWritableSerializer;
+import org.apache.log4j.Logger;
 
 public class MahoutPlatform extends Platform {
 
+  private static final Logger LOG = Logger.getLogger(MahoutPlatform.class);
   private Map<String, String> keyClassToComparator = new HashMap<String, String>();
-  public MahoutPlatform() throws IOException {
 
+  public MahoutPlatform() {
   }
 
   @Override
@@ -70,6 +72,8 @@ public class MahoutPlatform extends Platform {
       "VarIntComparator");
     keyClassToComparator.put("org.apache.mahout.math.VarLongWritable",
       "VarLongComparator");
+
+    LOG.info("Mahout platform inited");
   }
 
   @Override
@@ -78,12 +82,11 @@ public class MahoutPlatform extends Platform {
   }
 
   @Override
-  public boolean support(INativeSerializer serializer, JobConf job) {
-    if (keys.contains(serializer.getClass()) &&
+  public boolean support(String keyClassName, INativeSerializer serializer, JobConf job) {
+    if (keyClassNames.contains(keyClassName) &&
       serializer instanceof INativeComparable) {
-      String keyClass = job.getMapOutputKeyClass().getName();
-      String nativeComparator = Constants.NATIVE_MAPOUT_KEY_COMPARATOR + "." + keyClass;
-      job.set(nativeComparator, "MahoutPlatform.MahoutPlatform::" + keyClassToComparator.get(keyClass));
+      String nativeComparator = Constants.NATIVE_MAPOUT_KEY_COMPARATOR + "." + keyClassName;
+      job.set(nativeComparator, "MahoutPlatform.MahoutPlatform::" + keyClassToComparator.get(keyClassName));
       job.set(Constants.NATIVE_CLASS_LIBRARY_BUILDIN, "MahoutPlatform=libnativetaskmahout.so");
       return true;
     } else {

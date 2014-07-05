@@ -43,11 +43,12 @@ public class HivePlatform extends Platform {
   }
 
   @Override
-  public boolean support(INativeSerializer serializer, JobConf job) {
-    if (keys.contains(serializer.getClass()) && serializer instanceof INativeComparable) {
-      String keyClass = job.getMapOutputKeyClass().getName();
-      String nativeComparator = Constants.NATIVE_MAPOUT_KEY_COMPARATOR + "." + keyClass;
+  public boolean support(String keyClassName, INativeSerializer serializer, JobConf job) {
+    if (keyClassNames.contains(keyClassName) && serializer instanceof INativeComparable) {
+      String nativeComparator = Constants.NATIVE_MAPOUT_KEY_COMPARATOR + "." + keyClassName;
       job.set(nativeComparator, "HivePlatform.NativeObjectFactory::BytesComparator");
+      job.set(Constants.NATIVE_CLASS_LIBRARY_BUILDIN, "HivePlatform=libnativetaskhive.so");
+      LOG.info(serializer.getClass().getName() + "supported");
       return true;
     } else {
       return false;

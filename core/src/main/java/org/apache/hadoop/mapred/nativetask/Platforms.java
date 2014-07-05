@@ -41,12 +41,12 @@ public class Platforms {
     }
   }
 
-  public static boolean support(INativeSerializer serializer, JobConf job) {
+  public static boolean support(String keyClassName, INativeSerializer serializer, JobConf job) {
     synchronized (platforms) {
       for (Platform platform : platforms) {
-        if (platform.support(serializer, job)) {
-          LOG.debug("platform " + platform.name() + " support serializer "
-            + serializer.getClass().getName());
+        if (platform.support(keyClassName, serializer, job)) {
+          LOG.debug("platform " + platform.name() + " support key class"
+            + keyClassName);
           return true;
         }
       }

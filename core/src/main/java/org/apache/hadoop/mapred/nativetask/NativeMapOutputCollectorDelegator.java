@@ -105,7 +105,7 @@ public class NativeMapOutputCollectorDelegator<K, V> implements MapOutputCollect
         String message = "Key type not supported. Cannot find serializer for " + keyCls.getName();
         LOG.error(message);
         throw new InvalidJobConfException(message);
-      } else if (!Platforms.support(serializer, job)) {
+      } else if (!Platforms.support(keyCls.getName(), serializer, job)) {
         String message = "Native output collector don't support this key, this key is not comparable in native "
           + keyCls.getName();
         LOG.error(message);
@@ -130,32 +130,6 @@ public class NativeMapOutputCollectorDelegator<K, V> implements MapOutputCollect
       String message = "Nativeruntime cannot be loaded, please check the libnativetask.so is in hadoop library dir";
       LOG.error(message);
       throw new InvalidJobConfException(message);
-    }
-
-    String path = job.getJar();
-    if (null != path) {
-      Path jars = new Path(path).getParent();
-    String libraryConf = job.get(Constants.NATIVE_CLASS_LIBRARY_CUSTOM, null);
-    if (null != libraryConf) {
-      String[] libraries = libraryConf.split(",");
-      String[] pair;
-      String jarDir = jars.toString();
-      if (job.get(JTConfig.JT_IPC_ADDRESS).equals("local")) {
-        File jobJar = new File(job.getJar().split(":")[1]);
-        RunJar.unJar(jobJar, new File(jarDir));
-      }
-      for (int i = 0; i < libraries.length; i++) {
-        pair = libraries[i].split("=");
-        if (pair.length == 2) {
-          LOG.info("Try to load library " + pair[0] + " with file " + pair[1]);
-          if (NativeRuntime.registerLibrary(jarDir + "/lib/" + pair[1], pair[0]) != 0) {
-            LOG.error("RegisterLibrary failed : name = " + pair[0] + " path = " + pair[1]);
-          } else {
-            LOG.info("RegisterLibrary success : name = " + pair[0] + " path = " + pair[1]);
-          }
-        }
-      }
-    }
     }
 
     this.handler = null;

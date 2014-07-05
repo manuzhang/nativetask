@@ -23,21 +23,21 @@ import java.util.Map;
 import java.util.HashMap;
 import java.util.Set;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.nativetask.serde.INativeSerializer;
 import org.apache.hadoop.mapred.nativetask.util.ConfigUtil;
 import org.apache.hadoop.mapreduce.MRJobConfig;
+import org.apache.log4j.Logger;
 import org.apache.pig.backend.hadoop.executionengine.mapReduceLayer.*;
 import org.apache.pig.impl.io.PigNullableWritable;
 import org.apache.pig.impl.util.ObjectSerializer;
+
 
 import static org.apache.pig.backend.hadoop.executionengine.mapReduceLayer.JobControlCompiler.*;
 
 public class PigPlatform extends Platform {
 
-  private static Log LOG = LogFactory.getLog(PigPlatform.class);
+  private static Logger LOG = Logger.getLogger(PigPlatform.class);
   public static final String PIG_USER_COMPARATOR = "pig.usercomparator";
   public static final String PIG_SORT_ORDER = "pig.sortOrder";
   public static final String NATIVE_PIG_SORT = "native.pig.sortOrder";
@@ -46,9 +46,9 @@ public class PigPlatform extends Platform {
   public static final String NATIVE_PIG_USE_SEC_KEY = "native.pig.useSecondaryKey";
 
   private Map<String, String> keyClassToNativeComparator = new HashMap<String, String>();
-  private Set<Class> rawComparatorClass = new HashSet<Class>();
+  private Set<String> rawComparatorClass = new HashSet<String>();
 
-  public PigPlatform() throws IOException {
+  public PigPlatform() {
   }
   
   @Override
@@ -97,16 +97,26 @@ public class PigPlatform extends Platform {
     keyClassToNativeComparator.put("org.apache.pig.impl.io.NullableTuple",
         "PigNullableTupleComparator");
 
-    rawComparatorClass.add(PigBooleanRawComparator.class);
-    rawComparatorClass.add(PigIntRawComparator.class);
-    rawComparatorClass.add(PigLongRawComparator.class);
-    rawComparatorClass.add(PigFloatRawComparator.class);
-    rawComparatorClass.add(PigDoubleRawComparator.class);
-    rawComparatorClass.add(PigDateTimeRawComparator.class);
-    rawComparatorClass.add(PigTextRawComparator.class);
-    rawComparatorClass.add(PigBytesRawComparator.class);
-    rawComparatorClass.add(PigTupleSortComparator.class);
-    rawComparatorClass.add(PigSecondaryKeyComparator.class);
+    rawComparatorClass.add(
+        "org.apache.pig.backend.hadoop.executionengine.mapReduceLayer.PigBooleanRawComparator");
+    rawComparatorClass.add(
+        "org.apache.pig.backend.hadoop.executionengine.mapReduceLayer.PigIntRawComparator");
+    rawComparatorClass.add(
+        "org.apache.pig.backend.hadoop.executionengine.mapReduceLayer.PigLongRawComparator");
+    rawComparatorClass.add(
+        "org.apache.pig.backend.hadoop.executionengine.mapReduceLayer.PigFloatRawComparator");
+    rawComparatorClass.add(
+        "org.apache.pig.backend.hadoop.executionengine.mapReduceLayer.PigDoubleRawComparator");
+    rawComparatorClass.add(
+        "org.apache.pig.backend.hadoop.executionengine.mapReduceLayer.PigDateTimeRawComparator");
+    rawComparatorClass.add(
+        "org.apache.pig.backend.hadoop.executionengine.mapReduceLayer.PigTextRawComparator");
+    rawComparatorClass.add(
+        "org.apache.pig.backend.hadoop.executionengine.mapReduceLayer.PigBytesRawComparator");
+    rawComparatorClass.add(
+        "org.apache.pig.backend.hadoop.executionengine.mapReduceLayer.PigTupleSortComparator");
+    rawComparatorClass.add(
+        "org.apache.pig.backend.hadoop.executionengine.mapReduceLayer.PigSecondaryKeyComparator");
 
     LOG.info("Pig platform inited");
   }
@@ -117,11 +127,10 @@ public class PigPlatform extends Platform {
   }
 
   @Override
-  public boolean support(INativeSerializer serializer, JobConf job) {
+  public boolean support(String keyClassName, INativeSerializer serializer, JobConf job) {
     boolean supported = false;
-    if (keys.contains(serializer.getClass())) {
-      String keyClass = job.getMapOutputKeyClass().getName();
-      String nativeComparator = Constants.NATIVE_MAPOUT_KEY_COMPARATOR + "." + keyClass;
+    if (keyClassNames.contains(keyClassName)) {
+      String nativeComparator = Constants.NATIVE_MAPOUT_KEY_COMPARATOR + "." + keyClassName;
       Class comparatorClass = job.getClass(MRJobConfig.KEY_COMPARATOR, null);
       if (PigWritableComparator.class.isAssignableFrom(comparatorClass)) {
         job.set(nativeComparator, "PigPlatform.NativeObjectFactory::BytesComparator");
@@ -134,7 +143,7 @@ public class PigPlatform extends Platform {
           if (job.get(PIG_SORT_ORDER, null) != null) {
             boolean[] order = (boolean[]) ObjectSerializer.deserialize(job.get(PIG_SORT_ORDER));
             job.set(NATIVE_PIG_SORT, ConfigUtil.booleansToString(order));
-            job.set(nativeComparator, "PigPlatform.PigPlatform::" + keyClassToNativeComparator.get(keyClass));
+            job.set(nativeComparator, "PigPlatform.PigPlatform::" + keyClassToNativeComparator.get(keyClassName));
             LOG.info("Pig key types: set sort order");
           }
           if (job.get(PIG_SEC_SORT_ORDER, null) != null) {
@@ -160,7 +169,7 @@ public class PigPlatform extends Platform {
   @Override
   public boolean define(Class comparatorClass) {
     if (PigWritableComparator.class.isAssignableFrom(comparatorClass)||
-      rawComparatorClass.contains(comparatorClass))  {
+      rawComparatorClass.contains(comparatorClass.getName()))  {
       return true;
     } else {
       return false;
