@@ -161,7 +161,9 @@ public class PigPlatform extends Platform {
       }
     }
     if (supported) {
-      job.set(Constants.NATIVE_CLASS_LIBRARY_BUILDIN, "PigPlatform=libnativetaskpig.so");
+      if (job.get(Constants.NATIVE_CLASS_LIBRARY_BUILDIN) == null) {
+        job.set(Constants.NATIVE_CLASS_LIBRARY_BUILDIN, "PigPlatform=libnativetaskpig.so");
+      }
     }
     return supported;
   }

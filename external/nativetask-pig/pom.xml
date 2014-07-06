@@ -31,6 +31,12 @@
       <version>0.12.0</version>
     </dependency>
    <dependency>
+     <groupId>org.apache.hadoop</groupId>
+     <artifactId>hadoop-mapreduce-client-common</artifactId>
+     <version>2.2.0</version>
+     <scope>test</scope>
+   </dependency>
+   <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
       <version>4.11</version>
@@ -48,7 +54,7 @@
       <version>2.2.0</version>
       <type>test-jar</type>
       <scope>test</scope>
-    </dependency>
+    </dependency> 
       <dependency>
           <groupId>joda-time</groupId>
           <artifactId>joda-time</artifactId>
@@ -73,9 +79,6 @@
           <includes>
             <include>**/kvtest/PigKVTest.java</include>
           </includes> 
-          <additionalClasspathElements>
-            <additionalClasspathElement>${basedir}/../hadoop-mapreduce-client-common/target/classes</additionalClasspathElement>
-          </additionalClasspathElements>
         </configuration>
       </plugin>
     </plugins>

@@ -191,9 +191,9 @@ public class PigKVTest {
         + "/" + valueclass.getName();
       if(compareRet){
         final FileSystem fs = FileSystem.get(hadoopkvtestconf);
-        fs.delete(new Path(nativeoutput), true);
-        fs.delete(new Path(normaloutput), true);
-        fs.delete(new Path(input), true);
+        //fs.delete(new Path(nativeoutput), true);
+        //fs.delete(new Path(normaloutput), true);
+        //fs.delete(new Path(input), true);
         fs.close();
       }
       assertEquals("file compare result: if they are the same ,then return true", true, compareRet);

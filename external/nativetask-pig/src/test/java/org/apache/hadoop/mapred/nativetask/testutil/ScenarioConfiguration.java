@@ -25,20 +25,8 @@ public class ScenarioConfiguration extends Configuration {
     this.addResource(TestConstants.COMMON_CONF_PATH);
   }
 
-  public void addcombinerConf() {
-    this.addResource(TestConstants.COMBINER_CONF_PATH);
-  }
-
-  public void addKVTestConf() {
-    this.addResource(TestConstants.KVTEST_CONF_PATH);
-  }
-  
   public void addPigKVTestConf() {
     this.addResource(TestConstants.PIG_KVTEST_CONF_PATH);
-  }
-
-  public void addNonSortTestConf() {
-    this.addResource(TestConstants.NONSORT_TEST_CONF);
   }
 
   public void addNativeConf() {
