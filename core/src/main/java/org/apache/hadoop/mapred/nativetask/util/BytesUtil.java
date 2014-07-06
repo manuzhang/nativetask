@@ -53,7 +53,7 @@ public class BytesUtil {
    * @return the int value
    */
   public static int toInt(byte[] bytes) {
-    return toInt(bytes, 0, 4);
+    return toInt(bytes, 0, SIZEOF_INT);
   }
 
   /**
@@ -84,7 +84,18 @@ public class BytesUtil {
    * @return the long value
    */
   public static long toLong(byte[] bytes) {
-    return toLong(bytes, 0, 8);
+    return toLong(bytes, 0, SIZEOF_LONG);
+  }
+
+   /**
+   * Converts a byte array to a long value.
+   *
+   * @param bytes array of bytes
+   * @param offset offset into array
+   * @return the long value
+   */
+  public static long toLong(byte[] bytes, int offset) {
+    return toLong(bytes, offset, SIZEOF_LONG);
   }
 
   /**

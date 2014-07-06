@@ -50,7 +50,9 @@ public class HBasePlatform extends Platform {
       serializer instanceof INativeComparable) {
       String nativeComparator = Constants.NATIVE_MAPOUT_KEY_COMPARATOR + "." + keyClassName;
       job.set(nativeComparator, "HBasePlatform.NativeObjectFactory::BytesComparator");
-      job.set(Constants.NATIVE_CLASS_LIBRARY_BUILDIN, "HBasePlatform=libnativetaskhbase.so");
+      if (job.get(Constants.NATIVE_CLASS_LIBRARY_BUILDIN) == null) {
+        job.set(Constants.NATIVE_CLASS_LIBRARY_BUILDIN, "HBasePlatform=libnativetaskhbase.so");
+      }
       return true;
     } else {
       return false;
@@ -62,7 +64,7 @@ public class HBasePlatform extends Platform {
     return false;
   }
 
-  private static class ImmutableBytesWritableSerializer implements INativeComparable, INativeSerializer<ImmutableBytesWritable> {
+  public static class ImmutableBytesWritableSerializer implements INativeComparable, INativeSerializer<ImmutableBytesWritable> {
 
     public ImmutableBytesWritableSerializer() throws ClassNotFoundException, SecurityException, NoSuchMethodException {
     }

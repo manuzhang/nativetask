@@ -11,7 +11,7 @@
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
                       http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
-  <groupId>org.apache.hadoop</groupId>
+  <groupId>nativetask</groupId>
   <artifactId>nativetask-mahout</artifactId>
   <version>2.2.0</version>
   <name>nativetask-mahout</name>
@@ -20,7 +20,7 @@
   </properties>
 
   <dependencies>
-    <dependency>
+   <dependency>
       <groupId>org.apache.hadoop</groupId>
       <artifactId>hadoop-mapreduce-client-nativetask</artifactId>
       <version>2.2.0</version>
@@ -29,14 +29,14 @@
       <groupId>org.apache.mahout</groupId>
       <artifactId>mahout-core</artifactId>
       <version>0.9</version>
-      <exclusions>
-        <exclusion>
-          <groupId>org.apache.hadoop</groupId>
-          <artifactId>hadoop-core</artifactId>
-        </exclusion>
-      </exclusions> 
     </dependency>
-    <dependency>
+   <dependency>
+     <groupId>org.apache.hadoop</groupId>
+     <artifactId>hadoop-mapreduce-client-common</artifactId>
+     <version>2.2.0</version>
+     <scope>test</scope>
+   </dependency>
+   <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
       <version>4.11</version>
@@ -48,6 +48,19 @@
 	    <version>1.8.4</version>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>org.apache.hadoop</groupId>
+      <artifactId>hadoop-common</artifactId>
+      <version>2.2.0</version>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency> 
+      <dependency>
+          <groupId>joda-time</groupId>
+          <artifactId>joda-time</artifactId>
+          <version>2.2</version>
+          <scope>test</scope>
+      </dependency>
   </dependencies>
 
   <build>
@@ -55,6 +68,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
+        <version>2.12.3</version>
         <configuration>
           <properties>
             <property>
@@ -63,9 +77,9 @@
             </property>
           </properties>
           <includes>
-           <include>**/kvtest/*Test.java</include>
-          </includes>
-       </configuration>
+            <include>**/kvtest/KVTest.java</include>
+          </includes> 
+        </configuration>
       </plugin>
     </plugins>
   </build>
@@ -116,7 +130,7 @@
                 <configuration>
                   <target>
                     <exec executable="sh" dir="${basedir}/src/main/native"
-                          failonerror="true">
+                      failonerror="true">
                       <arg value="${basedir}/src/main/native/build.sh" />
                       <arg value="all" />
                     </exec>
@@ -127,13 +141,13 @@
                       </fileset>
                     </copy>
                     <copy todir="${project.build.directory}/${project.artifactId}-${project.version}/lib/native/sdk/" overwrite="true">
-                      <fileset dir="${basedir}/src/main/native/.libs">
-                        <exclude name="**/*.o"/>
-                        <exclude name="nttest"/>
-                      </fileset>
-                      <fileset file="${basedir}/src/main/native/src/NativeTask.h" />
+                    	<fileset dir="${basedir}/src/main/native/.libs">
+                    	  <exclude name="**/*.o"/>
+                    	  <exclude name="nttest"/>
+                    	</fileset>
+                    	<fileset file="${basedir}/src/main/native/src/NativeTask.h" />
                     </copy>
-                  </target>
+				  </target>
                 </configuration>
               </execution>
               <execution>
@@ -145,7 +159,7 @@
                 <configuration>
                   <target>
                     <exec executable="sh" dir="${basedir}/src/main/native"
-                          failonerror="true">
+                      failonerror="true">
                       <arg value="${basedir}/src/main/native/build.sh" />
                       <arg value="clean" />
                     </exec>

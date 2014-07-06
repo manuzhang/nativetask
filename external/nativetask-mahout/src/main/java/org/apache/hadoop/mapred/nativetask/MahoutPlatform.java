@@ -87,7 +87,9 @@ public class MahoutPlatform extends Platform {
       serializer instanceof INativeComparable) {
       String nativeComparator = Constants.NATIVE_MAPOUT_KEY_COMPARATOR + "." + keyClassName;
       job.set(nativeComparator, "MahoutPlatform.MahoutPlatform::" + keyClassToComparator.get(keyClassName));
-      job.set(Constants.NATIVE_CLASS_LIBRARY_BUILDIN, "MahoutPlatform=libnativetaskmahout.so");
+      if (job.get(Constants.NATIVE_CLASS_LIBRARY_BUILDIN, "MahoutPlatform=libnativetaskmahout.so") == null) {
+        job.set(Constants.NATIVE_CLASS_LIBRARY_BUILDIN, "MahoutPlatform=libnativetaskmahout.so");
+      }
       return true;
     } else {
       return false;
