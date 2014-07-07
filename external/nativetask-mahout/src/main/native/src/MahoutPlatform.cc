@@ -254,5 +254,6 @@ DEFINE_NATIVE_LIBRARY(MahoutPlatform) {
   REGISTER_FUNCTION(MahoutPlatform::GramKeyComparator, MahoutPlatform);
   REGISTER_FUNCTION(MahoutPlatform::SplitPartitionedComparator, MahoutPlatform);
   REGISTER_FUNCTION(MahoutPlatform::EntityEntityComparator, MahoutPlatform);
+  REGISTER_FUNCTION(NativeObjectFactory::LongComparator, MahoutPlatform);
 }
 

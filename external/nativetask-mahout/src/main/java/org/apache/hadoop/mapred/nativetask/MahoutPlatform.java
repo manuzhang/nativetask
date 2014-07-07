@@ -56,12 +56,10 @@ public class MahoutPlatform extends Platform {
         VarLongWritableSerializer.class);
 
 
-    keyClassToComparator.put("org.apache.mahout.classifier.df.mapreduce.partial.TreeID",
-      "LongComparator");
     keyClassToComparator.put("org.apache.mahout.common.StringTuple",
       "StringTupleComparator");
     keyClassToComparator.put("org.apache.mahout.vectorizer.collocations.llr.Gram",
-      "GrapComparator");
+      "GramComparator");
     keyClassToComparator.put("org.apache.mahout.vectorizer.collocations.llr.GramKey",
       "GramKeyComparator");
     keyClassToComparator.put("org.apache.mahout.math.hadoop.stochasticsvd.SplitPartitionedWritable",
@@ -86,7 +84,11 @@ public class MahoutPlatform extends Platform {
     if (keyClassNames.contains(keyClassName) &&
       serializer instanceof INativeComparable) {
       String nativeComparator = Constants.NATIVE_MAPOUT_KEY_COMPARATOR + "." + keyClassName;
-      job.set(nativeComparator, "MahoutPlatform.MahoutPlatform::" + keyClassToComparator.get(keyClassName));
+      if (keyClassName.equals("org.apache.mahout.classifier.df.mapreduce.partial.TreeID")) {
+        job.set(nativeComparator, "MahoutPlatform.NativeObjectFactory::LongComparator");
+      } else {
+        job.set(nativeComparator, "MahoutPlatform.MahoutPlatform::" + keyClassToComparator.get(keyClassName));
+      }
       if (job.get(Constants.NATIVE_CLASS_LIBRARY_BUILDIN, "MahoutPlatform=libnativetaskmahout.so") == null) {
         job.set(Constants.NATIVE_CLASS_LIBRARY_BUILDIN, "MahoutPlatform=libnativetaskmahout.so");
       }
