@@ -42,6 +42,7 @@ public class HashSumReducer<KTYPE, VTYPE> extends Reducer<KTYPE, VTYPE, KTYPE, I
         hashSum += hash;
       }
     }
+    System.out.println(hashSum);
     context.write(key, new IntWritable(hashSum));
   }
 }

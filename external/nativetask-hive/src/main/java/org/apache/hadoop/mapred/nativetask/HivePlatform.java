@@ -17,8 +17,11 @@
  */
 package org.apache.hadoop.mapred.nativetask;
 
+import java.io.DataInput;
+import java.io.DataOutput;
 import java.io.IOException;
 
+import org.apache.hadoop.hive.ql.io.HiveKey;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.nativetask.serde.BytesWritableSerializer;
 import org.apache.hadoop.mapred.nativetask.serde.INativeSerializer;
@@ -33,7 +36,7 @@ public class HivePlatform extends Platform {
 
   @Override
   public void init() throws IOException {
-    registerKey("org.apache.hadoop.hive.ql.io.HiveKey", BytesWritableSerializer.class);
+    registerKey("org.apache.hadoop.hive.ql.io.HiveKey", HiveKeySerializer.class);
     LOG.info("Hive platform inited");
   }
 
@@ -46,7 +49,7 @@ public class HivePlatform extends Platform {
   public boolean support(String keyClassName, INativeSerializer serializer, JobConf job) {
     if (keyClassNames.contains(keyClassName) && serializer instanceof INativeComparable) {
       String nativeComparator = Constants.NATIVE_MAPOUT_KEY_COMPARATOR + "." + keyClassName;
-      job.set(nativeComparator, "HivePlatform.NativeObjectFactory::BytesComparator");
+      job.set(nativeComparator, "HivePlatform.HivePlatform::HiveKeyComparator");
       if (job.get(Constants.NATIVE_CLASS_LIBRARY_BUILDIN) == null) {
         job.set(Constants.NATIVE_CLASS_LIBRARY_BUILDIN, "HivePlatform=libnativetaskhive.so");
       }
@@ -59,5 +62,26 @@ public class HivePlatform extends Platform {
   @Override
   public boolean define(Class comparatorClass) {
     return false;
+  }
+
+  public static class HiveKeySerializer implements INativeComparable, INativeSerializer<HiveKey> {
+
+    public HiveKeySerializer() throws ClassNotFoundException, SecurityException, NoSuchMethodException {
+    }
+
+    @Override
+    public int getLength(HiveKey w) throws IOException {
+      return 4 + w.getLength();
+    }
+
+    @Override
+    public void serialize(HiveKey w, DataOutput out) throws IOException {
+      w.write(out);
+    }
+
+    @Override
+    public void deserialize(DataInput in, int length, HiveKey w ) throws IOException {
+      w.readFields(in);
+    }
   }
 }

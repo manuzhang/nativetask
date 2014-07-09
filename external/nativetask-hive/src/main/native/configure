@@ -747,7 +747,7 @@ PACKAGE_VERSION=
 PACKAGE_STRING=
 PACKAGE_BUGREPORT=
 
-ac_unique_file="src/HivePlatform.cc"
+ac_unique_file="src/HivePlatform.h"
 # Factoring default headers for most tests.
 ac_includes_default="\
 #include <stdio.h>

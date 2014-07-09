@@ -49,7 +49,7 @@ public class HBasePlatform extends Platform {
     if (keyClassNames.contains(keyClassName) &&
       serializer instanceof INativeComparable) {
       String nativeComparator = Constants.NATIVE_MAPOUT_KEY_COMPARATOR + "." + keyClassName;
-      job.set(nativeComparator, "HBasePlatform.NativeObjectFactory::BytesComparator");
+      job.set(nativeComparator, "HBasePlatform.HBasePlatform::ImmutableBytesWritableComparator");
       if (job.get(Constants.NATIVE_CLASS_LIBRARY_BUILDIN) == null) {
         job.set(Constants.NATIVE_CLASS_LIBRARY_BUILDIN, "HBasePlatform=libnativetaskhbase.so");
       }
@@ -71,19 +71,17 @@ public class HBasePlatform extends Platform {
 
     @Override
     public int getLength(ImmutableBytesWritable w) throws IOException {
-      return w.getLength();
+      return 4 + w.getLength();
     }
 
     @Override
     public void serialize(ImmutableBytesWritable w, DataOutput out) throws IOException {
-      out.write(w.get(), w.getOffset(), w.getLength());
+      w.write(out);
     }
 
     @Override
     public void deserialize(DataInput in, int length, ImmutableBytesWritable w ) throws IOException {
-      final byte[] bytes = new byte[length];
-      in.readFully(bytes);
-      w.set(bytes);
+      w.readFields(in);
     }
   }
 }

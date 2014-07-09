@@ -16,14 +16,25 @@
  * limitations under the License.
  */
 
+#include "string.h"
+
 #include "NativeTask.h"
 #include "lib/NativeObjectFactory.h"
+#include "lib/primitives.h"
+#include "HivePlatform.h"
 
 using NativeTask::NativeObject;
 using NativeTask::NativeObjectFactory;
 using NativeTask::ObjectCreatorFunc;
 
+int HivePlatform::HiveKeyComparator(const char * src, uint32_t srcLength,
+    const char * dest, uint32_t destLength) {
+  uint32_t sl = bswap(*(uint32_t*)src);
+  uint32_t dl = bswap(*(uint32_t*)dest);
+  return NativeObjectFactory::BytesComparator(src + 4, sl, dest + 4, dl);
+}
+
 DEFINE_NATIVE_LIBRARY(HivePlatform) {
-  REGISTER_FUNCTION(NativeObjectFactory::BytesComparator, HivePlatform);
+  REGISTER_FUNCTION(HivePlatform::HiveKeyComparator, HivePlatform);
 }
 

@@ -16,14 +16,26 @@
  * limitations under the License.
  */
 
+#include "string.h"
+
 #include "NativeTask.h"
 #include "lib/NativeObjectFactory.h"
+#include "lib/primitives.h"
+#include "HBasePlatform.h"
 
 using NativeTask::NativeObject;
 using NativeTask::NativeObjectFactory;
 using NativeTask::ObjectCreatorFunc;
 
+
+int HBasePlatform::ImmutableBytesWritableComparator(const char * src, uint32_t srcLength,
+    const char * dest, uint32_t destLength) {
+  uint32_t sl = bswap(*(uint32_t*)src);
+  uint32_t dl = bswap(*(uint32_t*)dest);
+  return NativeObjectFactory::BytesComparator(src + 4, sl, dest + 4, dl);
+}
+
 DEFINE_NATIVE_LIBRARY(HBasePlatform) {
-  REGISTER_FUNCTION(NativeObjectFactory::BytesComparator, HBasePlatform);
+  REGISTER_FUNCTION(HBasePlatform::ImmutableBytesWritableComparator, HBasePlatform);
 }
 

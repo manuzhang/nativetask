@@ -38,9 +38,9 @@ org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 <property>
 <name>nativetask.kvtest.valueclasses</name>
 <value>
-org.apache.hadoop.hbase.io.ImmutableBytesWritable;
-<!--org.apache.hadoop.io.BytesWritable;
-org.apache.hadoop.io.BooleanWritable;
+<!--org.apache.hadoop.hbase.io.ImmutableBytesWritable; -->
+org.apache.hadoop.io.BytesWritable;
+<!--org.apache.hadoop.io.BooleanWritable;
 org.apache.hadoop.io.ByteWritable;
 org.apache.hadoop.io.DoubleWritable;
 org.apache.hadoop.io.FloatWritable;

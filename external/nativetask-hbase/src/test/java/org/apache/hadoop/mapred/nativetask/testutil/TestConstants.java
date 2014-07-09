@@ -28,16 +28,12 @@ public class TestConstants {
   public static final String NATIVETASK_KVTEST_OUTPUTDIR = "nativetask.kvtest.outputdir";
   public static final String NATIVETASK_KVTEST_NORMAL_OUTPUTDIR = "normal.kvtest.outputdir";
   public static final String NATIVETASK_KVTEST_CREATEFILE = "nativetask.kvtest.createfile";
-  public static final String NATIVETASK_KVTEST_FILE_RECORDNUM = "nativetask.kvtest.file.recordnum";
   public static final String NATIVETASK_KVTEST_KEYCLASSES = "nativetask.kvtest.keyclasses";
   public static final String NATIVETASK_KVTEST_VALUECLASSES = "nativetask.kvtest.valueclasses";
-  public static final String NATIVETASK_COLLECTOR_DELEGATOR = "mapreduce.map.output.collector.delegator.class";
-  public static final String NATIVETASK_COLLECTOR_DELEGATOR_CLASS = "org.apache.hadoop.mapred.nativetask.testutil.EnforceNativeOutputCollectorDelegator";
 
   public static final String COMMON_CONF_PATH = "common_conf.xml";
 
   public static final String FILESIZE_KEY = "kvtest.file.size";
 
-  public static final String NATIVETASK_MAP_OUTPUT_SORT = "mapreduce.sort.avoidance";
 
 }

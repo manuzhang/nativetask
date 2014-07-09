@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -15,27 +15,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.hadoop.mapred.nativetask.testutil;
 
-import org.apache.hadoop.conf.Configuration;
+#ifndef HBASEPLATFORM_H
+#define HBASEPLATFORM_H
 
-public class ScenarioConfiguration extends Configuration {
-  public ScenarioConfiguration() {
-    super();
-    this.addResource(TestConstants.COMMON_CONF_PATH);
-  }
+class HBasePlatform {
 
-  public static Configuration getNormalConfiguration() {
-    Configuration normalConf = new Configuration();
-    normalConf.addResource("common_conf.xml");
-    normalConf.addResource("normal_conf.xml");
-    return normalConf;
-  }
+public:
 
-  public static Configuration getNativeConfiguration() {
-    Configuration nativeConf = new Configuration();
-    nativeConf.addResource("common_conf.xml");
-    nativeConf.addResource("native_conf.xml");
-    return nativeConf;
-  }
-}
+  static int ImmutableBytesWritableComparator(const char * src, uint32_t srcLength,
+     const char * dest, uint32_t destLength);
+
+};
+
+#endif

@@ -38,7 +38,7 @@ AM_CFLAGS = $(PRFLAGS) $(JNI_INCLUDE) -I$(SNAPPY_PREFIX)/include -Ijavah -I$(top
 
 COMMONSOURCES = src/HBasePlatform.cc
 
-COMMONHEADERS =
+COMMONHEADERS = src/HBasePlatform.h
 
 TESTSOURCES =
 

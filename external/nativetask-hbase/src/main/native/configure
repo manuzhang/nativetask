@@ -747,7 +747,7 @@ PACKAGE_VERSION=
 PACKAGE_STRING=
 PACKAGE_BUGREPORT=
 
-ac_unique_file="src/HBasePlatform.cc"
+ac_unique_file="src/HBasePlatform.h"
 # Factoring default headers for most tests.
 ac_includes_default="\
 #include <stdio.h>

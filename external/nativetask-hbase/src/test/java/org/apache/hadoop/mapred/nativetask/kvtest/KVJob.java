@@ -73,7 +73,8 @@ public class KVJob {
     job.setMapperClass(KVJob.ValueMapper.class);
     job.setOutputKeyClass(keyclass);
     job.setMapOutputValueClass(valueclass);
-    
+    job.setReducerClass(HashSumReducer.class);
+
     if (conf.get(TestConstants.NATIVETASK_KVTEST_CREATEFILE).equals("true")) {
       final FileSystem fs = FileSystem.get(conf);
       fs.delete(new Path(inputpath), true);
