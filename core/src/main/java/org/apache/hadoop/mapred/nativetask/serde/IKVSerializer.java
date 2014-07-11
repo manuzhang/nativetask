@@ -24,6 +24,9 @@ import org.apache.hadoop.mapred.nativetask.buffer.DataInputStream;
 import org.apache.hadoop.mapred.nativetask.buffer.DataOutputStream;
 import org.apache.hadoop.mapred.nativetask.util.SizedWritable;
 
+/**
+ * serializes key-value pair
+ */
 public interface IKVSerializer {
 
   public void updateLength(SizedWritable key, SizedWritable value) throws IOException;

@@ -23,6 +23,9 @@ import java.io.IOException;
 import org.apache.hadoop.mapred.nativetask.buffer.InputBuffer;
 import org.apache.hadoop.mapred.nativetask.util.ReadWriteBuffer;
 
+/**
+ * like a Producer
+ */
 public interface NativeDataSource {
 
   /**

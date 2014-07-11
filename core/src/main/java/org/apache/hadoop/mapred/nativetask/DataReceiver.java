@@ -20,10 +20,14 @@ package org.apache.hadoop.mapred.nativetask;
 
 import java.io.IOException;
 
+/**
+ * a DataReceiver pulls in arriving data
+ */
 public interface DataReceiver {
 
   /**
-   * Send a signal to receive to the receiver that the data arrives. The data is transfered in another band.
+   * Send a signal to the receiver that the data arrives.
+   * The data is transferred in another band.
    * 
    * @return
    * @throws IOException

@@ -23,6 +23,9 @@ import java.io.DataOutput;
 import java.io.IOException;
 
 /**
+ * an INativeSerializer serializes keys to be sent to native side
+ * or deserializes keys from native side
+ *
  * Note: if you implemented your customized NativeSerializer instead of DefaultSerializer, you have to make sure the
  * native side can serialize it correctly.
  * 

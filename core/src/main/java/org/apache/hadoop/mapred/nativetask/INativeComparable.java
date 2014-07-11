@@ -19,11 +19,31 @@
 package org.apache.hadoop.mapred.nativetask;
 
 /**
- * 
- * For key types, you must implements this interface.
- * 
- * Interface to indicate whether this class is comparable in native space In native side
- * 
+ *
+ * Any key type that is comparable at native side must implement this interface
+ *
+ * a native comparator function should have the ComparatorPtr type
+ *
+ *   typedef int (*ComparatorPtr)(const char * src, uint32_t srcLength,
+ *   const char * dest,  uint32_t destLength);
+ *
+ * keys are in serialized format at native side. The function has passed in
+ * the keys' locations and lengths such that we can compare them in the same
+ * logic as their Java comparator
+ *
+ *
+ * For example, a HiveKey {@see HiveKey#write} is serialized as
+ * int field (containing the length of raw bytes) + raw bytes
+ * When comparing two HiveKeys, we firstly read the length field and then
+ * comparing the raw bytes invoking the BytesComparator provided by our library.
+ * We pass the location and length of raw bytes into BytesComparator
+ *
+ *   int HivePlatform::HiveKeyComparator(const char * src, uint32_t srcLength,
+ *   const char * dest, uint32_t destLength) {
+ *     uint32_t sl = bswap(*(uint32_t*)src);
+ *     uint32_t dl = bswap(*(uint32_t*)dest);
+ *     return NativeObjectFactory::BytesComparator(src + 4, sl, dest + 4, dl);
+ *   }
  */
 public interface INativeComparable {
 
