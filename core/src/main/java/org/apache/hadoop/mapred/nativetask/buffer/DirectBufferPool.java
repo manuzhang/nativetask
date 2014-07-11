@@ -28,6 +28,11 @@ import java.util.concurrent.ConcurrentMap;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+
+/**
+ * as direct buffer memory is not collected by GC, we keep a pool
+ * to reuse direct buffers
+ */
 public class DirectBufferPool {
   
   private static DirectBufferPool directBufferPool = null;

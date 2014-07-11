@@ -24,7 +24,7 @@ import org.apache.hadoop.mapred.nativetask.buffer.InputBuffer;
 import org.apache.hadoop.mapred.nativetask.util.ReadWriteBuffer;
 
 /**
- * like a Producer
+ * NativeDataSource loads data from upstream
  */
 public interface NativeDataSource {
 
@@ -45,7 +45,6 @@ public interface NativeDataSource {
   /**
    * load data from upstream
    * 
-   * @param param
    * @return
    * @throws IOException
    */

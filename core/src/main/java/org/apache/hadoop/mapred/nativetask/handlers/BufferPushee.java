@@ -31,6 +31,9 @@ import org.apache.hadoop.mapred.nativetask.buffer.InputBuffer;
 import org.apache.hadoop.mapred.nativetask.serde.KVSerializer;
 import org.apache.hadoop.mapred.nativetask.util.SizedWritable;
 
+/**
+ * collect data when signaled
+ */
 public class BufferPushee<OK, OV> implements Closeable {
 
   private static Log LOG = LogFactory.getLog(BufferPushee.class);

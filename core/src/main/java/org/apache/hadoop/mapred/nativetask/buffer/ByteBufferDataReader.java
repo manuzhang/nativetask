@@ -25,6 +25,9 @@ import java.io.PushbackInputStream;
 import java.io.UTFDataFormatException;
 import java.nio.ByteBuffer;
 
+/**
+ * read data from a input buffer
+ */
 public class ByteBufferDataReader extends DataInputStream {
   private ByteBuffer byteBuffer;
   private char lineCache[];

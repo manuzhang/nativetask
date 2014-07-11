@@ -36,6 +36,9 @@ import org.apache.hadoop.mapreduce.server.jobtracker.JTConfig;
 import org.apache.hadoop.util.QuickSort;
 import org.apache.hadoop.util.RunJar;
 
+/**
+ * native map output collector wrapped in Java interface
+ */
 public class NativeMapOutputCollectorDelegator<K, V> implements MapOutputCollector<K, V> {
 
   private static Log LOG = LogFactory.getLog(NativeMapOutputCollectorDelegator.class);

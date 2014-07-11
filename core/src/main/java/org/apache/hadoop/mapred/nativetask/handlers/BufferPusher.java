@@ -30,6 +30,9 @@ import org.apache.hadoop.mapred.nativetask.serde.IKVSerializer;
 import org.apache.hadoop.mapred.nativetask.serde.KVSerializer;
 import org.apache.hadoop.mapred.nativetask.util.SizedWritable;
 
+/**
+ * actively push data into a buffer and signal a {@link BufferPushee} to collect it
+ */
 public class BufferPusher<K, V> implements OutputCollector<K, V> {
   
   private static Log LOG = LogFactory.getLog(BufferPusher.class);

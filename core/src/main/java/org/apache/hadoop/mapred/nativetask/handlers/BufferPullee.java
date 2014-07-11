@@ -27,6 +27,9 @@ import org.apache.hadoop.mapred.nativetask.buffer.OutputBuffer;
 import org.apache.hadoop.mapred.nativetask.serde.KVSerializer;
 import org.apache.hadoop.mapred.nativetask.util.SizedWritable;
 
+/**
+ * load data into a buffer signaled by a {@link BufferPuller}
+ */
 public class BufferPullee<IK, IV> implements IDataLoader {
 
   public static int KV_HEADER_LENGTH = Constants.SIZEOF_KV_LENGTH;

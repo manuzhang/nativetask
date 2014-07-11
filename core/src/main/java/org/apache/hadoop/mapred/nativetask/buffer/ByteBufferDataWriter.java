@@ -24,6 +24,9 @@ import java.nio.ByteBuffer;
 
 import org.apache.hadoop.mapred.nativetask.NativeDataTarget;
 
+/**
+ * write data to a output buffer
+ */
 public class ByteBufferDataWriter extends DataOutputStream {
   private ByteBuffer buffer;
   private final NativeDataTarget target;

@@ -24,7 +24,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.mapred.TaskID;
 
 /**
- * defines the output path
+ * base class of output files manager.
  */
 public interface NativeTaskOutput {
 
