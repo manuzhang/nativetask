@@ -21,7 +21,8 @@ package org.apache.hadoop.mapred.nativetask;
 import java.io.IOException;
 
 /**
- * a DataReceiver pulls in arriving data
+ * a DataReceiver pulls in arriving data, an example
+ * is {@link org.apache.hadoop.mapred.nativetask.handlers.BufferPuller}
  */
 public interface DataReceiver {
 

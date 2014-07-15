@@ -27,7 +27,11 @@ import org.apache.hadoop.mapred.nativetask.serde.NativeSerialization;
 import org.apache.log4j.Logger;
 
 
-
+/**
+ * this class will load in and init all platforms on classpath
+ * it is also the facade to check for key type support and other
+ * platform methods
+ */
 public class Platforms {
 
   private static final Logger LOG = Logger.getLogger(Platforms.class);

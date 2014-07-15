@@ -23,15 +23,20 @@ import java.io.DataOutput;
 import java.io.IOException;
 
 /**
- * an INativeSerializer serializes keys to be sent to native side
- * or deserializes keys from native side
+ * an INativeSerializer serializes and deserializes data transferred between
+ * Java and native. {@link DefaultSerializer} provides default implementations.
  *
- * Note: if you implemented your customized NativeSerializer instead of DefaultSerializer, you have to make sure the
- * native side can serialize it correctly.
+ * Note: if you implemented your customized NativeSerializer instead of DefaultSerializer,
+ * you have to make sure the native side can serialize it correctly.
  * 
  */
 public interface INativeSerializer<T> {
 
+  /**
+   * get length of data to be serialized. If the data length is already known (like IntWritable)
+   * and could immediately be returned from this method, it is good chance to implement customized
+   * NativeSerializer for efficiency
+   */
   public int getLength(T w) throws IOException;
 
   public void serialize(T w, DataOutput out) throws IOException;

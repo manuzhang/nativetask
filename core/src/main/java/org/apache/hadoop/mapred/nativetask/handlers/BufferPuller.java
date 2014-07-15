@@ -17,6 +17,9 @@ import org.apache.hadoop.mapred.nativetask.serde.SerializationFramework;
 import org.apache.hadoop.mapred.nativetask.util.ReadWriteBuffer;
 import org.apache.hadoop.util.Progress;
 
+/**
+ * actively signal a {@link BufferPullee} to load data into buffer and receive
+ */
 public class BufferPuller implements RawKeyValueIterator, DataReceiver {
   
   private static Log LOG = LogFactory.getLog(BufferPuller.class);

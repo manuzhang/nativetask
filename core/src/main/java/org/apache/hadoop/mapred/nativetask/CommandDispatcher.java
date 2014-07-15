@@ -22,7 +22,7 @@ import java.io.IOException;
 import org.apache.hadoop.mapred.nativetask.util.ReadWriteBuffer;
 
 /**
- * a CommandDispatcher receives {@link Command} with parameters from upstream
+ * a CommandDispatcher receives {@link Command} from upstream
  * and performs corresponding operations
  */
 public interface CommandDispatcher {

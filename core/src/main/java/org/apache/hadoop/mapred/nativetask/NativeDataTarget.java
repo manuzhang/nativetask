@@ -23,7 +23,7 @@ import java.io.IOException;
 import org.apache.hadoop.mapred.nativetask.buffer.OutputBuffer;
 
 /**
- * like a consumer
+ * NativeDataTarge sends data to downstream
  */
 public interface NativeDataTarget {
 

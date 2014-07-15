@@ -20,7 +20,7 @@ package org.apache.hadoop.mapred.nativetask;
 import java.io.IOException;
 
 /**
- * interacts with native side to handle combine
+ * interacts with native side to support Java Combiner
  */
 public interface ICombineHandler {
 
@@ -31,9 +31,13 @@ public interface ICombineHandler {
   public void combine() throws IOException;
 
   /**
-   *
+   * @return id of this handler
    */
   public long getId();
 
+  /**
+   * close handlers, buffer pullers and pushers
+   * @throws IOException
+   */
   public void close() throws IOException;
 }

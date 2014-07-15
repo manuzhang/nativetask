@@ -31,6 +31,9 @@ import org.apache.hadoop.mapred.nativetask.buffer.OutputBuffer;
 import org.apache.hadoop.mapred.nativetask.util.ReadWriteBuffer;
 import org.apache.hadoop.mapred.nativetask.util.ConfigUtil;
 
+/**
+ * used to create channel, transfer data and command between Java and native
+ */
 public class NativeBatchProcessor implements INativeHandler {
   private static Log LOG = LogFactory.getLog(NativeBatchProcessor.class);
 

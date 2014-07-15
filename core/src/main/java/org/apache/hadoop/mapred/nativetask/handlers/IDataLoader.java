@@ -21,9 +21,14 @@ package org.apache.hadoop.mapred.nativetask.handlers;
 import java.io.IOException;
 
 /**
- * an IDataLoader pulls data from other sources
+ * an IDataLoader loads data on demand
  */
 public interface IDataLoader {
+
+  /**
+   * @return size of data loaded
+   * @throws IOException
+   */
   public int load() throws IOException;
 
   public void close() throws IOException;
