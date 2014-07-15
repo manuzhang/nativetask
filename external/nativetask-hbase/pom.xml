@@ -123,40 +123,18 @@
                 </goals>
                 <configuration>
                   <target>
-                    <exec executable="sh" dir="${basedir}/src/main/native"
-                          failonerror="true">
-                      <arg value="${basedir}/src/main/native/build.sh" />
-                      <arg value="all" />
+										<exec executable="mkdir">
+											<arg line="${project.build.directory}/native" />
+										</exec>
+                    <exec executable="cmake" dir="${project.build.directory}/native" failonerror="true">
+											<arg line="${basedir}/src/"/>
                     </exec>
-                    <copy toDir="${project.build.directory}/native/target/usr/local/lib" overwrite="true">
-                      <fileset dir="${basedir}/src/main/native/.libs">
-                        <exclude name="**/*.o"/>
-                        <exclude name="nttest"/>
-                      </fileset>
-                    </copy>
-                    <copy todir="${project.build.directory}/${project.artifactId}-${project.version}/lib/native/sdk/" overwrite="true">
-                      <fileset dir="${basedir}/src/main/native/.libs">
-                        <exclude name="**/*.o"/>
-                        <exclude name="nttest"/>
-                      </fileset>
-                      <fileset file="${basedir}/src/main/native/src/NativeTask.h" />
-                    </copy>
-                  </target>
-                </configuration>
-              </execution>
-              <execution>
-                <id>make-clean</id>
-                <phase>clean</phase>
-                <goals>
-                  <goal>run</goal>
-                </goals>
-                <configuration>
-                  <target>
-                    <exec executable="sh" dir="${basedir}/src/main/native"
-                          failonerror="true">
-                      <arg value="${basedir}/src/main/native/build.sh" />
-                      <arg value="clean" />
+                    <exec executable="make" dir="${project.build.directory}/native" failonerror="true">
+                      <arg line="VERBOSE=1"/>
                     </exec>
+                    <!-- The second make is a workaround for HADOOP-9215.  It can
+                         be removed when version 2.6 of cmake is no longer supported . -->
+                    <exec executable="make" dir="${project.build.directory}/native" failonerror="true"></exec>
                   </target>
                 </configuration>
               </execution>

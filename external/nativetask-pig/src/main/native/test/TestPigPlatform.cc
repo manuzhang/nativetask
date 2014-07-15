@@ -88,7 +88,7 @@ template<typename T>
 void compareDesc(T lv, T rv, string & lw, string & rw,
     ComparatorPtr comparator, const char * info);
 
-Config & config = NativeObjectFactory::GetConfig();
+Config & conf = NativeObjectFactory::GetConfig();
 time_t seed = time(NULL);
 
 void unsignedCharsToString(uint16_t src[], int len, string & ret) {
@@ -775,7 +775,7 @@ int getCompareResult(ComparatorPtr comparator, string & lhs, string & rhs) {
 template<typename T>
 void compareWithOrder(T lv, T rv, string & lw, string & rw,
     ComparatorPtr comparator, string & order, const char * info) {
-  config.set(NATIVE_PIG_SORT_ORDER, order);
+  conf.set(NATIVE_PIG_SORT_ORDER, order);
   ASSERT_TRUE(comparator != NULL) << "comparator is not set";
   ASSERT_EQ(PigPlatform::compare<T>(lv, rv), getCompareResult(comparator, lw, rw)) 
      << string(info) << "; raw values: " << lv << ", " << rv;
@@ -934,7 +934,7 @@ TEST(PigPlatform, ReadUTF) {
 }
 
 TEST(PigPlatform, PigSecondaryKeyComparator) {
-  config.set(NATIVE_PIG_SECONDARY_SORT_ORDER, "0");
+  conf.set(NATIVE_PIG_SECONDARY_SORT_ORDER, "0");
   ComparatorPtr comparator = &PigPlatform::PigSecondaryKeyComparator;
 
   Random random(++seed);
