@@ -40,7 +40,7 @@ NativeTask can works in two modes,
 
 **2. Native Runtime Mode** In this mode, NativeTask works as a dedicated native runtime to support native mapper and native reducer written in C++. 
 
-Here is the steps to enable NativeTask in transparent collector mode:
+Here are the steps to enable NativeTask in transparent collector mode:
 
 1. clone NativeTask repository
   
@@ -50,16 +50,8 @@ Here is the steps to enable NativeTask in transparent collector mode:
 
 2. Checkout the right source branch
 
-  To build NativeTask for hadoop1.2.1, 
-
   ```bash
-  git checkout hadoop-1.0
-  ```
-
-  To build NativeTask for Hadoop2.2.0, 
-
-  ```bash
-  git checkout master
+  git checkout native_output_collector
   ```
 
 3. patch Hadoop (${HADOOP_ROOTDIR} points to the root directory of Hadoop codebase)
@@ -74,7 +66,7 @@ Here is the steps to enable NativeTask in transparent collector mode:
 4. build NativeTask with Hadoop
   
   ```bash
-  cd nativetask
+  cd nativetask/core
   cp -r . ${HADOOP_ROOTDIR}/hadoop-mapreduce-project/hadoop-mapreduce-client/hadoop-mapreduce-client-nativetask
   cd ${HADOOP_ROOTDIR}
   mvn install -DskipTests -Pnative
