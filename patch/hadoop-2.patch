@@ -14,8 +14,8 @@ Index: hadoop-mapreduce-project/hadoop-mapreduce-client/hadoop-mapreduce-client-
 +
 +    try {
 +      collector.init(context);
-+    } catch (IOException e) {
-+      LOG.warn("Nativetask falling back to Java MapOutputCollector");
++    } catch (Exception e) {
++      LOG.warn("Nativetask falling back to Java MapOutputCollector", e);
 +      collector = new MapOutputBuffer();
 +      collector.init(context);
 +    } finally {
