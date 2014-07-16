@@ -89,7 +89,7 @@ public class MahoutPlatform extends Platform {
       } else {
         job.set(nativeComparator, "MahoutPlatform.MahoutPlatform::" + keyClassToComparator.get(keyClassName));
       }
-      if (job.get(Constants.NATIVE_CLASS_LIBRARY_BUILDIN, "MahoutPlatform=libnativetaskmahout.so") == null) {
+      if (job.get(Constants.NATIVE_CLASS_LIBRARY_BUILDIN) == null) {
         job.set(Constants.NATIVE_CLASS_LIBRARY_BUILDIN, "MahoutPlatform=libnativetaskmahout.so");
       }
       return true;
