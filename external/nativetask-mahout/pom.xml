@@ -135,9 +135,7 @@
                 </goals>
                 <configuration>
                   <target>
-										<exec executable="mkdir">
-											<arg line="${project.build.directory}/native" />
-										</exec>
+										<copy file="${basedir}/src/main/native/test.sh" todir="${project.build.directory}/native/test" />
                     <exec executable="cmake" dir="${project.build.directory}/native" failonerror="true">
 											<arg line="${basedir}/src/"/>
                     </exec>

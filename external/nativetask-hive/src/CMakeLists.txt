@@ -145,17 +145,8 @@ target_link_libraries(nativetaskhive
     ${JAVA_JVM_LIBRARY}
 )
 
-#IF (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
-#    #
-#    # By embedding '$ORIGIN' into the RPATH of libnativetaskhive.so,
-#    # dlopen will look in the directory containing libnativetaskhive.so.
-#    # However, $ORIGIN is not supported by all operating systems.
-#    #
-#    SET_TARGET_PROPERTIES(nativetaskhive
-#        PROPERTIES INSTALL_RPATH "\$ORIGIN/")
-#ENDIF()
 
-SET(LIBNATIVETASKHBASE_VERSION "1.0.0")
+SET(LIBNATIVETASKHIVE_VERSION "1.0.0")
 SET_TARGET_PROPERTIES(nativetaskhive PROPERTIES SOVERSION
-	${LIBNATIVETASKHBASE_VERSION})
+	${LIBNATIVETASKHIVE_VERSION})
 dual_output_directory(nativetaskhive target/usr/local/lib)

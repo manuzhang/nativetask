@@ -163,17 +163,9 @@ target_link_libraries(nttest
 		z
 		${JAVA_JVM_LIBRARY}
 )
-#IF (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
-#    #
-#    # By embedding '$ORIGIN' into the RPATH of libnativetaskpig.so,
-#    # dlopen will look in the directory containing libnativetaskpig.so.
-#    # However, $ORIGIN is not supported by all operating systems.
-#    #
-#    SET_TARGET_PROPERTIES(nativetaskpig
-#        PROPERTIES INSTALL_RPATH "\$ORIGIN/")
-#ENDIF()
 
-SET(LIBNATIVETASKHBASE_VERSION "1.0.0")
+SET(LIBNATIVETASKPIG_VERSION "1.0.0")
 SET_TARGET_PROPERTIES(nativetaskpig PROPERTIES SOVERSION
-	${LIBNATIVETASKHBASE_VERSION})
+	${LIBNATIVETASKPIG_VERSION})
 dual_output_directory(nativetaskpig target/usr/local/lib)
+output_directory(nttest test)

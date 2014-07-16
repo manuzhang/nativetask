@@ -64,7 +64,7 @@ TEST(Perf, Compressions) {
   string data;
   size_t length = TestConfig.getInt("compression.input.length", 100 * 1024 * 1024);
   uint32_t buffhint = TestConfig.getInt("compression.buffer.hint", 128 * 1024);
-  string type = TestConfig.get("compression.input.type", "tera");
+  string type = TestConfig.get("compression.input.type", "bytes");
   Timer timer;
   GenerateKVTextLength(data, length, type);
   LOG("%s", timer.getInterval("Generate data").c_str());

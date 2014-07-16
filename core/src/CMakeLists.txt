@@ -91,7 +91,8 @@ SET(CMAKE_FIND_LIBRARY_SUFFIXES STORED_CMAKE_FIND_LIBRARY_SUFFIXES)
 # primitive configs
 set(PRFLAGS "-DSIMPLE_MEMCPY")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${PRFLAGS} -Wall")
-set(CMAKE_LD_FLAGS "${CMAKE_LD_FLAGS} -no-undefined -version-info 0:1:0")
+set(CMAKE_LD_FLAGS "${CMAKE_LD_FLAGS} -no-undefined -version-info 0:1:0 
+		-L${_JAVA_HOME}/jre/lib/amd64/server -ljvm")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CMAKE_C_FLAGS} -g -O2 -DNDEBUG -fPIC")
 set(D main/native/)
 
@@ -214,7 +215,7 @@ target_link_libraries(nativetask
 		pthread
 		z
 		${SNAPPY_LIBRARY}
-    ${JAVA_JVM_LIBRARY}
+		${JAVA_JVM_LIBRARY}
 )
 
 add_executable(nttest 
@@ -248,6 +249,7 @@ add_executable(nttest
     ${D}/test/TestSort.cc                      
     ${D}/test/TestMain.cc                      
     ${D}/test/test_commons.cc)
+set(CMAKE_EXE_LINKER_FLAGS "-L${_JAVA_HOME}/jre/lib/amd64/server -ljvm")
 target_link_libraries(nttest 
    	nativetask_static
 	  dl
@@ -255,7 +257,7 @@ target_link_libraries(nttest
 	  pthread
 	  z
 	  ${SNAPPY_LIBRARY}
-	  ${JAVA_JVM_LIBRARY}
+		#	  ${JAVA_JVM_LIBRARY}
 )
 #if (NEED_LINK_DL)
 #   set(LIB_DL dl)
@@ -274,4 +276,4 @@ ENDIF()
 SET(LIBNATIVETASK_VERSION "1.0.0")
 SET_TARGET_PROPERTIES(nativetask PROPERTIES SOVERSION ${LIBNATIVETASK_VERSION})
 dual_output_directory(nativetask target/usr/local/lib)
-#output_directory(nttest target/usr/local/lib)
+output_directory(nttest test)

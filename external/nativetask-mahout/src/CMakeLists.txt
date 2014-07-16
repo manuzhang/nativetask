@@ -162,17 +162,9 @@ target_link_libraries(nttest
 		${JAVA_JVM_LIBRARY}
 )
 
-#IF (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
-#    #
-#    # By embedding '$ORIGIN' into the RPATH of libnativetaskmahout.so,
-#    # dlopen will look in the directory containing libnativetaskmahout.so.
-#    # However, $ORIGIN is not supported by all operating systems.
-#    #
-#    SET_TARGET_PROPERTIES(nativetaskmahout
-#        PROPERTIES INSTALL_RPATH "\$ORIGIN/")
-#ENDIF()
 
-SET(LIBNATIVETASKHBASE_VERSION "1.0.0")
+SET(LIBNATIVETASKMAHOUT_VERSION "1.0.0")
 SET_TARGET_PROPERTIES(nativetaskmahout PROPERTIES SOVERSION
-	${LIBNATIVETASKHBASE_VERSION})
+	${LIBNATIVETASKMAHOUT_VERSION})
 dual_output_directory(nativetaskmahout target/usr/local/lib)
+output_directory(nttest test)
