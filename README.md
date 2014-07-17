@@ -1,3 +1,5 @@
+#This branch now compile against hadoop3.0-trunk.
+
 #What is NativeTask?
 NativeTask is a **performance oriented** native engine for Hadoop MapReduce.
 
