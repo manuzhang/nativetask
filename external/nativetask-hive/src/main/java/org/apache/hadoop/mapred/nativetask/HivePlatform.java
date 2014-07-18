@@ -22,14 +22,18 @@ import java.io.DataOutput;
 import java.io.IOException;
 
 import org.apache.hadoop.hive.ql.io.HiveKey;
+import org.apache.hadoop.io.RawComparator;
+import org.apache.hadoop.mapred.InvalidJobConfException;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.nativetask.serde.BytesWritableSerializer;
 import org.apache.hadoop.mapred.nativetask.serde.INativeSerializer;
+import org.apache.hadoop.mapreduce.MRJobConfig;
 import org.apache.log4j.Logger;
 
 public class HivePlatform extends Platform {
 
   private static final Logger LOG = Logger.getLogger(HivePlatform.class);
+  public static final String DEFAULT_NATIVE_LIBRARY = "HivePlatform=libnativetaskhive.so";
 
   public HivePlatform() {
   }
@@ -47,20 +51,21 @@ public class HivePlatform extends Platform {
 
   @Override
   public boolean support(String keyClassName, INativeSerializer serializer, JobConf job) {
-    if (keyClassNames.contains(keyClassName) && serializer instanceof INativeComparable) {
-      String nativeComparator = Constants.NATIVE_MAPOUT_KEY_COMPARATOR + "." + keyClassName;
-      job.set(nativeComparator, "HivePlatform.HivePlatform::HiveKeyComparator");
-      if (job.get(Constants.NATIVE_CLASS_LIBRARY_BUILDIN) == null) {
-        job.set(Constants.NATIVE_CLASS_LIBRARY_BUILDIN, "HivePlatform=libnativetaskhive.so");
+    if (super.support(keyClassName, serializer, job)) {
+      Class comparatorClass = job.getClass(MRJobConfig.KEY_COMPARATOR, null, RawComparator.class);
+      if (comparatorClass != null) {
+        String message = "Native output collector don't support customized java comparator "
+          + comparatorClass.getName();
+        LOG.error(message);
+      } else {
+        String nativeComparator = Constants.NATIVE_MAPOUT_KEY_COMPARATOR + "." + keyClassName;
+        job.set(nativeComparator, "HivePlatform.HivePlatform::HiveKeyComparator");
+        if (job.get(Constants.NATIVE_CLASS_LIBRARY_BUILDIN) == null) {
+          job.set(Constants.NATIVE_CLASS_LIBRARY_BUILDIN, DEFAULT_NATIVE_LIBRARY);
+        }
+        return true;
       }
-      return true;
-    } else {
-      return false;
     }
-  }
-
-  @Override
-  public boolean define(Class comparatorClass) {
     return false;
   }
 

@@ -59,17 +59,4 @@ public class Platforms {
     }
     return false;
   }
-
-  public static boolean define(Class keyComparator) {
-    synchronized (platforms) {
-      for (Platform platform : platforms) {
-        if (platform.define(keyComparator)) {
-          LOG.debug("platform " + platform.name() + " define comparator "
-            + keyComparator.getName());
-          return true;
-        }
-      }
-    }
-    return false;
-  }
 }

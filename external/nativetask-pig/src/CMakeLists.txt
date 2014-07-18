@@ -120,7 +120,7 @@ CHECK_FUNCTION_EXISTS(strtoul HAVE_STRTOUL)
 
 
 set(NATIVETASK_DIR 
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../../core/src/main/native)
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../src/main/native)
 include_directories(
 		${D}
     ${D}/src

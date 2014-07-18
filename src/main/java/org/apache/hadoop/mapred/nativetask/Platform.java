@@ -41,7 +41,7 @@ import org.apache.hadoop.mapred.nativetask.serde.NativeSerialization;
  */
 public abstract class Platform {
   private final NativeSerialization serialization;
-  protected Set<String> keyClassNames = new HashSet<String>();
+  private Set<String> keyClassNames = new HashSet<String>();
 
   public Platform() {
     this.serialization = NativeSerialization.getInstance();
@@ -85,18 +85,12 @@ public abstract class Platform {
    * @return             true if the platform has implemented native comparators of the key and
    *                     false otherwise
    */
-  protected abstract boolean support(String keyClassName, INativeSerializer serializer, JobConf job);
+  protected boolean support(String keyClassName, INativeSerializer serializer, JobConf job) {
+    if (keyClassNames.contains(keyClassName) && serializer instanceof INativeComparable) {
+      return true;
+    } else {
+      return false;
+    }
+  }
 
-
-  /**
-   * whether it's the platform that has defined a custom Java comparator
-   *
-   * NativeTask doesn't support custom Java comparator(set with mapreduce.job.output.key.comparator.class)
-   * but a platform (e.g Pig) could also set that conf and implement native comparators so
-   * we shouldn't bail out.
-   *
-   * @param keyComparator comparator set with mapreduce.job.output.key.comparator.class
-   * @return
-   */
-  protected abstract boolean define(Class keyComparator);
 }

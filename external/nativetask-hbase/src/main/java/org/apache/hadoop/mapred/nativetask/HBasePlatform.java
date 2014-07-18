@@ -18,8 +18,10 @@
 package org.apache.hadoop.mapred.nativetask;
 
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
+import org.apache.hadoop.io.RawComparator;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.nativetask.serde.INativeSerializer;
+import org.apache.hadoop.mapreduce.MRJobConfig;
 import org.apache.log4j.Logger;
 
 import java.io.DataInput;
@@ -29,6 +31,7 @@ import java.io.IOException;
 
 public class HBasePlatform extends Platform {
   private static final Logger LOG = Logger.getLogger(HBasePlatform.class);
+  public static final String DEFAULT_NATIVE_LIBRARY = "HBasePlatform=libnativetaskhbase.so";
 
   public HBasePlatform() {
   }
@@ -46,22 +49,22 @@ public class HBasePlatform extends Platform {
 
   @Override
   public boolean support(String keyClassName, INativeSerializer serializer, JobConf job) {
-    if (keyClassNames.contains(keyClassName) &&
-      serializer instanceof INativeComparable) {
-      String nativeComparator = Constants.NATIVE_MAPOUT_KEY_COMPARATOR + "." + keyClassName;
-      job.set(nativeComparator, "HBasePlatform.HBasePlatform::ImmutableBytesWritableComparator");
-      if (job.get(Constants.NATIVE_CLASS_LIBRARY_BUILDIN) == null) {
-        job.set(Constants.NATIVE_CLASS_LIBRARY_BUILDIN, "HBasePlatform=libnativetaskhbase.so");
-      }
-      return true;
-    } else {
-      return false;
-    }
-  }
-
-  @Override
-  public boolean define(Class comparatorClass) {
-    return false;
+    if (super.support(keyClassName, serializer, job)) {
+      Class comparatorClass = job.getClass(MRJobConfig.KEY_COMPARATOR, null, RawComparator.class);
+      if (comparatorClass != null) {
+        String message = "Native output collector don't support customized java comparator "
+          + comparatorClass.getName();
+        LOG.error(message);
+			} else {
+				String nativeComparator = Constants.NATIVE_MAPOUT_KEY_COMPARATOR + "." + keyClassName;
+				job.set(nativeComparator, "HBasePlatform.HBasePlatform::ImmutableBytesWritableComparator");
+				if (job.get(Constants.NATIVE_CLASS_LIBRARY_BUILDIN) == null) {
+					job.set(Constants.NATIVE_CLASS_LIBRARY_BUILDIN, DEFAULT_NATIVE_LIBRARY);
+				}
+			}
+			return true;
+		}
+		return false;
   }
 
   public static class ImmutableBytesWritableSerializer implements INativeComparable, INativeSerializer<ImmutableBytesWritable> {

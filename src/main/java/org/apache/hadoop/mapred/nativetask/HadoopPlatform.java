@@ -19,20 +19,10 @@ package org.apache.hadoop.mapred.nativetask;
 
 import java.io.IOException;
 
-import org.apache.hadoop.io.BooleanWritable;
-import org.apache.hadoop.io.ByteWritable;
-import org.apache.hadoop.io.BytesWritable;
-import org.apache.hadoop.io.DoubleWritable;
-import org.apache.hadoop.io.FloatWritable;
-import org.apache.hadoop.io.IntWritable;
-import org.apache.hadoop.io.LongWritable;
-import org.apache.hadoop.io.NullWritable;
-import org.apache.hadoop.io.Text;
-import org.apache.hadoop.io.VIntWritable;
-import org.apache.hadoop.io.VLongWritable;
-import org.apache.hadoop.io.Writable;
+import org.apache.hadoop.io.*;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.nativetask.serde.*;
+import org.apache.hadoop.mapreduce.MRJobConfig;
 import org.apache.log4j.Logger;
 
 public class HadoopPlatform extends Platform {
@@ -59,20 +49,21 @@ public class HadoopPlatform extends Platform {
     LOG.info("Hadoop platform inited");
   }
 
-  @Override
   public boolean support(String keyClassName, INativeSerializer serializer, JobConf job) {
-    if (keyClassNames.contains(keyClassName)
-      && serializer instanceof INativeComparable) {
-      return true;
-    } else {
-      return false;
+    if (super.support(keyClassName, serializer, job)) {
+      Class comparatorClass = job.getClass(MRJobConfig.KEY_COMPARATOR, null, RawComparator.class);
+      if (comparatorClass != null) {
+        String message = "Native output collector don't support customized java comparator "
+          + comparatorClass.getName();
+        LOG.error(message);
+      } else {
+        return true;
+      }
     }
-  }
 
-  @Override
-  public boolean define(Class comparatorClass) {
     return false;
   }
+
 
   @Override
   public String name() {

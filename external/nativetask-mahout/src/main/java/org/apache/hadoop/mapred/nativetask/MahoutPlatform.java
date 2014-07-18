@@ -22,16 +22,19 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.hadoop.io.RawComparator;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.nativetask.serde.DefaultSerializer;
 import org.apache.hadoop.mapred.nativetask.serde.INativeSerializer;
 import org.apache.hadoop.mapred.nativetask.serde.LongWritableSerializer;
+import org.apache.hadoop.mapreduce.MRJobConfig;
 import org.apache.log4j.Logger;
 
 public class MahoutPlatform extends Platform {
 
   private static final Logger LOG = Logger.getLogger(MahoutPlatform.class);
   private Map<String, String> keyClassToComparator = new HashMap<String, String>();
+	public static final String DEFAULT_NATIVE_LIBRARY = "MahoutPlatform=libnativetaskmahout.so";
 
   public MahoutPlatform() {
   }
@@ -81,25 +84,25 @@ public class MahoutPlatform extends Platform {
 
   @Override
   public boolean support(String keyClassName, INativeSerializer serializer, JobConf job) {
-    if (keyClassNames.contains(keyClassName) &&
-      serializer instanceof INativeComparable) {
-      String nativeComparator = Constants.NATIVE_MAPOUT_KEY_COMPARATOR + "." + keyClassName;
-      if (keyClassName.equals("org.apache.mahout.classifier.df.mapreduce.partial.TreeID")) {
-        job.set(nativeComparator, "MahoutPlatform.NativeObjectFactory::LongComparator");
+    if (super.support(keyClassName, serializer, job)) {
+      Class comparatorClass = job.getClass(MRJobConfig.KEY_COMPARATOR, null, RawComparator.class);
+      if (comparatorClass != null) {
+        String message = "Native output collector don't support customized java comparator "
+          + comparatorClass.getName();
+        LOG.error(message);
       } else {
-        job.set(nativeComparator, "MahoutPlatform.MahoutPlatform::" + keyClassToComparator.get(keyClassName));
-      }
-      if (job.get(Constants.NATIVE_CLASS_LIBRARY_BUILDIN) == null) {
-        job.set(Constants.NATIVE_CLASS_LIBRARY_BUILDIN, "MahoutPlatform=libnativetaskmahout.so");
-      }
-      return true;
-    } else {
-      return false;
-    }
-  }
-
-  @Override
-  public boolean define(Class comparatorClass) {
+				String nativeComparator = Constants.NATIVE_MAPOUT_KEY_COMPARATOR + "." + keyClassName;
+				if (keyClassName.equals("org.apache.mahout.classifier.df.mapreduce.partial.TreeID")) {
+					job.set(nativeComparator, "MahoutPlatform.NativeObjectFactory::LongComparator");
+				} else {
+					job.set(nativeComparator, "MahoutPlatform.MahoutPlatform::" + keyClassToComparator.get(keyClassName));
+				}
+				if (job.get(Constants.NATIVE_CLASS_LIBRARY_BUILDIN) == null) {
+					job.set(Constants.NATIVE_CLASS_LIBRARY_BUILDIN, DEFAULT_NATIVE_LIBRARY);
+				}
+				return true;
+			} 
+		}
     return false;
   }
 

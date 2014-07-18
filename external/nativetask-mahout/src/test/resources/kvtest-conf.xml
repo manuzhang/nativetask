@@ -32,13 +32,13 @@
 <name>nativetask.kvtest.keyclasses</name>
 <value>
 org.apache.mahout.common.StringTuple;
-org.apache.mahout.vectorizer.collocations.llr.Gram;
+<!--org.apache.mahout.vectorizer.collocations.llr.Gram;
 org.apache.mahout.vectorizer.collocations.llr.GramKey;
 org.apache.mahout.math.hadoop.stochasticsvd.SplitPartitionedWritable;
 org.apache.mahout.cf.taste.hadoop.EntityEntityWritable;
 org.apache.mahout.math.VarIntWritable;
 org.apache.mahout.math.VarLongWritable;
-org.apache.mahout.classifier.df.mapreduce.partial.TreeID;
+org.apache.mahout.classifier.df.mapreduce.partial.TreeID; -->
 </value>
 </property>
 
@@ -46,7 +46,7 @@ org.apache.mahout.classifier.df.mapreduce.partial.TreeID;
 <name>nativetask.kvtest.valueclasses</name>
 <value>
 org.apache.mahout.common.StringTuple;
-org.apache.mahout.vectorizer.collocations.llr.Gram;
+<!--org.apache.mahout.vectorizer.collocations.llr.Gram;
 org.apache.mahout.vectorizer.collocations.llr.GramKey;
 org.apache.mahout.math.hadoop.stochasticsvd.SplitPartitionedWritable;
 org.apache.mahout.cf.taste.hadoop.EntityEntityWritable;
@@ -63,7 +63,7 @@ org.apache.hadoop.io.LongWritable;
 org.apache.hadoop.io.Text;
 org.apache.hadoop.io.VIntWritable;
 org.apache.hadoop.io.VLongWritable;
-org.apache.hadoop.mapred.nativetask.testutil.MockValueClass;
+org.apache.hadoop.mapred.nativetask.testutil.MockValueClass; -->
 </value>
 </property>
 

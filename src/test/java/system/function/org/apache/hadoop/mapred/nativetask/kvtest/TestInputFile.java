@@ -34,7 +34,7 @@ import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.SequenceFile;
 import org.apache.hadoop.io.VIntWritable;
 import org.apache.hadoop.io.VLongWritable;
-import org.apache.hadoop.mapred.nativetask.testutil.BytesFactory;
+import org.apache.hadoop.mapred.nativetask.testutil.BytesUtil;
 import org.apache.hadoop.mapred.nativetask.testutil.ScenarioConfiguration;
 import org.apache.hadoop.mapred.nativetask.testutil.TestConstants;
 
@@ -201,7 +201,7 @@ public class TestInputFile {
       offset += valuebytesnum;
       
       try {
-        writer.append(BytesFactory.newObject(key, this.keyClsName), BytesFactory.newObject(value, this.valueClsName));
+        writer.append(BytesUtil.newObject(key, this.keyClsName), BytesUtil.newObject(value, this.valueClsName));
       } catch (final IOException e) {
         e.printStackTrace();
         throw new Exception("sequence file create failed", e);
