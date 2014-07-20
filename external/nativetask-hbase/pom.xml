@@ -8,7 +8,7 @@
   the specific language governing permissions and limitations under the License. 
   See accompanying LICENSE file. -->
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
                       http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.apache.hadoop</groupId>
@@ -17,13 +17,14 @@
   <name>nativetask-hbase</name>
 
   <properties>
+    <hadoop.version>2.2.0</hadoop.version>
   </properties>
 
   <dependencies>
     <dependency>
       <groupId>org.apache.hadoop</groupId>
       <artifactId>hadoop-mapreduce-client-nativetask</artifactId>
-      <version>2.2.0</version>
+      <version>${hadoop.version}</version>
     </dependency>
     <dependency>
       <groupId>org.apache.hbase</groupId>
@@ -38,20 +39,20 @@
     </dependency>
     <dependency>
       <groupId>org.mockito</groupId>
-	    <artifactId>mockito-all</artifactId>
-	    <version>1.8.4</version>
+      <artifactId>mockito-all</artifactId>
+      <version>1.8.4</version>
       <scope>test</scope>
     </dependency>
     <dependency>
-		  <groupId>org.apache.hadoop</groupId>
-		  <artifactId>hadoop-mapreduce-client-common</artifactId>
-		  <version>2.2.0</version>
-		  <scope>test</scope>
-	  </dependency>
+      <groupId>org.apache.hadoop</groupId>
+      <artifactId>hadoop-mapreduce-client-common</artifactId>
+      <version>${hadoop.version}</version>
+      <scope>test</scope>
+    </dependency>
     <dependency>
       <groupId>org.apache.hadoop</groupId>
       <artifactId>hadoop-mapreduce-client-nativetask</artifactId>
-      <version>2.2.0</version>
+      <version>${hadoop.version}</version>
       <type>test-jar</type>
       <scope>test</scope>
     </dependency>
@@ -59,7 +60,7 @@
     <dependency>
       <groupId>org.apache.hadoop</groupId>
       <artifactId>hadoop-common</artifactId>
-      <version>2.2.0</version>
+      <version>${hadoop.version}</version>
       <type>test-jar</type>
       <scope>test</scope>
     </dependency>
@@ -80,7 +81,7 @@
           </properties>
           <includes>
             <include>**/kvtest/*Test.java</include>
-          </includes> 
+          </includes>
         </configuration>
       </plugin>
     </plugins>
@@ -131,11 +132,11 @@
                 </goals>
                 <configuration>
                   <target>
-										<exec executable="mkdir">
-											<arg line="${project.build.directory}/native" />
-										</exec>
+                    <exec executable="mkdir">
+                      <arg line="${project.build.directory}/native" />
+                    </exec>
                     <exec executable="cmake" dir="${project.build.directory}/native" failonerror="true">
-											<arg line="${basedir}/src/"/>
+                      <arg line="${basedir}/src/"/>
                     </exec>
                     <exec executable="make" dir="${project.build.directory}/native" failonerror="true">
                       <arg line="VERBOSE=1"/>

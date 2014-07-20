@@ -8,7 +8,7 @@
   the specific language governing permissions and limitations under the License. 
   See accompanying LICENSE file. -->
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
                       http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <groupId>nativetask</groupId>
@@ -17,14 +17,14 @@
   <name>nativetask-mahout</name>
 
   <properties>
-		<hadoop.version>2.2.0</hadoop.version>
+    <hadoop.version>2.2.0</hadoop.version>
   </properties>
 
   <dependencies>
-   <dependency>
+    <dependency>
       <groupId>org.apache.hadoop</groupId>
       <artifactId>hadoop-mapreduce-client-nativetask</artifactId>
-			<version>${hadoop.version}</version>
+      <version>${hadoop.version}</version>
     </dependency>
     <dependency>
       <groupId>org.apache.mahout</groupId>
@@ -37,13 +37,13 @@
         </exclusion>
       </exclusions>
     </dependency>
-   <dependency>
-     <groupId>org.apache.hadoop</groupId>
-     <artifactId>hadoop-mapreduce-client-common</artifactId>
-		 <version>${hadoop.version}</version>
-     <scope>test</scope>
-   </dependency>
-   <dependency>
+    <dependency>
+      <groupId>org.apache.hadoop</groupId>
+      <artifactId>hadoop-mapreduce-client-common</artifactId>
+      <version>${hadoop.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
       <version>4.11</version>
@@ -51,30 +51,30 @@
     </dependency>
     <dependency>
       <groupId>org.mockito</groupId>
-	    <artifactId>mockito-all</artifactId>
-	    <version>1.8.4</version>
+      <artifactId>mockito-all</artifactId>
+      <version>1.8.4</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.apache.hadoop</groupId>
       <artifactId>hadoop-mapreduce-client-nativetask</artifactId>
-			<version>${hadoop.version}</version>
+      <version>${hadoop.version}</version>
       <type>test-jar</type>
       <scope>test</scope>
-    </dependency> 
+    </dependency>
     <dependency>
       <groupId>org.apache.hadoop</groupId>
       <artifactId>hadoop-common</artifactId>
-			<version>${hadoop.version}</version>
+      <version>${hadoop.version}</version>
       <type>test-jar</type>
       <scope>test</scope>
-    </dependency> 
-      <dependency>
-          <groupId>joda-time</groupId>
-          <artifactId>joda-time</artifactId>
-          <version>2.2</version>
-          <scope>test</scope>
-      </dependency>
+    </dependency>
+    <dependency>
+      <groupId>joda-time</groupId>
+      <artifactId>joda-time</artifactId>
+      <version>2.2</version>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>
@@ -92,7 +92,7 @@
           </properties>
           <includes>
             <include>**/kvtest/KVTest.java</include>
-          </includes> 
+          </includes>
         </configuration>
       </plugin>
     </plugins>
@@ -143,9 +143,9 @@
                 </goals>
                 <configuration>
                   <target>
-										<copy file="${basedir}/src/main/native/test.sh" todir="${project.build.directory}/native/test" />
+                    <copy file="${basedir}/src/main/native/test.sh" todir="${project.build.directory}/native/test" />
                     <exec executable="cmake" dir="${project.build.directory}/native" failonerror="true">
-											<arg line="${basedir}/src/"/>
+                      <arg line="${basedir}/src/"/>
                     </exec>
                     <exec executable="make" dir="${project.build.directory}/native" failonerror="true">
                       <arg line="VERBOSE=1"/>
@@ -153,7 +153,7 @@
                     <!-- The second make is a workaround for HADOOP-9215.  It can
                          be removed when version 2.6 of cmake is no longer supported . -->
                     <exec executable="make" dir="${project.build.directory}/native" failonerror="true"></exec>
-        				  </target>
+                  </target>
                 </configuration>
               </execution>
             </executions>
