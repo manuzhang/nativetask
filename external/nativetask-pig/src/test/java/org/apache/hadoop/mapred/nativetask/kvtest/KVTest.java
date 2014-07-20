@@ -62,52 +62,51 @@ public class KVTest {
     hadoopkvtestconf.addResource(TestConstants.KVTEST_CONF_PATH);
 
     classToRawComparator.put(NullableBooleanWritable.class,
-      PigBooleanRawComparator.class);
+            PigBooleanRawComparator.class);
     classToRawComparator.put(NullableBytesWritable.class,
-      PigBytesRawComparator.class);
+            PigBytesRawComparator.class);
     classToRawComparator.put(NullableDateTimeWritable.class,
-      PigDateTimeRawComparator.class);
+            PigDateTimeRawComparator.class);
     classToRawComparator.put(NullableDoubleWritable.class,
-      PigDoubleRawComparator.class);
+            PigDoubleRawComparator.class);
     classToRawComparator.put(NullableFloatWritable.class,
-      PigFloatRawComparator.class);
+            PigFloatRawComparator.class);
     classToRawComparator.put(NullableIntWritable.class,
-      PigIntRawComparator.class);
+            PigIntRawComparator.class);
     classToRawComparator.put(NullableLongWritable.class,
-      PigLongRawComparator.class);
+            PigLongRawComparator.class);
     classToRawComparator.put(NullableText.class,
-      PigTextRawComparator.class);
+            PigTextRawComparator.class);
     classToRawComparator.put(NullableTuple.class,
-      PigTupleSortComparator.class);
+            PigTupleSortComparator.class);
     classToRawComparator.put(NullableBigIntegerWritable.class,
-      PigBigIntegerRawComparator.class);
+            PigBigIntegerRawComparator.class);
     classToRawComparator.put(NullableBigDecimalWritable.class,
-      PigBigDecimalRawComparator.class);
-
+            PigBigDecimalRawComparator.class);
 
 
     classToComparator.put(NullableBooleanWritable.class,
-      PigBooleanWritableComparator.class);
+            PigBooleanWritableComparator.class);
     classToComparator.put(NullableBytesWritable.class,
-      PigDBAWritableComparator.class);
+            PigDBAWritableComparator.class);
     classToComparator.put(NullableDateTimeWritable.class,
-      PigDateTimeWritableComparator.class);
+            PigDateTimeWritableComparator.class);
     classToComparator.put(NullableDoubleWritable.class,
-      PigDoubleWritableComparator.class);
+            PigDoubleWritableComparator.class);
     classToComparator.put(NullableFloatWritable.class,
-      PigFloatWritableComparator.class);
+            PigFloatWritableComparator.class);
     classToComparator.put(NullableIntWritable.class,
-      PigIntWritableComparator.class);
+            PigIntWritableComparator.class);
     classToComparator.put(NullableLongWritable.class,
-      PigLongWritableComparator.class);
+            PigLongWritableComparator.class);
     classToComparator.put(NullableText.class,
-      PigCharArrayWritableComparator.class);
+            PigCharArrayWritableComparator.class);
     classToComparator.put(NullableTuple.class,
-      PigTupleWritableComparator.class);
-		classToComparator.put(NullableBigIntegerWritable.class,
-		  PigBigIntegerWritableComparator.class);
+            PigTupleWritableComparator.class);
+    classToComparator.put(NullableBigIntegerWritable.class,
+            PigBigIntegerWritableComparator.class);
     classToComparator.put(NullableBigDecimalWritable.class,
-		  PigBigDecimalWritableComparator.class);
+            PigBigDecimalWritableComparator.class);
 
   }
 
@@ -120,7 +119,7 @@ public class KVTest {
     String[] keyOrderNames = null;
 
     final String valueclassesStr = nativekvtestconf
-      .get(TestConstants.NATIVETASK_KVTEST_VALUECLASSES);
+            .get(TestConstants.NATIVETASK_KVTEST_VALUECLASSES);
     valueclassNames = valueclassesStr.replaceAll("\\s", "").split(";");// delete
     // " "
     final ArrayList<Class<?>> tmpvalueclasses = new ArrayList<Class<?>>();
@@ -177,9 +176,9 @@ public class KVTest {
   private final String keyOrder;
 
   public KVTest(Object keyclass, Object valueclass, Object keyOrder) {
-    this.keyclass = (Class<?>)keyclass;
-    this.valueclass = (Class<?>)valueclass;
-    this.keyOrder = (String)keyOrder;
+    this.keyclass = (Class<?>) keyclass;
+    this.valueclass = (Class<?>) valueclass;
+    this.keyOrder = (String) keyOrder;
   }
 
   @Test
@@ -190,27 +189,27 @@ public class KVTest {
       if (keyOrder.equals("sortOrderAscDesc") && keyclass != NullableTuple.class) {
         return;
       }
-		  if ((keyclass == NullableBigIntegerWritable.class 
-						|| keyclass == NullableBigDecimalWritable.class)
-						&& !keyOrder.equals("groupOnly")) {
-				return;
-		  }
+      if ((keyclass == NullableBigIntegerWritable.class
+              || keyclass == NullableBigDecimalWritable.class)
+              && !keyOrder.equals("groupOnly")) {
+        return;
+      }
       final String nativeoutput = this.runNativeTest(
-        "Test:" + keyclass.getSimpleName() + "--" + valueclass.getSimpleName(), keyclass, valueclass);  
+              "Test:" + keyclass.getSimpleName() + "--" + valueclass.getSimpleName(), keyclass, valueclass);
       final String normaloutput = this.runNormalTest(
-        "Test:" + keyclass.getSimpleName() + "--" + valueclass.getSimpleName(), keyclass, valueclass);
+              "Test:" + keyclass.getSimpleName() + "--" + valueclass.getSimpleName(), keyclass, valueclass);
       final boolean compareRet = ResultVerifier.verify(normaloutput, nativeoutput);
       final String input = nativekvtestconf.get(TestConstants.NATIVETASK_KVTEST_INPUTDIR) + "/"
-        + keyclass.getName()
-        + "/" + valueclass.getName(); 
-      if(compareRet){
+              + keyclass.getName()
+              + "/" + valueclass.getName();
+      if (compareRet) {
         final FileSystem fs = FileSystem.get(hadoopkvtestconf);
         fs.delete(new Path(nativeoutput), true);
         fs.delete(new Path(normaloutput), true);
         fs.delete(new Path(input), true);
         fs.close();
       }
-      assertEquals("file compare result: if they are the same ,then return true", true, compareRet);  
+      assertEquals("file compare result: if they are the same ,then return true", true, compareRet);
     } catch (final IOException e) {
       assertEquals("test run exception:", null, e);
     } catch (final Exception e) {
@@ -225,10 +224,10 @@ public class KVTest {
 
   private String runNativeTest(String jobname, Class<?> keyclass, Class<?> valueclass) throws IOException {
     final String inputpath = nativekvtestconf.get(TestConstants.NATIVETASK_KVTEST_INPUTDIR) + "/"
-      + keyclass.getName()
-      + "/" + valueclass.getName();
+            + keyclass.getName()
+            + "/" + valueclass.getName();
     final String outputpath = nativekvtestconf.get(TestConstants.NATIVETASK_KVTEST_OUTPUTDIR) + "/"
-      + keyclass.getName() + "/" + valueclass.getName();
+            + keyclass.getName() + "/" + valueclass.getName();
     // if output file exists ,then delete it
     final FileSystem fs = FileSystem.get(nativekvtestconf);
     fs.delete(new Path(outputpath));
@@ -239,7 +238,7 @@ public class KVTest {
       setPigJobConf(keyJob.job);
       keyJob.runJob();
     } catch (final Exception e) {
-			e.printStackTrace();
+      e.printStackTrace();
       return "native testcase run time error.";
     }
     return outputpath;
@@ -247,12 +246,12 @@ public class KVTest {
 
   private String runNormalTest(String jobname, Class<?> keyclass, Class<?> valueclass) throws IOException {
     final String inputpath = hadoopkvtestconf.get(TestConstants.NATIVETASK_KVTEST_INPUTDIR) + "/"
-      + keyclass.getName()
-      + "/" + valueclass.getName();
+            + keyclass.getName()
+            + "/" + valueclass.getName();
     final String outputpath = hadoopkvtestconf
-      .get(TestConstants.NATIVETASK_KVTEST_NORMAL_OUTPUTDIR)
-      + "/"
-      + keyclass.getName() + "/" + valueclass.getName();
+            .get(TestConstants.NATIVETASK_KVTEST_NORMAL_OUTPUTDIR)
+            + "/"
+            + keyclass.getName() + "/" + valueclass.getName();
     // if output file exists ,then delete it
     final FileSystem fs = FileSystem.get(hadoopkvtestconf);
     fs.delete(new Path(outputpath));
@@ -272,20 +271,20 @@ public class KVTest {
   private void setPigConf(Configuration conf) {
     if (keyOrder.equals("sortOrderAsc")) {
       try {
-        conf.set(PigPlatform.PIG_SORT_ORDER, ObjectSerializer.serialize(new boolean[] { true }));
+        conf.set(PigPlatform.PIG_SORT_ORDER, ObjectSerializer.serialize(new boolean[]{true}));
       } catch (IOException e) {
         e.printStackTrace();
       }
     } else if (keyOrder.equals("sortOrderDesc")) {
       try {
-        conf.set(PigPlatform.PIG_SORT_ORDER, ObjectSerializer.serialize(new boolean[] { false }));
+        conf.set(PigPlatform.PIG_SORT_ORDER, ObjectSerializer.serialize(new boolean[]{false}));
       } catch (IOException e) {
         e.printStackTrace();
       }
     } else if (keyOrder.equals("sortOrderAscDesc")) {
       try {
         conf.set(PigPlatform.PIG_SORT_ORDER,
-          ObjectSerializer.serialize(new boolean[] { true, false }));
+                ObjectSerializer.serialize(new boolean[]{true, false}));
       } catch (IOException e) {
         e.printStackTrace();
       }
@@ -303,20 +302,20 @@ public class KVTest {
 
     if (keyOrder.equals("sortOrderAsc")) {
       try {
-        conf.set(PigPlatform.PIG_SORT_ORDER, ObjectSerializer.serialize(new boolean[] { true }));
+        conf.set(PigPlatform.PIG_SORT_ORDER, ObjectSerializer.serialize(new boolean[]{true}));
       } catch (IOException e) {
         e.printStackTrace();
       }
     } else if (keyOrder.equals("sortOrderDesc")) {
       try {
-        conf.set(PigPlatform.PIG_SORT_ORDER, ObjectSerializer.serialize(new boolean[] { false }));
+        conf.set(PigPlatform.PIG_SORT_ORDER, ObjectSerializer.serialize(new boolean[]{false}));
       } catch (IOException e) {
         e.printStackTrace();
       }
     } else if (keyOrder.equals("sortOrderAscDesc")) {
       try {
         conf.set(PigPlatform.PIG_SORT_ORDER,
-          ObjectSerializer.serialize(new boolean[] { true, false }));
+                ObjectSerializer.serialize(new boolean[]{true, false}));
       } catch (IOException e) {
         e.printStackTrace();
       }

@@ -53,18 +53,18 @@ public class HBasePlatform extends Platform {
       Class comparatorClass = job.getClass(MRJobConfig.KEY_COMPARATOR, null, RawComparator.class);
       if (comparatorClass != null) {
         String message = "Native output collector don't support customized java comparator "
-          + comparatorClass.getName();
+                + comparatorClass.getName();
         LOG.error(message);
-			} else {
-				String nativeComparator = Constants.NATIVE_MAPOUT_KEY_COMPARATOR + "." + keyClassName;
-				job.set(nativeComparator, "HBasePlatform.HBasePlatform::ImmutableBytesWritableComparator");
-				if (job.get(Constants.NATIVE_CLASS_LIBRARY_BUILDIN) == null) {
-					job.set(Constants.NATIVE_CLASS_LIBRARY_BUILDIN, DEFAULT_NATIVE_LIBRARY);
-				}
-			}
-			return true;
-		}
-		return false;
+      } else {
+        String nativeComparator = Constants.NATIVE_MAPOUT_KEY_COMPARATOR + "." + keyClassName;
+        job.set(nativeComparator, "HBasePlatform.HBasePlatform::ImmutableBytesWritableComparator");
+        if (job.get(Constants.NATIVE_CLASS_LIBRARY_BUILDIN) == null) {
+          job.set(Constants.NATIVE_CLASS_LIBRARY_BUILDIN, DEFAULT_NATIVE_LIBRARY);
+        }
+      }
+      return true;
+    }
+    return false;
   }
 
   public static class ImmutableBytesWritableSerializer implements INativeComparable, INativeSerializer<ImmutableBytesWritable> {

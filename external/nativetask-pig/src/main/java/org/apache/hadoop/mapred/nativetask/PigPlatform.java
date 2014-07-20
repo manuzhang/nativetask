@@ -51,71 +51,71 @@ public class PigPlatform extends Platform {
 
   public PigPlatform() {
   }
-  
+
   @Override
   public void init() throws IOException {
     registerKey("org.apache.pig.impl.io.NullableBigDecimalWritable",
-        NullableBigDecimalWritableSerializer.class);
+            NullableBigDecimalWritableSerializer.class);
     registerKey("org.apache.pig.impl.io.NullableBigIntegerWritable",
-        NullableBigIntegerWritableSerializer.class);
+            NullableBigIntegerWritableSerializer.class);
     registerKey("org.apache.pig.impl.io.NullableBooleanWritable",
-        NullableBooleanWritableSerializer.class);
+            NullableBooleanWritableSerializer.class);
     registerKey("org.apache.pig.impl.io.NullableBytesWritable",
-        NullableBytesWritableSerializer.class);
+            NullableBytesWritableSerializer.class);
     registerKey("org.apache.pig.impl.io.NullableDateTimeWritable",
-        NullableDateTimeWritableSerializer.class);
+            NullableDateTimeWritableSerializer.class);
     registerKey("org.apache.pig.impl.io.NullableDoubleWritable",
-        NullableDoubleWritableSerializer.class);
+            NullableDoubleWritableSerializer.class);
     registerKey("org.apache.pig.impl.io.NullableFloatWritable",
-        NullableFloatWritableSerializer.class);
+            NullableFloatWritableSerializer.class);
     registerKey("org.apache.pig.impl.io.NullableIntWritable",
-        NullableIntWritableSerializer.class);
+            NullableIntWritableSerializer.class);
     registerKey("org.apache.pig.impl.io.NullableLongWritable",
-        NullableLongWritableSerializer.class);
+            NullableLongWritableSerializer.class);
     registerKey("org.apache.pig.impl.io.NullableText",
-        NullableTextSerializer.class);
+            NullableTextSerializer.class);
     registerKey("org.apache.pig.impl.io.NullableTuple",
-        NullableTupleSerializer.class);
+            NullableTupleSerializer.class);
 
     keyClassToNativeComparator.put("org.apache.pig.impl.io.NullableBooleanWritable",
-        "PigNullableBooleanComparator");
+            "PigNullableBooleanComparator");
     keyClassToNativeComparator.put("org.apache.pig.impl.io.NullableBytesWritable",
-        "PigNullableBytesComparator");
+            "PigNullableBytesComparator");
     keyClassToNativeComparator.put("org.apache.pig.impl.io.NullableDateTimeWritable",
-        "PigNullableDateTimeComparator");
+            "PigNullableDateTimeComparator");
     keyClassToNativeComparator.put("org.apache.pig.impl.io.NullableDoubleWritable",
-        "PigNullableDoubleComparator");
+            "PigNullableDoubleComparator");
     keyClassToNativeComparator.put("org.apache.pig.impl.io.NullableFloatWritable",
-        "PigNullableFloatComparator");
+            "PigNullableFloatComparator");
     keyClassToNativeComparator.put("org.apache.pig.impl.io.NullableIntWritable",
-        "PigNullableIntComparator");
+            "PigNullableIntComparator");
     keyClassToNativeComparator.put("org.apache.pig.impl.io.NullableLongWritable",
-        "PigNullableLongComparator");
+            "PigNullableLongComparator");
     keyClassToNativeComparator.put("org.apache.pig.impl.io.NullableText",
-        "PigNullableTextComparator");
+            "PigNullableTextComparator");
     keyClassToNativeComparator.put("org.apache.pig.impl.io.NullableTuple",
-        "PigNullableTupleComparator");
+            "PigNullableTupleComparator");
 
     rawComparatorClass.add(
-        "org.apache.pig.backend.hadoop.executionengine.mapReduceLayer.PigBooleanRawComparator");
+            "org.apache.pig.backend.hadoop.executionengine.mapReduceLayer.PigBooleanRawComparator");
     rawComparatorClass.add(
-        "org.apache.pig.backend.hadoop.executionengine.mapReduceLayer.PigIntRawComparator");
+            "org.apache.pig.backend.hadoop.executionengine.mapReduceLayer.PigIntRawComparator");
     rawComparatorClass.add(
-        "org.apache.pig.backend.hadoop.executionengine.mapReduceLayer.PigLongRawComparator");
+            "org.apache.pig.backend.hadoop.executionengine.mapReduceLayer.PigLongRawComparator");
     rawComparatorClass.add(
-        "org.apache.pig.backend.hadoop.executionengine.mapReduceLayer.PigFloatRawComparator");
+            "org.apache.pig.backend.hadoop.executionengine.mapReduceLayer.PigFloatRawComparator");
     rawComparatorClass.add(
-        "org.apache.pig.backend.hadoop.executionengine.mapReduceLayer.PigDoubleRawComparator");
+            "org.apache.pig.backend.hadoop.executionengine.mapReduceLayer.PigDoubleRawComparator");
     rawComparatorClass.add(
-        "org.apache.pig.backend.hadoop.executionengine.mapReduceLayer.PigDateTimeRawComparator");
+            "org.apache.pig.backend.hadoop.executionengine.mapReduceLayer.PigDateTimeRawComparator");
     rawComparatorClass.add(
-        "org.apache.pig.backend.hadoop.executionengine.mapReduceLayer.PigTextRawComparator");
+            "org.apache.pig.backend.hadoop.executionengine.mapReduceLayer.PigTextRawComparator");
     rawComparatorClass.add(
-        "org.apache.pig.backend.hadoop.executionengine.mapReduceLayer.PigBytesRawComparator");
+            "org.apache.pig.backend.hadoop.executionengine.mapReduceLayer.PigBytesRawComparator");
     rawComparatorClass.add(
-        "org.apache.pig.backend.hadoop.executionengine.mapReduceLayer.PigTupleSortComparator");
+            "org.apache.pig.backend.hadoop.executionengine.mapReduceLayer.PigTupleSortComparator");
     rawComparatorClass.add(
-        "org.apache.pig.backend.hadoop.executionengine.mapReduceLayer.PigSecondaryKeyComparator");
+            "org.apache.pig.backend.hadoop.executionengine.mapReduceLayer.PigSecondaryKeyComparator");
 
     LOG.info("Pig platform inited");
   }
@@ -137,10 +137,10 @@ public class PigPlatform extends Platform {
         LOG.info("Pig key types: group only");
         supported = true;
       } else if (!keyClassName.equals("org.apache.pig.impl.io.NullableBigDecimalWritable") &&
-				// don't support native comparators of BigDecimalWritable and BigIntegerWritable
-        !keyClassName.equals("org.apache.pig.impl.io.NullableBigIntegerWritable") &&
-        // don't support user defined comparator
-        !job.getBoolean(PIG_USER_COMPARATOR, false)) {
+              // don't support native comparators of BigDecimalWritable and BigIntegerWritable
+              !keyClassName.equals("org.apache.pig.impl.io.NullableBigIntegerWritable") &&
+              // don't support user defined comparator
+              !job.getBoolean(PIG_USER_COMPARATOR, false)) {
         try {
           if (job.get(PIG_SORT_ORDER, null) != null) {
             boolean[] order = (boolean[]) ObjectSerializer.deserialize(job.get(PIG_SORT_ORDER));
@@ -150,7 +150,7 @@ public class PigPlatform extends Platform {
           }
           if (job.get(PIG_SEC_SORT_ORDER, null) != null) {
             boolean[] order = (boolean[]) ObjectSerializer.deserialize(job
-              .get(PIG_SEC_SORT_ORDER));
+                    .get(PIG_SEC_SORT_ORDER));
             job.set(NATIVE_PIG_SEC_SORT, ConfigUtil.booleansToString(order));
             job.setBoolean(NATIVE_PIG_USE_SEC_KEY, true);
             job.set(nativeComparator, "PigPlatform.PigPlatform::PigSecondaryKeyComparator");
@@ -171,7 +171,7 @@ public class PigPlatform extends Platform {
   }
 
   public static class NullableWritableSerializer implements
-    INativeSerializer<PigNullableWritable> {
+          INativeSerializer<PigNullableWritable> {
 
     public ByteArrayOutputStream outBuffer = new ByteArrayOutputStream();
     public DataOutputStream outData = new DataOutputStream(outBuffer);
@@ -196,28 +196,28 @@ public class PigPlatform extends Platform {
 
     @Override
     public void serialize(PigNullableWritable w, DataOutput out)
-      throws IOException {
+            throws IOException {
       w.write(out);
     }
 
     @Override
     public void deserialize(DataInput in, int length, PigNullableWritable w)
-      throws IOException {
+            throws IOException {
       w.readFields(in);
     }
 
   }
 
   public static class NullableTupleSerializer extends NullableWritableSerializer
-    implements INativeComparable {
+          implements INativeComparable {
   }
 
   public static class NullableTextSerializer extends NullableWritableSerializer
-    implements INativeComparable {
+          implements INativeComparable {
   }
 
   public static class NullableLongWritableSerializer extends NullableWritableSerializer
-    implements INativeComparable {
+          implements INativeComparable {
 
     @Override
     public int getLength(PigNullableWritable w) throws IOException {
@@ -232,7 +232,7 @@ public class PigPlatform extends Platform {
   }
 
   public static class NullableIntWritableSerializer extends NullableWritableSerializer
-    implements INativeComparable {
+          implements INativeComparable {
 
     @Override
     public int getLength(PigNullableWritable w) throws IOException {
@@ -247,7 +247,7 @@ public class PigPlatform extends Platform {
   }
 
   public static class NullableFloatWritableSerializer extends NullableWritableSerializer
-    implements INativeComparable {
+          implements INativeComparable {
 
     @Override
     public int getLength(PigNullableWritable w) throws IOException {
@@ -262,7 +262,7 @@ public class PigPlatform extends Platform {
   }
 
   public static class NullableDoubleWritableSerializer extends NullableWritableSerializer
-    implements INativeComparable {
+          implements INativeComparable {
 
     @Override
     public int getLength(PigNullableWritable w) throws IOException {
@@ -277,7 +277,7 @@ public class PigPlatform extends Platform {
   }
 
   public static class NullableDateTimeWritableSerializer extends NullableWritableSerializer
-    implements INativeComparable {
+          implements INativeComparable {
     @Override
     public int getLength(PigNullableWritable w) {
       if (w.isNull()) {
@@ -291,11 +291,11 @@ public class PigPlatform extends Platform {
   }
 
   public static class NullableBytesWritableSerializer extends NullableWritableSerializer
-    implements INativeComparable {
+          implements INativeComparable {
   }
 
   public static class NullableBooleanWritableSerializer extends NullableWritableSerializer
-    implements INativeComparable {
+          implements INativeComparable {
 
     @Override
     public int getLength(PigNullableWritable w) {
@@ -313,14 +313,14 @@ public class PigPlatform extends Platform {
    * Note: NullableBigIntegerWritable is only comparable in native when group only
    */
   public static class NullableBigIntegerWritableSerializer extends NullableWritableSerializer
-    implements INativeComparable {
+          implements INativeComparable {
   }
 
   /**
    * Note: NullableBigDecimalWritable is only comparable in native when group only
-   */  
-	public static class NullableBigDecimalWritableSerializer extends NullableWritableSerializer
-    implements INativeComparable {
+   */
+  public static class NullableBigDecimalWritableSerializer extends NullableWritableSerializer
+          implements INativeComparable {
   }
 
 }
