@@ -25,39 +25,22 @@ import org.apache.hadoop.mapred.nativetask.util.BytesUtil;
 @SuppressWarnings({ "deprecation" })
 public class TestBytesUtil extends TestCase {
 
-  public void testBytesStringConversion() {
+  public void testBytesUtil() {
 
     final String str = "I am good!";
     final byte[] bytes = BytesUtil.toBytes(str);
 
     Assert.assertEquals(str, BytesUtil.fromBytes(bytes));
- }
 
-  public void testBytesIntConversion() {
     final int a = 1000;
-    final byte[] intBytes = BytesUtil.toBytes(a);
+    final byte[] intBytes = new byte[4];
+    BytesUtil.toBytes(a, intBytes);
 
     Assert.assertEquals(a, BytesUtil.toInt(intBytes));
-  }
 
-  public void testBytesLongConversion() {
-    final long l = 1000000L;
-    final byte[] longBytes = BytesUtil.toBytes(l);
+    final byte[] largeBuffer = new byte[1000];
+    BytesUtil.toBytes(a, largeBuffer, 100, 4);
 
-    Assert.assertEquals(l, BytesUtil.toLong(longBytes));
-  }
-
-  public void testBytesFloatConversion() {
-    final float f = 3.14f;
-    final byte[] floatBytes = BytesUtil.toBytes(f);
-
-    Assert.assertEquals(f, BytesUtil.toFloat(floatBytes));
-  }
-
-  public void testBytesDoubleConversion() {
-    final double d = 3.14;
-    final byte[] doubleBytes = BytesUtil.toBytes(d);
-
-    Assert.assertEquals(d, BytesUtil.toDouble(doubleBytes));
+    Assert.assertEquals(a, BytesUtil.toInt(largeBuffer, 100, 4));
   }
 }

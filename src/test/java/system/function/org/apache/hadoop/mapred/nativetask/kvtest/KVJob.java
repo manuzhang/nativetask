@@ -62,7 +62,7 @@ public class KVJob {
         resultlong += crc32.getValue();
       }
       final VTYPE V = null;
-      context.write(key, (VTYPE) BytesUtil.newObject(org.apache.hadoop.mapred.nativetask.util.BytesUtil.toBytes(resultlong), V.getClass().getName()));
+      context.write(key, (VTYPE) BytesUtil.newObject(BytesUtil.toBytes(resultlong), V.getClass().getName()));
     }
   }
 

@@ -137,6 +137,7 @@ public class PigPlatform extends Platform {
         LOG.info("Pig key types: group only");
         supported = true;
       } else if (!keyClassName.equals("org.apache.pig.impl.io.NullableBigDecimalWritable") &&
+				// don't support native comparators of BigDecimalWritable and BigIntegerWritable
         !keyClassName.equals("org.apache.pig.impl.io.NullableBigIntegerWritable") &&
         // don't support user defined comparator
         !job.getBoolean(PIG_USER_COMPARATOR, false)) {
@@ -188,7 +189,7 @@ public class PigPlatform extends Platform {
         w.write(outData);
         bufferedLength = outBuffer.size();
 
-        // mNull + bufferedLength + mIndex
+
         return bufferedLength;
       }
     }
@@ -317,7 +318,8 @@ public class PigPlatform extends Platform {
 
   /**
    * Note: NullableBigDecimalWritable is only comparable in native when group only
-   */  public static class NullableBigDecimalWritableSerializer extends NullableWritableSerializer
+   */  
+	public static class NullableBigDecimalWritableSerializer extends NullableWritableSerializer
     implements INativeComparable {
   }
 

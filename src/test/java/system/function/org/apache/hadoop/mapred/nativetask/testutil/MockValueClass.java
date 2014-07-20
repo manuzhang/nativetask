@@ -25,7 +25,7 @@ import java.util.Random;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.Writable;
-import org.apache.hadoop.mapred.nativetask.util.BytesUtil;
+import org.apache.hadoop.mapred.nativetask.testutil.BytesUtil;
 
 public class MockValueClass implements Writable {
   private final static int DEFAULT_ARRAY_LENGTH = 16;

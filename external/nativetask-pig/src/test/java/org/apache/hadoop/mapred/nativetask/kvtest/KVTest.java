@@ -43,7 +43,7 @@ import static org.apache.pig.backend.hadoop.executionengine.mapReduceLayer.JobCo
 import static org.junit.Assert.assertEquals;
 
 @RunWith(Parameterized.class)
-public class PigKVTest {
+public class KVTest {
 
 
   private static Configuration nativekvtestconf = null;
@@ -56,11 +56,10 @@ public class PigKVTest {
 
   static {
     nativekvtestconf = ScenarioConfiguration.getNativeConfiguration();
-    nativekvtestconf.addResource(TestConstants.PIG_KVTEST_CONF_PATH);
-    ;
+    nativekvtestconf.addResource(TestConstants.KVTEST_CONF_PATH);
+
     hadoopkvtestconf = ScenarioConfiguration.getNormalConfiguration();
-    hadoopkvtestconf.addResource(TestConstants.PIG_KVTEST_CONF_PATH);
-    ;
+    hadoopkvtestconf.addResource(TestConstants.KVTEST_CONF_PATH);
 
     classToRawComparator.put(NullableBooleanWritable.class,
       PigBooleanRawComparator.class);
@@ -80,6 +79,12 @@ public class PigKVTest {
       PigTextRawComparator.class);
     classToRawComparator.put(NullableTuple.class,
       PigTupleSortComparator.class);
+    classToRawComparator.put(NullableBigIntegerWritable.class,
+      PigBigIntegerRawComparator.class);
+    classToRawComparator.put(NullableBigDecimalWritable.class,
+      PigBigDecimalRawComparator.class);
+
+
 
     classToComparator.put(NullableBooleanWritable.class,
       PigBooleanWritableComparator.class);
@@ -99,6 +104,11 @@ public class PigKVTest {
       PigCharArrayWritableComparator.class);
     classToComparator.put(NullableTuple.class,
       PigTupleWritableComparator.class);
+		classToComparator.put(NullableBigIntegerWritable.class,
+		  PigBigIntegerWritableComparator.class);
+    classToComparator.put(NullableBigDecimalWritable.class,
+		  PigBigDecimalWritableComparator.class);
+
   }
 
   @Parameterized.Parameters(name = "key:{0}\nvalue:{1}\norder:{2}")
@@ -166,11 +176,10 @@ public class PigKVTest {
   private final Class<?> valueclass;
   private final String keyOrder;
 
-  public PigKVTest(Object keyclass, Object valueclass, Object keyOrder) {
+  public KVTest(Object keyclass, Object valueclass, Object keyOrder) {
     this.keyclass = (Class<?>)keyclass;
     this.valueclass = (Class<?>)valueclass;
     this.keyOrder = (String)keyOrder;
-
   }
 
   @Test
@@ -181,22 +190,27 @@ public class PigKVTest {
       if (keyOrder.equals("sortOrderAscDesc") && keyclass != NullableTuple.class) {
         return;
       }
+		  if ((keyclass == NullableBigIntegerWritable.class 
+						|| keyclass == NullableBigDecimalWritable.class)
+						&& !keyOrder.equals("groupOnly")) {
+				return;
+		  }
       final String nativeoutput = this.runNativeTest(
-        "Test:" + keyclass.getSimpleName() + "--" + valueclass.getSimpleName(), keyclass, valueclass);
+        "Test:" + keyclass.getSimpleName() + "--" + valueclass.getSimpleName(), keyclass, valueclass);  
       final String normaloutput = this.runNormalTest(
         "Test:" + keyclass.getSimpleName() + "--" + valueclass.getSimpleName(), keyclass, valueclass);
       final boolean compareRet = ResultVerifier.verify(normaloutput, nativeoutput);
       final String input = nativekvtestconf.get(TestConstants.NATIVETASK_KVTEST_INPUTDIR) + "/"
         + keyclass.getName()
-        + "/" + valueclass.getName();
+        + "/" + valueclass.getName(); 
       if(compareRet){
         final FileSystem fs = FileSystem.get(hadoopkvtestconf);
-        //fs.delete(new Path(nativeoutput), true);
-        //fs.delete(new Path(normaloutput), true);
-        //fs.delete(new Path(input), true);
+        fs.delete(new Path(nativeoutput), true);
+        fs.delete(new Path(normaloutput), true);
+        fs.delete(new Path(input), true);
         fs.close();
       }
-      assertEquals("file compare result: if they are the same ,then return true", true, compareRet);
+      assertEquals("file compare result: if they are the same ,then return true", true, compareRet);  
     } catch (final IOException e) {
       assertEquals("test run exception:", null, e);
     } catch (final Exception e) {
@@ -225,6 +239,7 @@ public class PigKVTest {
       setPigJobConf(keyJob.job);
       keyJob.runJob();
     } catch (final Exception e) {
+			e.printStackTrace();
       return "native testcase run time error.";
     }
     return outputpath;

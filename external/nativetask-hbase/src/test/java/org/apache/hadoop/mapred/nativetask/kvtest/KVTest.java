@@ -53,7 +53,6 @@ public class KVTest {
   public static Iterable<Class<?>[]> data() {
     final String valueclassesStr = nativekvtestconf
         .get(TestConstants.NATIVETASK_KVTEST_VALUECLASSES);
-    System.out.println(valueclassesStr);
     valueclassNames = valueclassesStr.replaceAll("\\s", "").split(";");// delete
     // " "
     final ArrayList<Class<?>> tmpvalueclasses = new ArrayList<Class<?>>();
@@ -69,7 +68,6 @@ public class KVTest {
     }
     valueclasses = tmpvalueclasses.toArray(new Class[tmpvalueclasses.size()]);
     final String keyclassesStr = nativekvtestconf.get(TestConstants.NATIVETASK_KVTEST_KEYCLASSES);
-    System.out.println(keyclassesStr);
     keyclassNames = keyclassesStr.replaceAll("\\s", "").split(";");// delete
     // " "
     final ArrayList<Class<?>> tmpkeyclasses = new ArrayList<Class<?>>();
@@ -107,10 +105,10 @@ public class KVTest {
   @Test
   public void testKVCompability() throws Exception {
 
-//    try {
+    try {
       final String nativeoutput = this.runNativeTest(
           "Test:" + keyclass.getSimpleName() + "--" + valueclass.getSimpleName(), keyclass, valueclass);
-/*      final String normaloutput = this.runNormalTest(
+      final String normaloutput = this.runNormalTest(
           "Test:" + keyclass.getSimpleName() + "--" + valueclass.getSimpleName(), keyclass, valueclass);
       final boolean compareRet = ResultVerifier.verify(normaloutput, nativeoutput);
       final String input = nativekvtestconf.get(TestConstants.NATIVETASK_KVTEST_INPUTDIR) + "/"
@@ -128,7 +126,7 @@ public class KVTest {
       assertEquals("test run exception:", null, e);
     } catch (final Exception e) {
       assertEquals("test run exception:", null, e);
-    } */
+    } 
   }
 
   @Before
@@ -151,6 +149,7 @@ public class KVTest {
       final KVJob keyJob = new KVJob(jobname, nativekvtestconf, keyclass, valueclass, inputpath, outputpath);
       keyJob.runJob();
     } catch (final Exception e) {
+			e.printStackTrace();
       return "native testcase run time error.";
     } 
     return outputpath;
