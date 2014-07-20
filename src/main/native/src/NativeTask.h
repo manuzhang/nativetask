@@ -57,23 +57,8 @@ enum Endium {
 };
 
 #define NATIVE_COMBINER "native.combiner.class"
-#define NATIVE_PARTITIONER "native.partitioner.class"
-#define NATIVE_MAPPER "native.mapper.class"
-#define NATIVE_RECORDREADER "native.recordreader.class"
-#define NATIVE_RECORDWRITER "native.recordwriter.class"
-
-#define NATIVE_REDUCER "native.reducer.class"
 #define NATIVE_HADOOP_VERSION "native.hadoop.version"
 
-#define NATIVE_INPUT_SPLIT "native.input.split"
-#define INPUT_LINE_KV_SEPERATOR "mapreduce.input.keyvaluelinerecordreader.key.value.separator"
-#define MAPRED_TEXTOUTPUT_FORMAT_SEPERATOR "mapreduce.output.textoutputformat.separator"
-#define MAPRED_WORK_OUT_DIR "mapreduce.task.output.dir"
-#define NATIVE_OUTPUT_FILE_NAME "native.output.file.name"
-#define MAPRED_COMPRESS_OUTPUT "mapreduce.output.fileoutputformat.compress"
-#define MAPRED_OUTPUT_COMPRESSION_CODEC "mapreduce.output.fileoutputformat.compress.codec"
-#define TOTAL_ORDER_PARTITIONER_PATH "total.order.partitioner.path"
-#define TOTAL_ORDER_PARTITIONER_MAX_TRIE_DEPTH "total.order.partitioner.max.trie.depth"
 #define FS_DEFAULT_NAME "fs.default.name"
 #define FS_DEFAULT_FS "fs.defaultFS"
 
