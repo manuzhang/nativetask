@@ -5,6 +5,10 @@
 
 <configuration>
 <property>
+<name>mapreduce.job.map.output.collector.class</name>
+<value>org.apache.hadoop.mapred.nativetask.NativeMapOutputCollectorDelegator</value>
+</property>
+<property>
 <name>mapred.output.compress</name>
 <value>false</value>
 </property>
