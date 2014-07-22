@@ -16,6 +16,9 @@
  * limitations under the License.
  */
 
+#include "config.h"
+
+#if defined HADOOP_SNAPPY_LIBRARY
 #include "snappy-c.h"
 #include "commons.h"
 #include "NativeTask.h"
@@ -89,5 +92,6 @@ uint32_t SnappyDecompressStream::decompressOneBlock(uint32_t compressedSize, voi
 uint64_t SnappyDecompressStream::maxCompressedLength(uint64_t origLength) {
   return snappy_max_compressed_length(origLength);
 }
-
 } // namespace NativeTask
+
+#endif // define HADOOP_SNAPPY_LIBRARY

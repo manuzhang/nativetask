@@ -122,7 +122,6 @@ CHECK_FUNCTION_EXISTS(memset HAVE_MEMSET)
 CHECK_FUNCTION_EXISTS(strchr HAVE_STRCHR)
 CHECK_FUNCTION_EXISTS(strtoul HAVE_STRTOUL)
 
-
 SET(STORED_CMAKE_FIND_LIBRARY_SUFFIXES CMAKE_FIND_LIBRARY_SUFFIXES)
 set_find_shared_library_version("1")
 find_library(SNAPPY_LIBRARY 
@@ -139,6 +138,7 @@ if (SNAPPY_LIBRARY AND SNAPPY_INCLUDE_DIR)
     set(SNAPPY_SOURCE_FILES
         "${D}/src/codec/SnappyCodec.cc")
 else (SNAPPY_LIBRARY AND SNAPPY_INCLUDE_DIR)
+    set(SNAPPY_LIBRARY "")
     set(SNAPPY_INCLUDE_DIR "")
     set(SNAPPY_SOURCE_FILES "")
     IF(REQUIRE_SNAPPY)
@@ -146,22 +146,22 @@ else (SNAPPY_LIBRARY AND SNAPPY_INCLUDE_DIR)
     ENDIF(REQUIRE_SNAPPY)
 endif (SNAPPY_LIBRARY AND SNAPPY_INCLUDE_DIR)
 
+CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/config.h.cmake ${CMAKE_BINARY_DIR}/config.h)
+
 include_directories(
 	  ${GENERATED_JAVAH}
 		${D}
     ${D}/src
 		${D}/src/util
 		${D}/src/lib
+		${D}/src/codec
 		${D}/test
     ${CMAKE_CURRENT_SOURCE_DIR}
 		#${CMAKE_CURRENT_SOURCE_DIR}/src
-		#${CMAKE_BINARY_DIR}
+		${CMAKE_BINARY_DIR}
     ${JNI_INCLUDE_DIRS}
     ${SNAPPY_INCLUDE_DIR}
 )
-
-#SET(CMAKE_SOURCE_DIR "/cygdrive/c/Users/tianlunz/repo/hadoop-2.2.0-src/hadoop-common-project/hadoop-common/src")
-CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/config.h.cmake ${CMAKE_BINARY_DIR}/config.h)
 
 
 SET(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
@@ -220,7 +220,7 @@ target_link_libraries(nativetask
 
 add_executable(nttest 
     ${D}/gtest/gtest-all.cc
-    ${D}/test/lib/TestByteArray.cc      
+    ${D}/test/lib/TestByteArray.cc
     ${D}/test/lib/TestByteBuffer.cc      
     ${D}/test/lib/TestComparatorForDualPivotQuickSort.cc 
     ${D}/test/lib/TestComparatorForStdSort.cc 
@@ -239,11 +239,11 @@ add_executable(nttest
     ${D}/test/util/TestStringUtil.cc           
     ${D}/test/util/TestSyncUtils.cc            
     ${D}/test/util/TestWritableUtils.cc        
-    ${D}/test/TestCommand.cc                   
+    ${D}/test/TestCommand.cc
+    ${D}/test/TestCompressions.cc
     ${D}/test/TestConfig.cc                   
     ${D}/test/TestCounter.cc                   
-    ${D}/test/TestCompressions.cc              
-    ${D}/test/TestFileSystem.cc                
+    ${D}/test/TestFileSystem.cc
     ${D}/test/TestIFile.cc                     
     ${D}/test/TestPrimitives.cc                
     ${D}/test/TestSort.cc                      
