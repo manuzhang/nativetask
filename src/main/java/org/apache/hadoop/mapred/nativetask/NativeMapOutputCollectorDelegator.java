@@ -86,14 +86,7 @@ public class NativeMapOutputCollectorDelegator<K, V> implements MapOutputCollect
       throw new InvalidJobConfException(message);
     }
 
-    if (job.getBoolean(MRJobConfig.MAP_OUTPUT_COMPRESS, false) == true) {
-      if (!isCodecSupported(job.get(MRJobConfig.MAP_OUTPUT_COMPRESS_CODEC))) {
-        String message = "Native output collector don't support compression codec "
-          + job.get(MRJobConfig.MAP_OUTPUT_COMPRESS_CODEC) + ", We support Gzip, Lz4, snappy";
-        LOG.error(message);
-        throw new InvalidJobConfException(message);
-      }
-    }
+
 
     if (!QuickSort.class.getName().equals(job.get(Constants.MAP_SORT_CLASS))) {
       String message = "Native-Task don't support sort class " + job.get(Constants.MAP_SORT_CLASS);
@@ -129,6 +122,22 @@ public class NativeMapOutputCollectorDelegator<K, V> implements MapOutputCollect
 
     final boolean ret = NativeRuntime.isNativeLibraryLoaded();
     if (ret) {
+      if (job.getBoolean(MRJobConfig.MAP_OUTPUT_COMPRESS, false) == true) {
+        String codec = job.get(MRJobConfig.MAP_OUTPUT_COMPRESS_CODEC);
+        if ("org.apache.hadoop.io.compress.SnappyCodec".equals(codec)) {
+          if (!NativeRuntime.buildSupportsSnappy()) {
+            String message = "Snappy library is not loaded";
+            LOG.error(message);
+            throw new InvalidJobConfException(message);
+          }
+        } else if ( !"org.apache.hadoop.io.compress.GzipCodec".equals(codec)
+          && !"org.apache.hadoop.io.compress.Lz4Codec".equals(codec)) {
+          String message = "Native output collector don't support compression codec "
+            + job.get(MRJobConfig.MAP_OUTPUT_COMPRESS_CODEC) + ", We support Gzip, Lz4, snappy";
+          LOG.error(message);
+          throw new InvalidJobConfException(message);
+        }
+      }
       NativeRuntime.configure(job);
 
       final long updateInterval = job.getLong(Constants.NATIVE_STATUS_UPDATE_INTERVAL,
@@ -159,12 +168,4 @@ public class NativeMapOutputCollectorDelegator<K, V> implements MapOutputCollect
     LOG.info("Native output collector can be successfully enabled!");
   }
 
-  private boolean isCodecSupported(String string) {
-    if ("org.apache.hadoop.io.compress.SnappyCodec".equals(string)
-        || "org.apache.hadoop.io.compress.GzipCodec".equals(string)
-        || "org.apache.hadoop.io.compress.Lz4Codec".equals(string)) {
-      return true;
-    }
-    return false;
-  }
 }

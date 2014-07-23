@@ -19,6 +19,7 @@
 #ifndef QUICK_BUILD
 #include "org_apache_hadoop_mapred_nativetask_NativeRuntime.h"
 #endif
+#include "config.h"
 #include "commons.h"
 #include "jniutils.h"
 #include "NativeObjectFactory.h"
@@ -28,6 +29,21 @@ using namespace NativeTask;
 ///////////////////////////////////////////////////////////////
 // NativeRuntime JNI methods
 ///////////////////////////////////////////////////////////////
+
+/*
+ * Class:     org_apache_hadoop_mapred_nativetask_NativeRuntime
+ * Method:    buildSupportsSnappy
+ * Signature: ()Z
+ */
+JNIEXPORT jboolean JNICALL Java_org_apache_hadoop_mapred_nativetask_NativeRuntime_buildSupportsSnappy
+  (JNIEnv *env, jclass clazz)
+{
+#ifdef HADOOP_SNAPPY_LIBRARY
+  return JNI_TRUE;
+#else
+  return JNI_FALSE;
+#endif
+}
 
 /*
  * Class:     org_apache_hadoop_mapred_nativetask_NativeRuntime

@@ -52,11 +52,6 @@ public class NativeRuntime {
 
   static {
     try {
-      if (false == SnappyUtil.isNativeSnappyLoaded(conf)) {
-        throw new IOException("Snappy library cannot be loaded");
-      } else {
-        LOG.info("Snappy native library is available");
-      }
       System.loadLibrary("nativetask");
       LOG.info("Nativetask JNI library loaded.");
       nativeLibraryLoaded = true;
@@ -164,6 +159,12 @@ public class NativeRuntime {
   /*******************************************************
    *** The following are JNI Apis
    ********************************************************/
+
+  /**
+   * Check whether the native side has snappy support built in
+   * @return
+   */
+  public native static boolean buildSupportsSnappy();
 
   /**
    * Config the native runtime with mapreduce job configurations.
