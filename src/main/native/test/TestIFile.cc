@@ -18,7 +18,6 @@
 
 #include <algorithm>
 #include "commons.h"
-#include "config.h"
 #include "BufferStream.h"
 #include "FileSystem.h"
 #include "IFile.h"
@@ -90,9 +89,7 @@ TEST(IFile, WriteRead) {
   TestIFileReadWrite(TextType, partition, size, kvs);
   TestIFileReadWrite(BytesType, partition, size, kvs);
   TestIFileReadWrite(UnknownType, partition, size, kvs);
-#if defined HADOOP_SNAPPY_LIBRARY
   TestIFileReadWrite(TextType, partition, size, kvs, "org.apache.hadoop.io.compress.SnappyCodec");
-#endif
 }
 
 void TestIFileWriteRead2(vector<pair<string, string> > & kvs, char * buff, size_t buffsize,
@@ -169,7 +166,7 @@ TEST(Perf, IFile) {
 TEST(IFile, TestGlibCBug) {
   std::string path("./testData/testGlibCBugSpill.out");
 
-  uint32_t expect[5] = {-1538241715, -1288088794, -192294464, 563552421, 1661521654};
+  int32_t expect[5] = {-1538241715, -1288088794, -192294464, 563552421, 1661521654};
 
   LOG("TestGlibCBug %s", path.c_str());
   IFileSegment * segments = new IFileSegment [1];
@@ -185,7 +182,8 @@ TEST(IFile, TestGlibCBug) {
   reader->nextPartition();
   uint32_t index = 0;
   while(NULL != (key = reader->nextKey(length))) {
-    int realKey = bswap(*(uint32_t *)(key));
+    int32_t realKey = (int32_t)bswap(*(uint32_t *)(key));
+    ASSERT_LT(index, 5);
     ASSERT_EQ(expect[index], realKey);
     index++;
   }

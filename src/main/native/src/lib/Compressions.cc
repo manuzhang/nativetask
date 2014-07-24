@@ -17,7 +17,6 @@
  */
 
 #include "commons.h"
-#include "config.h"
 #include "SyncUtils.h"
 #include "Compressions.h"
 #include "codec/GzipCodec.h"
@@ -111,11 +110,7 @@ CompressStream * Compressions::getCompressionStream(const string & codec, Output
     return new GzipCompressStream(stream, bufferSizeHint);
   }
   if (codec == SnappyCodec.name) {
-#if defined HADOOP_SNAPPY_LIBRARY
     return new SnappyCompressStream(stream, bufferSizeHint);
-#else
-    return NULL;
-#endif
   }
   if (codec == Lz4Codec.name) {
     return new Lz4CompressStream(stream, bufferSizeHint);
@@ -129,11 +124,7 @@ DecompressStream * Compressions::getDecompressionStream(const string & codec, In
     return new GzipDecompressStream(stream, bufferSizeHint);
   }
   if (codec == SnappyCodec.name) {
-#if defined HADOOP_SNAPPY_LIBRARY
     return new SnappyDecompressStream(stream, bufferSizeHint);
-#else
-    return NULL;
-#endif
   }
   if (codec == Lz4Codec.name) {
     return new Lz4DecompressStream(stream, bufferSizeHint);
