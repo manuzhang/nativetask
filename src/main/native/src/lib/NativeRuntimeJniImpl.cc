@@ -32,10 +32,10 @@ using namespace NativeTask;
 
 /*
  * Class:     org_apache_hadoop_mapred_nativetask_NativeRuntime
- * Method:    JNIBuildSupportsCodec
+ * Method:    supportCompressionCodec
  * Signature: ([B)Z
  */
-JNIEXPORT jboolean JNICALL Java_org_apache_hadoop_mapred_nativetask_NativeRuntime_JNIBuildSupportsCodec
+JNIEXPORT jboolean JNICALL Java_org_apache_hadoop_mapred_nativetask_NativeRuntime_supportCompressionCodec
   (JNIEnv *jenv, jclass clazz, jbyteArray codec)
 {
   const std::string codecString = JNU_ByteArrayToString(jenv, codec);

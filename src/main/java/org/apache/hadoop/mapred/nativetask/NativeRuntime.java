@@ -160,12 +160,12 @@ public class NativeRuntime {
    ********************************************************/
 
   /**
-   * Check whether the native side has codec support built in
+   * Check whether the native side has compression codec support built in
    *
-   * @param codec
+   * @param codecName
    * @return
    */
-  public native static boolean JNIBuildSupportsCodec(byte[] codec);
+  public native static boolean supportCompressionCodec(byte[] codec);
 
   /**
    * Config the native runtime with mapreduce job configurations.

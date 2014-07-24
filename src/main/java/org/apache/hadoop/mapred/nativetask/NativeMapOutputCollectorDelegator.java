@@ -125,7 +125,7 @@ public class NativeMapOutputCollectorDelegator<K, V> implements MapOutputCollect
     if (ret) {
       if (job.getBoolean(MRJobConfig.MAP_OUTPUT_COMPRESS, false) == true) {
         String codec = job.get(MRJobConfig.MAP_OUTPUT_COMPRESS_CODEC);
-        if (NativeRuntime.JNIBuildSupportsCodec(codec.getBytes(Charsets.UTF_8)) == false) {
+        if (NativeRuntime.supportCompressionCodec(codec.getBytes(Charsets.UTF_8)) == false) {
           String message = "Native output collector don't support compression codec " + codec;
           LOG.error(message);
           throw new InvalidJobConfException(message);
