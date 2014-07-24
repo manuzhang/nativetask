@@ -48,7 +48,7 @@ public class CompressTest {
 
     final boolean compareRet = ResultVerifier.verify(CompressMapper.outputFileDir + "nativesnappy",
         CompressMapper.outputFileDir + "hadoopsnappy");
-		assertEquals("file compare result: if they are the same ,then return true", true, compareRet);
+    assertEquals("file compare result: if they are the same ,then return true", true, compareRet);
   }
 
   @Test
@@ -82,7 +82,7 @@ public class CompressTest {
 
     final boolean compareRet = ResultVerifier.verify(CompressMapper.outputFileDir + "nativebzip2",
         CompressMapper.outputFileDir + "hadoopbzip2");
-    assertEquals("file compare result: if they are the same ,then return true", false, compareRet);
+    assertEquals("file compare result: if they are the same ,then return true", true, compareRet);
   }
 
   @Test
@@ -114,7 +114,7 @@ public class CompressTest {
     hadoopJob.waitForCompletion(true);
     final boolean compareRet = ResultVerifier.verify(CompressMapper.outputFileDir + "nativedefault",
         CompressMapper.outputFileDir + "hadoopdefault");
-    assertEquals("file compare result: if they are the same ,then return true", false, compareRet);
+    assertEquals("file compare result: if they are the same ,then return true", true, compareRet);
   }
 
   @Before

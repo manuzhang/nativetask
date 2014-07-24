@@ -123,15 +123,7 @@ public class NativeMapOutputCollectorDelegator<K, V> implements MapOutputCollect
     final boolean ret = NativeRuntime.isNativeLibraryLoaded();
     if (ret) {
       if (job.getBoolean(MRJobConfig.MAP_OUTPUT_COMPRESS, false) == true) {
-        String codec = job.get(MRJobConfig.MAP_OUTPUT_COMPRESS_CODEC);
-        if ("org.apache.hadoop.io.compress.SnappyCodec".equals(codec)) {
-          if (!NativeRuntime.buildSupportsSnappy()) {
-            String message = "Snappy library is not loaded";
-            LOG.error(message);
-            throw new InvalidJobConfException(message);
-          }
-        } else if ( !"org.apache.hadoop.io.compress.GzipCodec".equals(codec)
-          && !"org.apache.hadoop.io.compress.Lz4Codec".equals(codec)) {
+        if (!isCodecSupported(job.get(MRJobConfig.MAP_OUTPUT_COMPRESS_CODEC))) {
           String message = "Native output collector don't support compression codec "
             + job.get(MRJobConfig.MAP_OUTPUT_COMPRESS_CODEC) + ", We support Gzip, Lz4, snappy";
           LOG.error(message);
@@ -168,4 +160,19 @@ public class NativeMapOutputCollectorDelegator<K, V> implements MapOutputCollect
     LOG.info("Native output collector can be successfully enabled!");
   }
 
+  private boolean isCodecSupported(String string) throws IOException {
+    if ("org.apache.hadoop.io.compress.GzipCodec".equals(string)
+      || "org.apache.hadoop.io.compress.Lz4Codec".equals(string)) {
+      return true;
+    } else if ("org.apache.hadoop.io.compress.SnappyCodec".equals(string)) {
+      if (NativeRuntime.buildSupportsSnappy()) {
+        return true;
+      } else {
+        String message = "Snappy library is not loaded";
+        LOG.error(message);
+        throw new InvalidJobConfException(message);
+      }
+    }
+    return false;
+  }
 }
