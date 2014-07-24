@@ -35,7 +35,6 @@ import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapred.Task.TaskReporter;
 import org.apache.hadoop.mapred.nativetask.util.BytesUtil;
 import org.apache.hadoop.mapred.nativetask.util.ConfigUtil;
-import org.apache.hadoop.mapred.nativetask.util.SnappyUtil;
 import org.apache.hadoop.util.VersionInfo;
 
 /**
