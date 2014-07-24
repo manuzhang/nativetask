@@ -95,8 +95,6 @@ TEST(IFile, WriteRead) {
 #endif
 }
 
-
-
 void TestIFileWriteRead2(vector<pair<string, string> > & kvs, char * buff, size_t buffsize,
     const string & codec, ChecksumType checksumType, KeyValueType type) {
   int partition = TestConfig.getInt("ifile.partition", 50);
