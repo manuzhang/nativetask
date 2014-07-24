@@ -114,7 +114,7 @@ CompressStream * Compressions::getCompressionStream(const string & codec, Output
 #if defined HADOOP_SNAPPY_LIBRARY
     return new SnappyCompressStream(stream, bufferSizeHint);
 #else
-    return NULL;
+    THROW_EXCEPTION(UnsupportException, "Snappy library is not loaded");
 #endif
   }
   if (codec == Lz4Codec.name) {
@@ -132,7 +132,7 @@ DecompressStream * Compressions::getDecompressionStream(const string & codec, In
 #if defined HADOOP_SNAPPY_LIBRARY
     return new SnappyDecompressStream(stream, bufferSizeHint);
 #else
-    return NULL;
+    THROW_EXCEPTION(UnsupportException, "Snappy library is not loaded");
 #endif
   }
   if (codec == Lz4Codec.name) {
