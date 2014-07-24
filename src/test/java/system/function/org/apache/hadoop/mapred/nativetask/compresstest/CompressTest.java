@@ -48,11 +48,7 @@ public class CompressTest {
 
     final boolean compareRet = ResultVerifier.verify(CompressMapper.outputFileDir + "nativesnappy",
         CompressMapper.outputFileDir + "hadoopsnappy");
-		if (NativeRuntime.buildSupportsSnappy()) {
-			assertEquals("file compare result: if they are the same ,then return true", true, compareRet);
-		} else {
-			assertEquals("file compare result: if they are the same ,then return true", false, compareRet);
-		}
+		assertEquals("file compare result: if they are the same ,then return true", true, compareRet);
   }
 
   @Test
