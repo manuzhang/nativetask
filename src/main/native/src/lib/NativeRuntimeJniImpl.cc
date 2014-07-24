@@ -32,17 +32,26 @@ using namespace NativeTask;
 
 /*
  * Class:     org_apache_hadoop_mapred_nativetask_NativeRuntime
- * Method:    buildSupportsSnappy
- * Signature: ()Z
+ * Method:    JNIBuildSupportsCodec
+ * Signature: ([B)Z
  */
-JNIEXPORT jboolean JNICALL Java_org_apache_hadoop_mapred_nativetask_NativeRuntime_buildSupportsSnappy
-  (JNIEnv *env, jclass clazz)
+JNIEXPORT jboolean JNICALL Java_org_apache_hadoop_mapred_nativetask_NativeRuntime_JNIBuildSupportsCodec
+  (JNIEnv *jenv, jclass clazz, jbyteArray codec)
 {
-#ifdef HADOOP_SNAPPY_LIBRARY
-  return JNI_TRUE;
+  const std::string codecString = JNU_ByteArrayToString(jenv, codec);
+  if ("org.apache.hadoop.io.compress.GzipCodec" == codecString) {
+    return JNI_TRUE;
+  } else if ("org.apache.hadoop.io.compress.Lz4Codec" == codecString) {
+    return JNI_TRUE;
+  } else if ("org.apache.hadoop.io.compress.SnappyCodec" == codecString) {
+#if defined HADOOP_SNAPPY_LIBRARY
+    return JNI_TRUE;
 #else
-  return JNI_FALSE;
+    return JNI_FALSE;
 #endif
+  } else {
+    return JNI_FALSE;
+  }
 }
 
 /*

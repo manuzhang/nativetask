@@ -160,10 +160,12 @@ public class NativeRuntime {
    ********************************************************/
 
   /**
-   * Check whether the native side has snappy support built in
+   * Check whether the native side has codec support built in
+   *
+   * @param codec
    * @return
    */
-  public native static boolean buildSupportsSnappy();
+  public native static boolean JNIBuildSupportsCodec(byte[] codec);
 
   /**
    * Config the native runtime with mapreduce job configurations.

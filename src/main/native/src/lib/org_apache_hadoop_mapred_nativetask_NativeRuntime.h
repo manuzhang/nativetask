@@ -9,11 +9,11 @@ extern "C" {
 #endif
 /*
  * Class:     org_apache_hadoop_mapred_nativetask_NativeRuntime
- * Method:    buildSupportsSnappy
- * Signature: ()Z
+ * Method:    JNIBuildSupportsCodec
+ * Signature: ([B)Z
  */
-JNIEXPORT jboolean JNICALL Java_org_apache_hadoop_mapred_nativetask_NativeRuntime_buildSupportsSnappy
-  (JNIEnv *, jclass);
+JNIEXPORT jboolean JNICALL Java_org_apache_hadoop_mapred_nativetask_NativeRuntime_JNIBuildSupportsCodec
+  (JNIEnv *, jclass, jbyteArray);
 
 /*
  * Class:     org_apache_hadoop_mapred_nativetask_NativeRuntime
